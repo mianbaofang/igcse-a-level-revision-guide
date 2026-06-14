@@ -96,6 +96,17 @@ class Qualification:
 
 
 @dataclass
+class GuideRunOptions:
+    requested_subject: str
+    image_provider: str
+    explanation_style: str
+    output_language: str
+    image_model: str | None = None
+    image_endpoint_url: str | None = None
+    image_api_key_env: str | None = None
+
+
+@dataclass
 class PracticeItem:
     topic_title: str
     command_word: str
@@ -138,6 +149,7 @@ class VisualBrief:
 @dataclass
 class GuidePlan:
     qualification: Qualification
+    run_options: GuideRunOptions
     topic_guides: list[TopicGuide]
     practice_items: list[PracticeItem]
     visual_briefs: list[VisualBrief]

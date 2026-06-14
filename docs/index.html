@@ -9,7 +9,7 @@
       Assumptions:
       - This is the GitHub repository home-page preview, not the student guide.
       - Audience: open-source maintainers, tutors, international-school families.
-      - Tone: source-traceable academic tool, polished but not decorative.
+      - Tone: practical study-skill project, visual, warm, and clear.
       - Current provider support: OxfordAQA only. Edexcel and CAIE are roadmap.
     */
     :root {
@@ -292,6 +292,33 @@
       display: grid;
       gap: 10px;
     }
+    .sample-strip {
+      display: grid;
+      gap: 9px;
+    }
+    .sample-shot {
+      margin: 0;
+      border: 1px solid var(--line);
+      background: var(--white);
+      box-shadow: 5px 5px 0 rgba(23,50,77,.08);
+      overflow: hidden;
+    }
+    .sample-shot img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 5;
+      object-fit: cover;
+      object-position: top left;
+    }
+    .sample-shot figcaption {
+      padding: 7px 9px;
+      color: var(--oxford);
+      font: 900 11px/1 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      background: var(--paper);
+      border-top: 1px solid var(--line);
+    }
     .guide-page {
       background: var(--white);
       border: 1px solid var(--line);
@@ -483,6 +510,19 @@
       overflow: hidden;
       padding: 26px;
     }
+    .real-samples {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      min-height: auto;
+    }
+    .real-samples .sample-shot {
+      min-height: 145px;
+    }
+    .real-samples .sample-shot img {
+      aspect-ratio: 16 / 7;
+      object-position: top left;
+    }
     .sheet {
       position: absolute;
       width: 42%;
@@ -621,60 +661,32 @@
     .motion-band p { color: rgba(255,255,255,.72); margin-top: 16px; }
     .motion-actions { margin-top: 26px; display: flex; gap: 12px; flex-wrap: wrap; }
     .motion-stage {
-      min-height: 330px;
       position: relative;
       border: 1px solid rgba(255,255,255,.18);
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255,255,255,.05) 1px, transparent 1px),
-        #172033;
-      background-size: 34px 34px;
+      background: #172033;
       overflow: hidden;
       padding: 22px;
     }
-    .orbit-card {
-      position: absolute;
-      width: 220px;
-      height: 122px;
-      border: 1px solid rgba(255,255,255,.25);
-      background: rgba(255,255,255,.08);
-      padding: 14px;
-      backdrop-filter: blur(8px);
-      animation: float 7s cubic-bezier(.16,1,.3,1) infinite;
-    }
-    .orbit-card:nth-child(1) { left: 32px; top: 36px; }
-    .orbit-card:nth-child(2) { right: 54px; top: 78px; animation-delay: -1.4s; }
-    .orbit-card:nth-child(3) { left: 170px; bottom: 40px; animation-delay: -2.8s; }
-    @keyframes float {
-      0%, 100% { transform: translate3d(0,0,0) rotate(-1deg); }
-      50% { transform: translate3d(18px,-14px,0) rotate(1.5deg); }
-    }
-    .orbit-card strong {
+    .motion-preview {
       display: block;
-      color: var(--white);
-      margin-bottom: 10px;
+      background: #0f1724;
+      border: 1px solid rgba(255,255,255,.14);
     }
-    .orbit-card span {
+    .motion-preview img {
       display: block;
-      height: 8px;
-      margin-top: 7px;
-      background: rgba(255,255,255,.22);
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
     }
-    .orbit-card span:nth-child(3) { width: 70%; background: var(--gold); }
-    .motion-beam {
-      position: absolute;
-      left: 10%;
-      right: 10%;
-      top: 50%;
-      height: 2px;
-      background: var(--gold);
-      transform-origin: left center;
-      animation: beam 4s cubic-bezier(.16,1,.3,1) infinite;
-    }
-    @keyframes beam {
-      0% { transform: scaleX(.1); opacity: .2; }
-      45% { transform: scaleX(1); opacity: 1; }
-      100% { transform: scaleX(.1); opacity: .2; }
+    .motion-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 14px;
+      color: rgba(255,255,255,.72);
+      font: 800 12px/1.4 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .06em;
     }
 
     footer {
@@ -703,6 +715,7 @@
       .flow-item { border-right: 0; border-bottom: 1px solid var(--line); }
       .flow-item:last-child { border-bottom: 0; }
       .spread { min-height: 680px; }
+      .real-samples { min-height: auto; }
       .sheet { width: calc(100% - 52px); left: 26px !important; right: auto; min-height: 280px; }
       .sheet.one { top: 36px; }
       .sheet.two { top: 340px; }
@@ -719,9 +732,6 @@
       .scope-table { font-size: 13px; }
       .scope-table th, .scope-table td { padding: 10px 8px; }
       .motion-stage { min-height: 420px; }
-      .orbit-card { width: 190px; }
-      .orbit-card:nth-child(2) { right: 20px; }
-      .orbit-card:nth-child(3) { left: 42px; }
     }
   </style>
 </head>
@@ -748,8 +758,8 @@
       <div class="shell hero-grid">
         <div>
           <div class="kicker">OxfordAQA MVP · Pearson Edexcel / CAIE roadmap</div>
-          <h1>Source-first revision guides.</h1>
-          <p class="lead">面向 International GCSE 与 International AS/A-level：从官方 qualification 页面和 specification PDF 出发，生成带来源追溯、知识地图、例题框架、答案检查点和打印版 PDF 的复习指南。当前版本只实现 OxfordAQA，后续只按国内常用场景扩 Pearson Edexcel 与 Cambridge International / CAIE。</p>
+          <h1>给 agent 一个科目，拿回一份图文复习手册。</h1>
+          <p class="lead">把 Skill 链接交给 Codex 或其他 agent，说一句“帮我生成某个科目的复习手册”。确认科目、输出语言、生图模型和讲解风格后，它会为 OxfordAQA International GCSE / International AS-A-level 生成知识点讲解、例题、信息图和可打印 PDF。</p>
           <div class="action-row">
             <a class="button" href="https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill">安装 Skill</a>
             <a class="button secondary" href="../README.zh-CN.md">中文使用说明</a>
@@ -758,29 +768,29 @@
           </div>
           <div class="proof-row" aria-label="Verified progress">
             <div class="proof">
-              <strong>48</strong>
-              <span>OxfordAQA qualification pages audited</span>
+              <strong>3</strong>
+              <span>国内常用考试局路线：OxfordAQA, Edexcel, CAIE</span>
             </div>
             <div class="proof">
-              <strong>0</strong>
-              <span>parser errors in the live audit</span>
+              <strong>95</strong>
+              <span>样例手册已合并的信息图数量</span>
             </div>
             <div class="proof">
-              <strong>5</strong>
-              <span>sample guides generated and validated</span>
+              <strong>3</strong>
+              <span>数学、经济、化学完整样例展示</span>
             </div>
           </div>
         </div>
 
-        <div class="lab" id="effect" aria-label="Source to guide visual preview">
+        <div class="lab" id="effect" aria-label="Skill to guide visual preview">
           <div class="lab-head">
-            <span>Repository home preview</span>
-            <span>guide.html + validation.json</span>
+            <span>Skill usage preview</span>
+            <span>HTML + PDF guide</span>
           </div>
           <div class="lab-grid">
             <div class="panel">
-              <h3>Official Source</h3>
-              <p>OxfordAQA qualification page + public specification PDF.</p>
+              <h3>一句话需求</h3>
+              <p>帮我生成 Mathematics 9260 中文复习手册，并导出 PDF。</p>
               <div class="source-lines" aria-hidden="true">
                 <span class="line"></span>
                 <span class="line"></span>
@@ -792,35 +802,26 @@
               <div class="scan" aria-hidden="true"></div>
             </div>
             <div class="panel engine">
-              <div class="engine-step">discover()</div>
-              <div class="engine-step">parse syllabus</div>
-              <div class="engine-step">match snippets</div>
-              <div class="engine-step">validate output</div>
+              <div class="engine-step">确认科目</div>
+              <div class="engine-step">选择语言</div>
+              <div class="engine-step">选择生图模型</div>
+              <div class="engine-step">选择讲解风格</div>
             </div>
             <div class="panel">
               <h3>Student Guide</h3>
-              <div class="guide-card">
-                <div class="guide-page">
-                  <strong>知识地图 / Knowledge Map</strong>
-                  <div class="tag-row">
-                    <span class="tag">topic points</span>
-                    <span class="tag red">source page</span>
-                  </div>
-                </div>
-                <div class="guide-page">
-                  <strong>例题推导 / Worked Example</strong>
-                  <div class="tag-row">
-                    <span class="tag gold">command word</span>
-                    <span class="tag">answer frame</span>
-                  </div>
-                </div>
-                <div class="guide-page">
-                  <strong>质量检查 / Validation</strong>
-                  <div class="tag-row">
-                    <span class="tag">hash</span>
-                    <span class="tag red">review required</span>
-                  </div>
-                </div>
+              <div class="sample-strip" aria-label="Sample guide screenshots">
+                <figure class="sample-shot">
+                  <img src="assets/sample-math-guide.png?v=2" alt="Mathematics guide screenshot">
+                  <figcaption>Mathematics 9260</figcaption>
+                </figure>
+                <figure class="sample-shot">
+                  <img src="assets/sample-economics-guide.png?v=2" alt="Economics guide screenshot">
+                  <figcaption>Economics 9214</figcaption>
+                </figure>
+                <figure class="sample-shot">
+                  <img src="assets/sample-chemistry-guide.png?v=2" alt="Chemistry guide screenshot">
+                  <figcaption>Chemistry 9202</figcaption>
+                </figure>
               </div>
             </div>
           </div>
@@ -831,7 +832,7 @@
     <section class="origin" id="origin">
       <div class="shell origin-card">
         <div class="origin-title">
-          <div class="kicker" style="color:#f0cf84;">Origin / 初衷</div>
+          <div class="kicker" style="color:#f0cf84;">项目初衷</div>
           <h2>这个项目先是为一个孩子做的。</h2>
           <p>It began as a practical way to make a difficult school transition feel less overwhelming.</p>
         </div>
@@ -839,7 +840,7 @@
           <div class="quote">不是替孩子学习，而是把学习路上的噪音降下来。</div>
           <p>这个项目最早不是为了做一个“工具”，而是为了帮一个真实的孩子轻一点地走过转轨期。我的儿子今年要参加 International GCSE 大考；他从公办体系转到国际课程还不到一年，课堂语言几乎一下从全中文切换到全英文。知识点本身可以慢慢学，但新的语言、新的考试方式和临近大考的时间压力叠在一起，很容易让孩子觉得自己被推着走。</p>
           <p>我用 Codex 做了一个学习、复习用的 Skill：让它先读官方大纲，再把知识点拆成能理解的结构、例题和检查点。这个项目的初衷很简单：利用人工智能帮助孩子更轻松、更有掌控感地面对学业。</p>
-          <p class="origin-note">That is why the project insists on official sources, bilingual scaffolding, and reviewable outputs. The technology is only useful if it makes learning calmer, clearer, and more humane.</p>
+          <p class="origin-note">所以这个项目的重点不是炫技，而是把“看不懂、记不住、不会用”的复习压力，拆成孩子能读、能练、能看图理解的一页页手册。</p>
         </div>
       </div>
     </section>
@@ -847,36 +848,36 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>不是题库搬运器，而是大纲驱动的生成流水线。</h2>
-          <p>参考 huashu-design README 的组织方式：先给一句定位，再给可视化效果，再解释能力边界和核心机制。这里的视觉和内容都服务于一个承诺：每个 syllabus fact 都要能回到公开来源。</p>
+          <h2>不是题库搬运器，而是一套复习手册生成流程。</h2>
+          <p>先让用户知道它能交付什么，再展示真实样例，最后说明能力边界和工作机制。核心承诺很简单：把考试大纲变成能读、能练、能看图理解的学习手册。</p>
         </div>
         <div class="flow">
           <article class="flow-item">
-            <div class="num">01 · Discover</div>
+            <div class="num">01 · Choose</div>
             <div>
-              <h3>找官方 qualification 页面</h3>
-              <p>通过学科名或代码定位 OxfordAQA 公开页面，并记录蓝色 / 红色 listing 元数据。</p>
+              <h3>选择科目和语言</h3>
+              <p>用户先确认考试局、科目、代码，以及手册输出中文还是英文；未确认前不开始生成。</p>
             </div>
           </article>
           <article class="flow-item">
-            <div class="num">02 · Extract</div>
+            <div class="num">02 · Style</div>
             <div>
-              <h3>下载并解析 specification</h3>
-              <p>运行时下载 PDF，不把官方 PDF 提交到仓库；抽取 topic、assessment 和页码文本。</p>
+              <h3>选择讲解风格</h3>
+              <p>可以走严肃备考、轻松愉快、生活化场景、侦探推理、闯关式讲解等不同语气。</p>
             </div>
           </article>
           <article class="flow-item">
-            <div class="num">03 · Compose</div>
+            <div class="num">03 · Visuals</div>
             <div>
-              <h3>生成学习指南结构</h3>
-              <p>组织知识地图、复习路径、例题框架、练习卡和图解规划，保持中英双语模板标签。</p>
+              <h3>选择生图模型</h3>
+              <p>简单结构图用 SVG；复杂知识点和例题需要信息图时，使用用户提供的 GPT Image、Qwen Image、SenseNova 或自定义 API。</p>
             </div>
           </article>
           <article class="flow-item">
-            <div class="num">04 · Validate</div>
+            <div class="num">04 · Deliver</div>
             <div>
-              <h3>输出前做质量检查</h3>
-              <p>检查 topic、source snippets、PDF、practice cards、diagram 和 provider listing。</p>
+              <h3>生成 HTML/PDF 手册</h3>
+              <p>输出包含知识点讲解、例题、复习题、图文学习单元和最终可打印 PDF。</p>
             </div>
           </article>
         </div>
@@ -887,17 +888,17 @@
       <div class="shell scope-grid">
         <div class="scope-copy">
           <div>
-            <div class="kicker">Scope is a feature</div>
-            <h2>当前只做 OxfordAQA。</h2>
+            <div class="kicker">Provider scope</div>
+            <h2>当前先把 OxfordAQA 做稳。</h2>
           </div>
-          <p>开源项目最怕“看起来什么都支持”。这里反过来：把当前能力、路线图、暂不支持范围写在首页，避免用户误以为已经覆盖所有 A-level 考试局。</p>
+          <p>国内常用方向是 OxfordAQA、Pearson Edexcel 和 Cambridge International / CAIE。当前版本先支持 OxfordAQA，后续版本再按同一套流程扩展 Edexcel 和 CAIE。</p>
         </div>
         <table class="scope-table">
           <thead>
             <tr>
               <th>Provider / exam board</th>
               <th>International GCSE</th>
-              <th>International AS/A-level</th>
+              <th>International AS-A-level</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -933,46 +934,36 @@
 
     <section class="band">
       <div class="shell anatomy">
-        <div class="spread" aria-label="Guide output anatomy">
-          <div class="sheet one">
-            <div class="sheet-title">International GCSE Demo Science</div>
-            <div class="mini-lines">
-              <span></span><span></span><span></span><span></span>
-            </div>
-            <div class="diagram">
-              <span class="dot a"></span>
-              <span class="dot b"></span>
-              <span class="dot c"></span>
-            </div>
-          </div>
-          <div class="sheet two">
-            <div class="sheet-title">Practice Card / 练习卡</div>
-            <div class="mini-lines">
-              <span></span><span></span><span></span><span></span><span></span>
-            </div>
-            <div class="tag-row">
-              <span class="tag">Answer frame</span>
-              <span class="tag red">Checkpoints</span>
-              <span class="tag gold">Source points</span>
-            </div>
-          </div>
+        <div class="spread real-samples" aria-label="Actual sample guide screenshots">
+          <figure class="sample-shot">
+            <img src="assets/sample-math-guide.png?v=2" alt="Mathematics sample guide page with visual worked example">
+            <figcaption>Mathematics 9260 · 图形例题</figcaption>
+          </figure>
+          <figure class="sample-shot">
+            <img src="assets/sample-economics-guide.png?v=2" alt="Economics sample guide page with infographic">
+            <figcaption>Economics 9214 · 概念信息图</figcaption>
+          </figure>
+          <figure class="sample-shot">
+            <img src="assets/sample-chemistry-guide.png?v=2" alt="Chemistry sample guide page with infographic">
+            <figcaption>Chemistry 9202 · 实验与模型图</figcaption>
+          </figure>
         </div>
         <div class="checklist">
           <div class="section-head" style="display:block;margin-bottom:10px;">
-            <h2>生成物长什么样。</h2>
-            <p>学生看到的是漂亮的学习指南；维护者看到的是可追溯数据和校验报告。</p>
+            <h2>实际样例长这样。</h2>
+            <p>截图来自最终数学、经济、化学手册，不是占位图。每个样例都包含知识点讲解、例题和已合并的信息图。</p>
           </div>
           <article class="check">
-            <h3>HTML / PDF guide</h3>
-            <p>可打印、可直接交给学生预览，但仍保留 review required 的安全边界。</p>
+            <h3>学生手册 HTML/PDF</h3>
+            <p>可直接预览、打印或交给学生复习，页面重点放在知识点、例题和图文讲解。</p>
           </article>
           <article class="check">
-            <h3>guide-plan.json</h3>
-            <p>结构化保存 topic guide blocks、practice cards、diagram briefs 和 source points。</p>
+            <h3>图文学习单元</h3>
+            <p>AI 先判断哪些内容需要图，再决定用 SVG 还是复杂信息图模型生成。</p>
           </article>
           <article class="check">
-            <h3>validation.json</h3>
-            <p>把 topic、assessment、source snippets、listing metadata 和输出完整性放进质量门槛。</p>
+            <h3>例题与复习题</h3>
+            <p>每个 topic 都要能落到讲解、练习、答案检查点和最终备考复习题。</p>
           </article>
         </div>
       </div>
@@ -987,8 +978,8 @@
         <div class="language">
           <article>
             <h3>不是文字模板</h3>
-            <p>被 AI 判断为需要图的 topic，必须有图文学习单元：图/信息图、情境问题、讲解风格、答题步骤和 source check。</p>
-            <div class="sample">Visual worked example / 图形例题</div>
+            <p>被 AI 判断为需要图的 topic，必须有图文学习单元：图/信息图、情境问题、讲解风格、答题步骤和复习检查点。</p>
+            <div class="sample">Visual Worked Example</div>
           </article>
           <article>
             <h3>模型由用户选择</h3>
@@ -998,7 +989,7 @@
           <article>
             <h3>讲解模板更生动</h3>
             <p>同一知识点可以用生活场景、侦探推理、动漫闯关感等方式讲，但默认不复刻具体受保护 IP。</p>
-            <div class="sample">Life Scene / Detective / Anime Quest</div>
+            <div class="sample">Life Scene, Detective, Adventure</div>
           </article>
         </div>
       </div>
@@ -1007,19 +998,19 @@
     <section class="band alt" id="language">
       <div class="shell">
         <div class="section-head">
-          <h2>中英双语不是随便混排。</h2>
-          <p>模板标签可以双语；官方 syllabus terms 不自动翻译。这样看起来少一点“顺滑”，但更稳。</p>
+          <h2>先选语言，再生成手册。</h2>
+          <p>生成前需要选择英文或中文；模板标签、讲解框架和生图提示词跟随同一种输出语言。</p>
         </div>
         <div class="language">
           <article>
-            <h3>官方内容保留英文</h3>
-            <p>qualification titles、topic titles、paper titles、syllabus points 和 source snippets 都保留 OxfordAQA 原文。</p>
+            <h3>输出语言先锁定</h3>
+            <p>英文模式给学生看英文；中文模式给学生看简体中文。不要出现一半中文、一半英文的 topic 正文。</p>
             <div class="sample">Atomic structure and the periodic table</div>
           </article>
           <article>
-            <h3>模板标签统一双语</h3>
-            <p>导航和结构性标题采用中文在前、英文在后的形式，帮助国内学生和家长快速扫读。</p>
-            <div class="sample">知识地图 / Knowledge Map</div>
+            <h3>模板标签不混排</h3>
+            <p>英文模式显示 Study Roadmap、Worked Example；中文模式显示复习路线、例题，不做中英拼接。</p>
+            <div class="sample">Study Roadmap</div>
           </article>
           <article>
             <h3>中文 topic 需要审核词表</h3>
@@ -1034,8 +1025,8 @@
       <div class="shell package">
         <div>
           <div class="section-head" style="display:block;margin-bottom:18px;">
-            <h2>GitHub 开源包已经按 README-first 组织。</h2>
-            <p>首页介绍、双语 README、accuracy policy、examples、skill 解释、issue templates 和 CI 都放进了源码包。</p>
+            <h2>GitHub 首页按“先会用，再看机制”组织。</h2>
+            <p>先告诉用户怎么安装 Skill、怎么让 agent 生成手册，再展示样例、能力边界、图文生成逻辑和开发文档。</p>
           </div>
           <pre class="file-list"><code>international-exam-guide/
   README.md
@@ -1064,7 +1055,7 @@
             <span>MD</span>
           </a>
           <a class="doc-link" href="SKILL_EXPLAINED.md">
-            <span>Skill explained<small>Skill 工作流、输入输出和来源追溯机制。</small></span>
+            <span>Skill explained<small>Skill 工作流、输入输出和生成步骤。</small></span>
             <span>MD</span>
           </a>
           <a class="doc-link" href="IMAGE_MODEL_GUIDE.md">
@@ -1080,17 +1071,20 @@
         <div>
           <div class="kicker" style="color:#f0cf84;">Motion companion</div>
           <h2>加了一支 24 秒介绍动画。</h2>
-          <p>动画用同一套产品边界讲清楚：OxfordAQA source -> parser -> bilingual guide -> validation -> Edexcel / CAIE roadmap。HTML 可直接打开，后续可以导 MP4 放进 GitHub README 或演示文档。</p>
+          <p>动画展示真实使用路径：给 agent 一个 Skill 链接，确认科目、语言、生图模型和讲解风格，然后生成图文手册并导出 PDF。</p>
           <div class="motion-actions">
             <a class="button" href="project-intro-animation.html">打开动画 HTML</a>
             <a class="button secondary" href="project-intro-animation.mp4">查看 MP4</a>
           </div>
         </div>
         <div class="motion-stage" aria-label="Animated introduction preview">
-          <div class="motion-beam"></div>
-          <div class="orbit-card"><strong>OxfordAQA</strong><span></span><span></span><span></span></div>
-          <div class="orbit-card"><strong>Specification PDF</strong><span></span><span></span><span></span></div>
-          <div class="orbit-card"><strong>Guide + validation</strong><span></span><span></span><span></span></div>
+          <a class="motion-preview" href="project-intro-animation.html" aria-label="Open intro animation">
+            <img src="assets/intro-animation-preview.gif?v=2" alt="Animated introduction preview with guide screenshots">
+          </a>
+          <div class="motion-caption">
+            <span>Autoplay GIF preview</span>
+            <span>HTML / MP4</span>
+          </div>
         </div>
       </div>
     </section>

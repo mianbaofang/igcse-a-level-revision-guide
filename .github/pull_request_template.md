@@ -13,7 +13,8 @@ Describe the change.
 ## Checks
 
 - [ ] `python -m pytest`
-- [ ] `python -m compileall -q src tests`
+- [ ] `python -m compileall -q src tests scripts`
+- [ ] `python scripts/scan_for_raw_keys.py .`
 - [ ] Demo command runs, or change does not affect runtime behavior
 - [ ] No downloaded PDFs, past papers, mark schemes, or copied question content were committed
 - [ ] Accuracy-sensitive changes preserve source URLs, PDF hashes, and validation behavior

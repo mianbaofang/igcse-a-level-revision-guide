@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
+import re
 
 from intl_exam_guide.models import GuidePlan
+from intl_exam_guide.rendering.visual_assets import (
+    has_renderable_infographic,
+    is_raster_asset,
+    load_visual_manifest,
+)
 
 
 @dataclass
@@ -12,9 +18,71 @@ class ValidationIssue:
     message: str
 
 
-def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path | None = None) -> list[ValidationIssue]:
+BILINGUAL_LABEL_PATTERNS = [
+    "Chinese / English",
+    "中文 / English",
+    "图文学习页 / Visual Guide",
+    "复习路线 / Study Roadmap",
+    "例题 / Worked Example",
+]
+BILINGUAL_SLASH_PATTERN = re.compile(
+    r"(?:[\u4e00-\u9fff][^<>\n/]{0,40}\s/\s[^<>\n/]{0,40}[A-Za-z]"
+    r"|[A-Za-z][^<>\n/]{0,40}\s/\s[^<>\n/]{0,40}[\u4e00-\u9fff])"
+)
+ZH_FORBIDDEN_TEMPLATE_PHRASES = [
+    "How to Study",
+    "Study Roadmap",
+    "One-Sentence Essence",
+    "Everyday Analogy",
+    "Worked Example",
+    "Try First",
+    "Solution",
+    "Check",
+    "Exam Pitfall",
+    "Source anchor",
+    "Concept Map",
+    "Visual Worked Example",
+    "Generated Infographic",
+    "Infographic Queue",
+    "Local SVG draft",
+    "Why not SVG",
+    "Prompt queue",
+    "Output language: English",
+]
+
+
+def validate_plan(
+    plan: GuidePlan,
+    html_path: Path | None = None,
+    pdf_path: Path | None = None,
+    output_dir: Path | None = None,
+) -> list[ValidationIssue]:
     qualification = plan.qualification
     issues: list[ValidationIssue] = []
+    options = plan.run_options
+
+    if not options.requested_subject.strip():
+        issues.append(ValidationIssue("error", "Missing preflight subject selection."))
+    if options.explanation_style not in {"formal", "friendly", "life", "story", "detective", "adventure"}:
+        issues.append(ValidationIssue("error", "Missing or unsupported explanation style selection."))
+    if options.output_language not in {"en", "zh-CN"}:
+        issues.append(ValidationIssue("error", "Missing or unsupported output language selection."))
+    if options.image_provider not in {
+        "prompt-queue",
+        "deterministic-svg",
+        "gpt-image-2",
+        "qwen-image-pro",
+        "sensenova-u1-fast",
+        "custom",
+    }:
+        issues.append(ValidationIssue("error", "Missing or unsupported image-provider selection."))
+    if options.image_provider == "custom":
+        if not options.image_model:
+            issues.append(ValidationIssue("error", "Custom image provider is missing a model name."))
+        if not options.image_endpoint_url:
+            issues.append(ValidationIssue("error", "Custom image provider is missing an endpoint URL."))
+        if not options.image_api_key_env:
+            issues.append(ValidationIssue("error", "Custom image provider is missing an API-key environment variable name."))
 
     if not qualification.source.page_url:
         issues.append(ValidationIssue("error", "Missing source qualification page URL."))
@@ -71,6 +139,13 @@ def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path
             issues.append(ValidationIssue("error", f"Practice item has too few answer checkpoints: {item.topic_title}"))
         if not item.source_points:
             issues.append(ValidationIssue("error", f"Practice item has no source points: {item.topic_title}"))
+        if is_placeholder_practice_question(item.question):
+            issues.append(
+                ValidationIssue(
+                    "warning",
+                    f"Practice item is an authoring frame, not a concrete worked example: {item.topic_title}",
+                )
+            )
 
     for brief in plan.visual_briefs:
         if not brief.focus_point.strip():
@@ -95,37 +170,73 @@ def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path
             issues.append(ValidationIssue("warning", "GCSE guide does not mention the linear qualification structure."))
     if qualification.qualification_type == "international_as_a_level":
         if qualification.source.listing_qualification_type and qualification.source.listing_qualification_type != "international_as_a_level":
-            issues.append(ValidationIssue("error", "Source listing metadata conflicts with AS/A-level type."))
+            issues.append(ValidationIssue("error", "Source listing metadata conflicts with AS-A-level type."))
         if "modular" not in " ".join([qualification.audience_note, *qualification.summary]).lower():
-            issues.append(ValidationIssue("warning", "AS/A-level guide does not mention the modular qualification structure."))
+            issues.append(ValidationIssue("warning", "AS-A-level guide does not mention the modular qualification structure."))
 
     if html_path:
         if not html_path.exists():
             issues.append(ValidationIssue("error", f"HTML output is missing: {html_path}"))
         else:
             html = html_path.read_text(encoding="utf-8", errors="replace")
-            for topic in qualification.topics:
-                if topic.title not in html:
-                    issues.append(ValidationIssue("error", f"Topic missing from HTML: {topic.title}"))
-            required_phrases = [
-                "一句话本质",
-                "Mini Worked Example",
-                "practice card",
-                "Public solution steps",
-                "Answer checkpoints",
-                "考试陷阱",
-                "Source check",
-                "Concept map / 图文解释",
-                "图文解释规划",
-                "Language Policy",
-            ]
+            for label in mixed_language_label_matches(html):
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        f"HTML contains a bilingual mixed-language label: {label}",
+                    )
+                )
+            for index, topic in enumerate(qualification.topics, start=1):
+                marker = expected_topic_marker(topic.title, index, options.output_language)
+                if marker not in html:
+                    issues.append(ValidationIssue("error", f"Topic missing from HTML: {marker}"))
+            if options.output_language == "en":
+                if re.search(r"[\u4e00-\u9fff]", html):
+                    issues.append(ValidationIssue("error", "English output contains Chinese characters in the student-facing HTML."))
+                required_phrases = [
+                    "How to Study",
+                    "Study Roadmap",
+                    "One-Sentence Essence",
+                    "Method",
+                    "Worked Example",
+                    "Solution",
+                    "Check",
+                    "Exam Pitfall",
+                    "Source anchor",
+                    "Concept Map",
+                ]
+            else:
+                for phrase in ZH_FORBIDDEN_TEMPLATE_PHRASES:
+                    if phrase in html:
+                        issues.append(
+                            ValidationIssue(
+                                "error",
+                                f"Chinese output contains an English template phrase: {phrase}",
+                            )
+                        )
+                required_phrases = [
+                    "怎么用这本手册",
+                    "复习路线",
+                    "一句话本质",
+                    "解题套路",
+                    "例题",
+                    "解题步骤",
+                    "检查答案",
+                    "考试陷阱",
+                    "来源依据",
+                    "图文解释",
+                ]
             for phrase in required_phrases:
                 if phrase not in html:
                     issues.append(ValidationIssue("error", f"HTML missing required section phrase: {phrase}"))
             if plan.visual_briefs:
-                for phrase in ["Visual worked example", "Image prompt"]:
-                    if phrase not in html:
-                        issues.append(ValidationIssue("error", f"HTML missing required visual phrase: {phrase}"))
+                visual_markers = (
+                    ["Visual Worked Example", "Infographic Queue", "Generated Infographic"]
+                    if options.output_language == "en"
+                    else ["图形例题", "信息图生成队列", "已生成信息图"]
+                )
+                if not any(marker in html for marker in visual_markers):
+                    issues.append(ValidationIssue("error", "HTML missing required visual explanation block."))
             diagram_count = html.count('class="topic-diagram"')
             if diagram_count < len(qualification.topics):
                 issues.append(
@@ -138,7 +249,126 @@ def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path
     if pdf_path and not pdf_path.exists():
         issues.append(ValidationIssue("warning", f"PDF output is missing: {pdf_path}"))
 
+    if output_dir:
+        sections_dir = output_dir / "sections"
+        images_dir = output_dir / "images"
+        package_manifest = output_dir / "handbook-package.json"
+        if not sections_dir.exists():
+            issues.append(ValidationIssue("error", f"Sections directory is missing: {sections_dir}"))
+        else:
+            section_count = len(list(sections_dir.glob("*.txt")))
+            if section_count < 5:
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        f"Sections directory has only {section_count} section files.",
+                    )
+                )
+        if not images_dir.exists():
+            issues.append(ValidationIssue("error", f"Images directory is missing: {images_dir}"))
+        elif plan.visual_briefs:
+            svg_briefs = [brief for brief in plan.visual_briefs if brief.complexity == "svg-basic"]
+            infographic_briefs = [
+                brief for brief in plan.visual_briefs if brief.complexity == "infographic"
+            ]
+            svg_count = len(list(images_dir.glob("*.svg")))
+            if svg_count < len(svg_briefs):
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        f"Images directory has {svg_count} SVG drafts for {len(svg_briefs)} SVG-safe visual briefs.",
+                    )
+                )
+            manifest_path = images_dir / "visual_manifest.json"
+            manifest_entries = load_visual_manifest(images_dir)
+            if not manifest_path.exists():
+                issues.append(ValidationIssue("error", "Visual manifest is missing from images directory."))
+            for entry in manifest_entries:
+                filename = entry.get("file")
+                if filename and not (images_dir / str(filename)).exists():
+                    issues.append(
+                        ValidationIssue(
+                            "error",
+                            f"Visual manifest references a missing image file: {filename}",
+                        )
+                    )
+            if infographic_briefs:
+                generated = sum(
+                    1
+                    for entry in manifest_entries
+                    if entry.get("complexity") == "infographic"
+                    and has_renderable_infographic(entry, images_dir)
+                )
+                pending_user_choice = sum(
+                    1
+                    for entry in manifest_entries
+                    if entry.get("complexity") == "infographic"
+                    and entry.get("asset_status") == "infographic-provider-required"
+                )
+                selected_pending = sum(
+                    1
+                    for entry in manifest_entries
+                    if entry.get("complexity") == "infographic"
+                    and entry.get("asset_status") == "provider-selected-pending-generation"
+                )
+                if pending_user_choice:
+                    issues.append(
+                        ValidationIssue(
+                            "warning",
+                            f"{pending_user_choice} infographic briefs need a user-selected image model before final visual delivery.",
+                        )
+                    )
+                if selected_pending:
+                    issues.append(
+                        ValidationIssue(
+                            "warning",
+                            f"{selected_pending} infographic briefs have a provider selected but still need reviewed generated assets.",
+                        )
+                    )
+                selected_or_generated = len(infographic_briefs) - pending_user_choice
+                if generated < selected_or_generated:
+                    issues.append(
+                        ValidationIssue(
+                            "warning",
+                            f"{generated}/{selected_or_generated} selected infographic briefs have generated raster assets.",
+                        )
+                    )
+        if not (output_dir / "run-options.json").exists():
+            issues.append(ValidationIssue("error", "Run options file is missing from output directory."))
+        if not package_manifest.exists():
+            issues.append(ValidationIssue("error", f"Handbook package manifest is missing: {package_manifest}"))
+
     return issues
+
+
+def is_placeholder_practice_question(question: str) -> bool:
+    text = question.lower()
+    return (
+        "how the syllabus idea" in text
+        and "could be used in an exam question" in text
+    )
+
+
+def mixed_language_label_matches(html: str) -> list[str]:
+    text = re.sub(r"<[^>]+>", " ", html)
+    matches: list[str] = []
+    for pattern in BILINGUAL_LABEL_PATTERNS:
+        if pattern in html:
+            matches.append(pattern)
+    for match in BILINGUAL_SLASH_PATTERN.finditer(text):
+        label = " ".join(match.group(0).split())
+        if label not in matches:
+            matches.append(label)
+    return matches
+
+
+def expected_topic_marker(topic_title: str, index: int, output_language: str) -> str:
+    if output_language == "en":
+        return topic_title
+    match = re.match(r"^\s*([A-Z]\d+[A-Z]?|\d+(?:\.\d+)+)\b", topic_title)
+    if match:
+        return f"大纲点 {match.group(1)}"
+    return f"知识单元 {index}"
 
 
 def issues_to_dict(issues: list[ValidationIssue]) -> list[dict[str, str]]:
@@ -149,28 +379,68 @@ def review_summary(
     plan: GuidePlan,
     html_path: Path | None = None,
     pdf_path: Path | None = None,
+    output_dir: Path | None = None,
 ) -> dict[str, object]:
     qualification = plan.qualification
     topic_titles = {topic.title for topic in qualification.topics}
     practice_topics = {item.topic_title for item in plan.practice_items}
     guide_topics = {guide.topic_title for guide in plan.topic_guides}
     topics_with_source = sum(1 for topic in qualification.topics if topic.source_snippets)
+    svg_safe_visuals = sum(1 for brief in plan.visual_briefs if brief.complexity == "svg-basic")
+    infographic_visuals = sum(1 for brief in plan.visual_briefs if brief.complexity == "infographic")
     html = ""
     if html_path and html_path.exists():
         html = html_path.read_text(encoding="utf-8", errors="replace")
+    section_files = 0
+    image_files = 0
+    generated_infographic_assets = 0
+    has_visual_manifest = False
+    has_package_manifest = False
+    if output_dir:
+        sections_dir = output_dir / "sections"
+        images_dir = output_dir / "images"
+        section_files = len(list(sections_dir.glob("*.txt"))) if sections_dir.exists() else 0
+        if images_dir.exists():
+            image_files = len(
+                [
+                    path
+                    for path in images_dir.iterdir()
+                    if path.suffix.lower() == ".svg" or is_raster_asset(path.name)
+                ]
+            )
+            manifest_entries = load_visual_manifest(images_dir)
+            generated_infographic_assets = sum(
+                1
+                for entry in manifest_entries
+                if entry.get("complexity") == "infographic"
+                and has_renderable_infographic(entry, images_dir)
+            )
+        has_visual_manifest = (images_dir / "visual_manifest.json").exists()
+        has_package_manifest = (output_dir / "handbook-package.json").exists()
     return {
+        "requested_subject": plan.run_options.requested_subject,
+        "image_provider": plan.run_options.image_provider,
+        "explanation_style": plan.run_options.explanation_style,
+        "output_language": plan.run_options.output_language,
         "topics": len(qualification.topics),
         "assessments": len(qualification.assessments),
         "topic_guides": len(plan.topic_guides),
         "visual_briefs": len(plan.visual_briefs),
+        "svg_safe_visuals": svg_safe_visuals,
+        "infographic_visuals": infographic_visuals,
+        "generated_infographic_assets": generated_infographic_assets,
         "practice_cards": len(plan.practice_items),
         "topics_with_practice": len(topic_titles & practice_topics),
         "topics_with_guides": len(topic_titles & guide_topics),
         "topics_with_pdf_source_snippets": topics_with_source,
         "topic_diagrams_in_html": html.count('class="topic-diagram"') if html else 0,
-        "visual_examples_in_html": html.count('class="visual-example"') if html else 0,
+        "visual_examples_in_html": html.count('<figure class="visual-example') if html else 0,
         "has_html": bool(html_path and html_path.exists()),
         "has_pdf": bool(pdf_path and pdf_path.exists()),
+        "section_files": section_files,
+        "image_files": image_files,
+        "has_visual_manifest": has_visual_manifest,
+        "has_package_manifest": has_package_manifest,
         "has_listing_metadata": bool(
             qualification.source.listing_qualification_type
             or qualification.source.listing_group_label

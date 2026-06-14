@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "international-exam-guide"
 version = "0.1.0"
-description = "Generate source-traceable International GCSE and International AS/A-level revision guides from public specification pages."
+description = "Generate image-rich International GCSE and International AS-A-level revision guides with worked examples and PDF output."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

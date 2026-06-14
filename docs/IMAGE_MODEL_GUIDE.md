@@ -14,13 +14,31 @@ For many subjects, richer illustrations are still useful:
 - chemistry particle or reaction sketches;
 - physics force, circuit, wave, and energy-transfer diagrams;
 - economics curves, flow diagrams, and scenario posters;
-- bilingual infographics that help students bridge Chinese explanation and
-  English exam language.
+- text-heavy infographics in the selected output language, with official
+  formulae and syllabus terms preserved when needed.
 
 Use image generation as a user-selected illustration adapter, not as the source
 of truth. The generator should first create source-bound knowledge points and
 practice examples, then analyze which items need visual explanation. Simple
 visuals can use SVG; complex infographics should ask the user for a provider.
+
+Before the pipeline starts, the user must choose the visual route:
+
+- `gpt-image-2`
+- `qwen-image-pro`
+- `sensenova-u1-fast`
+- `custom`
+- `deterministic-svg` for SVG-safe visuals only
+- `prompt-queue` for a deliberate dry run with prompts but no final complex
+  infographics
+
+For `custom`, collect only:
+
+- model name;
+- endpoint URL;
+- API-key environment variable name.
+
+Never collect the raw key in chat, docs, screenshots, or committed files.
 
 The guide should also support lively explanation styles. A model-generated
 visual can be paired with a life-scene story, detective-style reasoning, or an
@@ -31,8 +49,8 @@ and should not copy protected characters, dialogue, or fictional worlds.
 
 | Provider | Best use | Notes |
 |---|---|---|
-| OpenAI `gpt-image-2` | Default high-quality provider for Codex/OpenAI workflows, visual explanations, edits, and polished guide illustrations. | Official OpenAI docs list text and image input, image output, flexible sizes, and image generation/edit endpoints. Check cost, moderation, and organization verification requirements. |
-| Qwen-Image-2.0 / Qwen Image 2.0 Pro | Chinese/English text-heavy infographics, poster-like layouts, PPT-style visual explanations, and China-market experiments. | Treat API availability, provider endpoint, license, and deployment constraints as configurable. |
+| OpenAI `gpt-image-2` | High-quality option for Codex/OpenAI workflows, visual explanations, edits, and polished guide illustrations. | Official OpenAI docs list text and image input, image output, flexible sizes, and image generation/edit endpoints. Check cost, moderation, and organization verification requirements. |
+| Qwen-Image-2.0 / Qwen Image 2.0 Pro | Chinese or English text-heavy infographics, poster-like layouts, PPT-style visual explanations, and China-market experiments. | Treat API availability, provider endpoint, license, and deployment constraints as configurable. |
 | SenseNova U1 / SenseNova-U1-8B-MoT variants | Open-source or local experiments, dense visual communication, interleaved image-text, and fast infographic drafts. | Use as an experimental provider until this project has its own visual benchmark set. The official repo describes 8-step inference variants and infographic-focused checkpoints. |
 
 Do not hard-code one provider. Use a provider interface so schools, tutors, or
@@ -57,6 +75,7 @@ Recommended interface:
 
 ```text
 generate_illustration(
+  provider_config,
   topic_id,
   topic_title,
   source_snippet_ids,
@@ -78,14 +97,55 @@ Each generated image should store:
 - review status;
 - whether it is safe for student-facing use.
 
+## Importing External Assets
+
+The open-source repository does not hard-code private image APIs. If an agent or
+teacher generates infographic files with GPT Image, Qwen Image, SenseNova, or a
+custom provider, name each file with the manifest ID, for example:
+
+```text
+visual_001.png
+visual_002_market-equilibrium.png
+visual_003.webp
+```
+
+For Codex environments that have Ethan's `image-gen-flow` GPT Image 2
+Codex-only Router installed, generate pending showcase images directly after
+the user confirms the route and parameters:
+
+```bash
+python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
+```
+
+This helper reads the API key from `YAIROUTER_API_KEY`, writes prompts and
+responses under each guide's `images/` directory, and updates
+`visual_manifest.json`. Do not commit the key or paste it into prompts.
+
+Then import them into the guide package:
+
+```bash
+python scripts/import_infographic_assets.py ./outputs/chemistry-9202 \
+  --asset-dir ./generated-infographics/chemistry-9202 \
+  --provider "gpt-image-2"
+```
+
+The script copies matching raster images into `images/`, updates
+`images/visual_manifest.json`, and marks imported entries as generated. After
+import, regenerate/finalize the guide so the HTML/PDF uses the images:
+
+```bash
+python scripts/finalize_release_samples.py --outputs-root ./outputs
+python scripts/verify_release_samples.py --outputs-root ./outputs
+```
+
 ## Routing Rules
 
 - Use deterministic SVG for knowledge maps, topic dependency diagrams, and
   source-bound structure.
 - Use `gpt-image-2` when the user wants polished guide illustrations and the
   OpenAI stack is available.
-- Use Qwen-Image-2.0 or Qwen Image 2.0 Pro when Chinese typography or bilingual
-  infographic layout is the main evaluation point.
+- Use Qwen-Image-2.0 or Qwen Image 2.0 Pro when Chinese typography or
+  text-heavy infographic layout is the main evaluation point.
 - Use SenseNova U1 variants for open-source, local, or low-latency experiments.
 - Do not recreate official exam paper diagrams, mark scheme diagrams, or
   copyrighted textbook illustrations.
@@ -102,8 +162,8 @@ Topic: {topic_title}
 Source-bound learning point: {source_point}
 Visual type: {visual_type}
 Required labels: {required_labels}
-Language policy: official syllabus terms in English; optional Chinese scaffold
-labels only when reviewed.
+Language policy: use the selected output language for labels; preserve official
+formulae, symbols, and reviewed syllabus terms when needed.
 
 Make it clear, printable, student-friendly, and suitable for a revision guide.
 Do not add new syllabus facts, named examples, equations, or exam claims beyond
@@ -113,7 +173,7 @@ the source point.
 ## 中文
 
 复习手册的核心事实不应该依赖生图模型。当前 MVP 使用确定性 SVG 知识地图，是因为
-它们更容易追溯到 syllabus points。
+它们更容易追溯到官方大纲点。
 
 但很多知识点确实需要更好的视觉解释，例如：
 
@@ -122,28 +182,40 @@ the source point.
 - Chemistry 粒子模型、反应过程示意图；
 - Physics 力、电路、波、能量转移图；
 - Economics 曲线图、流程图、场景信息图；
-- 帮助学生从中文理解过渡到英文考试表达的双语信息图。
+- 按用户选择的输出语言生成的文字信息图，必要时保留公式、符号和经复核的官方术语。
 
 生图应该是用户选择的插图层，不是事实来源。生成器应先根据大纲生成基础知识点和
 例题，再分析哪些知识点或例题需要图文结合讲解。简单图用 SVG；复杂信息图再让用户
 选择 provider。
 
+流程开始前，用户必须先选择视觉路线：
+
+- `gpt-image-2`
+- `qwen-image-pro`
+- `sensenova-u1-fast`
+- `custom`
+- `deterministic-svg`：只用于 SVG 安全图
+- `prompt-queue`：只做 dry run，生成提示词队列，不代表复杂信息图已经完成
+
+如果选择 `custom`，只记录模型名、接口 URL、API key 所在的环境变量名。不要让用户
+在聊天、文档、截图或仓库里暴露真实 key。
+
 ## 推荐模型
 
 | Provider | 适合场景 | 备注 |
 |---|---|---|
-| OpenAI `gpt-image-2` | Codex/OpenAI 工作流里的默认高质量方案，适合复习手册插图、视觉解释和编辑。 | OpenAI 官方文档说明它支持文本和图像输入、图像输出、灵活尺寸，并支持生成和编辑接口。注意成本、内容审核和组织验证要求。 |
-| Qwen-Image-2.0 / Qwen Image 2.0 Pro | 中文/英文文字较多的信息图、海报式解释、PPT 风格知识图、国内场景实验。 | API、服务商、许可和部署限制应做成配置，不要写死。 |
+| OpenAI `gpt-image-2` | Codex/OpenAI 工作流里的高质量选项，适合复习手册插图、视觉解释和编辑。 | OpenAI 官方文档说明它支持文本和图像输入、图像输出、灵活尺寸，并支持生成和编辑接口。注意成本、内容审核和组织验证要求。 |
+| Qwen-Image-2.0 / Qwen Image 2.0 Pro | 中文或英文文字较多的信息图、海报式解释、PPT 风格知识图、国内场景实验。 | API、服务商、许可和部署限制应做成配置，不要写死。 |
 | SenseNova U1 / SenseNova-U1-8B-MoT variants | 开源、本地、快速信息图草稿、密集图文表达实验。 | 在本项目建立自己的视觉基准前，建议作为实验性 provider。官方仓库提到 8-step 推理变体和 infographic checkpoints。 |
 
 不要把项目绑定到单一 provider。更好的做法是设计一个 provider interface，让学校、
-老师、家长或 agent 按可用性、成本、隐私和中英文排版质量来选择。
+老师、家长或 agent 按可用性、成本、隐私和所选语言的排版质量来选择。
 
 ## 生成边界
 
 - 知识地图、topic 依赖关系和 source-bound 结构优先用确定性 SVG。
 - 需要精美插图且 OpenAI 环境可用时，优先用 `gpt-image-2`。
-- 需要中文排版或双语信息图时，可以评估 Qwen-Image-2.0 / Qwen Image 2.0 Pro。
+- 需要中文排版或文字密集型信息图时，可以评估 Qwen-Image-2.0 / Qwen Image 2.0 Pro。
 - 需要开源、本地或低延迟实验时，可以评估 SenseNova U1 variants。
 - 不要复刻官方真题图、mark scheme 图或教材版权插图。
 - 不要让图片添加 specification 中没有的标签、机制、公式或考试结论，除非经过学科老师复核。

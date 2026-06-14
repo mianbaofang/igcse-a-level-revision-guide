@@ -75,6 +75,13 @@
       letter-spacing: 0;
       text-wrap: balance;
     }
+    #scene-source h2 {
+      max-width: 360px;
+      font-size: clamp(42px, 4.4vw, 72px);
+    }
+    #scene-source .lead {
+      max-width: 360px;
+    }
     #scene-guide h2 {
       max-width: 1080px;
       font: 700 clamp(38px, 3.5vw, 62px)/1.02 var(--display);
@@ -271,6 +278,45 @@
       color: rgba(255,255,255,.72);
       font-size: clamp(15px, 1vw, 18px);
     }
+    .choice-wall {
+      position: absolute;
+      right: 7vw;
+      top: 10vh;
+      width: min(660px, 38vw);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .choice-shot {
+      position: relative;
+      min-height: 150px;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.38);
+      background: var(--white);
+      box-shadow: 16px 20px 0 rgba(0,0,0,.20);
+    }
+    .choice-shot:nth-child(1) { transform: rotateZ(-.6deg); }
+    .choice-shot:nth-child(2) { transform: rotateZ(.45deg); }
+    .choice-shot:nth-child(3) { transform: rotateZ(-.25deg); }
+    .choice-shot img {
+      width: 100%;
+      height: 190px;
+      display: block;
+      object-fit: cover;
+      object-position: top left;
+    }
+    .choice-shot figcaption {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      padding: 7px 10px;
+      background: rgba(7,11,18,.84);
+      color: #fff;
+      font: 900 12px/1 var(--mono);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
 
     .pipeline {
       position: absolute;
@@ -333,6 +379,13 @@
       gap: 24px;
       align-items: stretch;
     }
+    .sample-screens {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      min-height: 0;
+    }
     .guide-screenshot {
       min-height: 0;
       margin: 0;
@@ -341,6 +394,21 @@
       border: 1px solid rgba(255,255,255,.5);
       box-shadow: 24px 30px 0 rgba(0,0,0,.22);
       transform: rotateZ(-.35deg);
+      position: relative;
+    }
+    .guide-screenshot:nth-child(2) { transform: rotateZ(.25deg); }
+    .guide-screenshot:nth-child(3) { transform: rotateZ(-.2deg); }
+    .guide-screenshot figcaption {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 2;
+      padding: 7px 9px;
+      background: rgba(7,11,18,.82);
+      color: #fff;
+      font: 900 12px/1 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .05em;
     }
     .guide-screenshot img {
       width: 100%;
@@ -397,6 +465,11 @@
       margin-bottom: 4px;
       color: var(--red);
       font-size: 15px;
+    }
+    .guide-note {
+      margin-top: auto;
+      color: #6a7584;
+      font: 800 12px/1.45 var(--mono);
     }
 
     .scope-row {
@@ -538,8 +611,8 @@
   <div class="stage" id="stage">
     <section class="scene" id="scene-title">
       <div class="kicker">International Exam Guide</div>
-      <h1>Source-first revision guides.</h1>
-      <p class="lead">A practical AI skill for International GCSE and International AS/A-level revision, built around official specifications and calmer learning.</p>
+      <h1>给 agent 一个科目，拿回一份图文复习手册。</h1>
+      <p class="lead">A Codex Skill for International GCSE and International AS-A-level revision guides with explanations, worked examples, infographics, and PDF output.</p>
       <div class="title-lockup">
         <div class="mark">IEG</div>
         <div class="small">OxfordAQA MVP<br>Pearson Edexcel / CAIE roadmap</div>
@@ -547,7 +620,7 @@
     </section>
 
     <section class="scene" id="scene-origin">
-      <div class="kicker">Origin / 初衷</div>
+      <div class="kicker">项目初衷</div>
       <h2>从全中文课堂，到全英文考试。</h2>
       <p class="lead">不到一年就要面对 International GCSE 大考。我用 Codex 做了一个学习、复习用的 Skill，把大纲、语言和复习路径整理得更清楚。</p>
       <div class="bridge">
@@ -564,27 +637,40 @@
     </section>
 
     <section class="scene" id="scene-source">
-      <div class="kicker">Official source first</div>
-      <h2>先读官方大纲，再生成复习指南。</h2>
-      <p class="lead">The tool finds the OxfordAQA qualification page, downloads the public specification at runtime, and keeps source URLs and hashes.</p>
-      <div class="source-wall">
-        <h3>Specification PDF</h3>
-        <span class="line"></span><span class="line"></span><span class="line"></span>
-        <span class="line"></span><span class="line"></span><span class="line"></span>
-        <span class="line"></span><span class="line"></span><span class="line"></span>
-        <div class="scan" id="scan"></div>
+      <div class="kicker">Before generation</div>
+      <h2>先确认四件事，再开始生成。</h2>
+      <p class="lead">科目、输出语言、生图模型、讲解风格。比如 Mathematics 9260 / 中文 / GPT Image 2 / 侦探推理式讲解。</p>
+      <div class="choice-wall" aria-label="Actual generated guide samples">
+        <figure class="choice-shot">
+          <figcaption>Maths visual example</figcaption>
+          <img src="assets/sample-math-guide.png?v=2" alt="Mathematics guide sample screenshot">
+        </figure>
+        <figure class="choice-shot">
+          <figcaption>Economics infographic</figcaption>
+          <img src="assets/sample-economics-guide.png?v=2" alt="Economics guide sample screenshot">
+        </figure>
+        <figure class="choice-shot">
+          <figcaption>Chemistry model</figcaption>
+          <img src="assets/sample-chemistry-guide.png?v=2" alt="Chemistry guide sample screenshot">
+        </figure>
+      </div>
+      <div class="source-stack">
+        <div class="source-chip"><b>Subject</b><span>OxfordAQA subject and code</span></div>
+        <div class="source-chip"><b>Language</b><span>Chinese or English, locked before writing</span></div>
+        <div class="source-chip"><b>Images</b><span>SVG for simple diagrams, image model for complex infographics</span></div>
+        <div class="source-chip"><b>Style</b><span>Serious, light, story-based, detective, or life-scene explanation</span></div>
       </div>
     </section>
 
     <section class="scene" id="scene-pipeline">
       <div class="kicker">AI as scaffolding</div>
       <h2>把压力拆成可以复习的结构。</h2>
-      <p class="lead">知识地图、例题框架、答案检查点和质量报告，都从 specification 提取内容出发。</p>
+      <p class="lead">知识点讲解、例题、答案检查点和图文学习单元，组合成一份可打印手册。</p>
       <div class="pipeline">
-        <article class="pipe-card"><b>01</b><strong>discover</strong><p>Find the public qualification page.</p></article>
-        <article class="pipe-card"><b>02</b><strong>extract</strong><p>Parse syllabus and assessment structure.</p></article>
-        <article class="pipe-card"><b>03</b><strong>compose</strong><p>Build topic maps and practice cards.</p></article>
-        <article class="pipe-card"><b>04</b><strong>validate</strong><p>Check sources before release.</p></article>
+        <article class="pipe-card"><b>01</b><strong>subject</strong><p>Confirm the exam board, subject, code, and output language.</p></article>
+        <article class="pipe-card"><b>02</b><strong>guide</strong><p>Generate teachable topic explanations and worked examples.</p></article>
+        <article class="pipe-card"><b>03</b><strong>visuals</strong><p>Decide SVG or infographic model for each visual learning need.</p></article>
+        <article class="pipe-card"><b>04</b><strong>pdf</strong><p>Render the final HTML guide and printable PDF.</p></article>
       </div>
     </section>
 
@@ -592,11 +678,22 @@
       <div class="kicker">Guide output</div>
       <h2>手册不只是文字，而是图形、题目和故事化讲解。</h2>
       <div class="guide-spread">
-        <figure class="guide-screenshot">
-          <img src="assets/sample-guide-snapshot.png" alt="Generated revision guide screenshot showing a visual worked example and story modes">
-        </figure>
+        <div class="sample-screens" aria-label="Mathematics, Economics, and Chemistry sample guide screenshots">
+          <figure class="guide-screenshot">
+            <figcaption>Maths</figcaption>
+            <img src="assets/sample-math-guide.png?v=2" alt="Mathematics guide screenshot with a visual worked example">
+          </figure>
+          <figure class="guide-screenshot">
+            <figcaption>Economics</figcaption>
+            <img src="assets/sample-economics-guide.png?v=2" alt="Economics guide screenshot with an infographic learning unit">
+          </figure>
+          <figure class="guide-screenshot">
+            <figcaption>Chemistry</figcaption>
+            <img src="assets/sample-chemistry-guide.png?v=2" alt="Chemistry guide screenshot with an infographic learning unit">
+          </figure>
+        </div>
         <div class="guide-page right">
-          <h3>图文学习页 / Visual Guide</h3>
+          <h3>三科样板页</h3>
           <span class="guide-tag">SVG basics</span>
           <span class="guide-tag gold">Infographic models</span>
           <span class="guide-tag red">Story modes</span>
@@ -605,13 +702,14 @@
             <li><strong>再选择生成方式</strong>简单结构图用 SVG；复杂信息图才让用户选择 GPT Image、Qwen Image 或 SenseNova。</li>
             <li><strong>讲解不催眠</strong>支持生活场景、侦探推理、动漫闯关感等模板，但不默认复刻具体 IP。</li>
           </ul>
+          <p class="guide-note">Final release screenshots are recaptured from Mathematics, Economics, and Chemistry after generated infographics are merged.</p>
         </div>
       </div>
     </section>
 
     <section class="scene" id="scene-scope">
       <div class="kicker">Provider scope</div>
-      <h2>开源范围要诚实。</h2>
+      <h2>当前先做好 OxfordAQA。</h2>
       <p class="lead">Current release is OxfordAQA only. Pearson Edexcel and Cambridge International / CAIE are roadmap providers for the China-market version.</p>
       <div class="scope-row">
         <div class="scope-card"><strong>OxfordAQA</strong><span>MVP implemented</span></div>
@@ -625,11 +723,11 @@
       <div>
         <div class="kicker" style="justify-content:center;">International Exam Guide</div>
         <h2>AI should make learning calmer, clearer, and more humane.</h2>
-        <p>Built for a real International GCSE transition, open-sourced for families, tutors, and schools who need source-traceable revision materials.</p>
+        <p>Built from a real International GCSE transition, open-sourced for families, tutors, and schools who want clearer, more visual revision guides.</p>
       </div>
     </section>
 
-    <div class="watermark no-record">Created by Huashu-Design</div>
+    <div class="watermark no-record">International Exam Guide</div>
     <div class="vignette"></div>
   </div>
   <div class="controls no-record" aria-label="Animation controls">
@@ -670,7 +768,9 @@
       const source = fade(t, 7.1, 8.0, 11.2, 12.0);
       setScene(el["scene-source"], source, mix(44, 0, source));
       const scanY = mix(0, 430, clamp((t - 8.2) / 2.6));
-      scan.style.transform = `translateY(${scanY}px)`;
+      if (scan) {
+        scan.style.transform = `translateY(${scanY}px)`;
+      }
 
       const pipeline = fade(t, 11.0, 12.0, 15.1, 15.9);
       setScene(el["scene-pipeline"], pipeline, mix(44, 0, pipeline));
@@ -682,12 +782,12 @@
 
       const guide = fade(t, 15.0, 16.0, 19.1, 19.8);
       setScene(el["scene-guide"], guide, mix(42, 0, guide));
-      const shot = document.querySelector(".guide-screenshot");
-      if (shot) {
-        const p = expoOut(clamp((t - 16.0) / 1.0));
+      document.querySelectorAll(".guide-screenshot").forEach((shot, i) => {
+        const p = expoOut(clamp((t - 16.0 - i * .16) / 1.0));
+        const angle = [-.35, .25, -.2][i] ?? -.35;
         shot.style.opacity = p;
-        shot.style.transform = `rotateZ(-.35deg) translateY(${mix(70, 0, p)}px) scale(${mix(.985, 1, p)})`;
-      }
+        shot.style.transform = `rotateZ(${angle}deg) translateY(${mix(70 + i * 14, 0, p)}px) scale(${mix(.985, 1, p)})`;
+      });
       document.querySelectorAll(".guide-page").forEach((page, i) => {
         const p = expoOut(clamp((t - 16.25 - i * .2) / 1.0));
         page.style.opacity = p;
@@ -720,7 +820,6 @@
     function tick(now) {
       if (lastTick === null) {
         lastTick = now;
-        render(0);
         window.__ready = true;
         requestAnimationFrame(tick);
         return;
@@ -743,11 +842,32 @@
       render(time);
     };
 
-    document.fonts.ready.then(() => {
-      render(0);
+    function boot() {
+      if (window.__booted) return;
+      window.__booted = true;
+      const params = new URLSearchParams(window.location.search);
+      const frameTime = params.get("t");
+      if (frameTime !== null) {
+        window.__recording = true;
+        const value = Number(frameTime);
+        window.__seek(Number.isFinite(value) ? value : 0);
+        setPlaying(false);
+        window.__ready = true;
+        return;
+      }
+      time = 0.2;
+      render(time);
+      window.__ready = true;
       setPlaying(true);
       requestAnimationFrame(tick);
-    });
+    }
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(boot).catch(boot);
+      setTimeout(boot, 350);
+    } else {
+      boot();
+    }
 
     playToggle.addEventListener("click", () => {
       setPlaying(!playing);

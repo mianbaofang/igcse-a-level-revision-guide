@@ -22,7 +22,7 @@
 - [ ] Offline demo works:
 
 ```bash
-python -m intl_exam_guide demo --out ./outputs/demo-science --skip-pdf
+python -m intl_exam_guide demo --out ./outputs/demo-science --language en --image-provider deterministic-svg --explanation-style friendly --skip-pdf
 ```
 
 - [ ] Subject-page discovery shows qualification metadata:
@@ -37,35 +37,65 @@ python -m intl_exam_guide discover --subject-url https://www.oxfordaqa.com/subje
 - [ ] OxfordAQA International GCSE sample works:
 
 ```bash
-python -m intl_exam_guide generate --query chemistry --level igcse --out ./outputs/chemistry-9202
+python -m intl_exam_guide generate --query chemistry --level igcse --language en --image-provider gpt-image-2 --explanation-style friendly --out ./outputs/chemistry-9202
 ```
 
-- [ ] OxfordAQA International AS/A-level sample works:
+- [ ] OxfordAQA International AS-A-level sample works:
 
 ```bash
-python -m intl_exam_guide generate --query chemistry --level a-level --out ./outputs/chemistry-9620
+python -m intl_exam_guide generate --query chemistry --level a-level --language en --image-provider prompt-queue --explanation-style detective --out ./outputs/chemistry-9620
 ```
 
 - [ ] OxfordAQA non-Science International GCSE sample works:
 
 ```bash
-python -m intl_exam_guide generate --query economics --level igcse --out ./outputs/economics-9214
+python -m intl_exam_guide generate --query economics --level igcse --language en --image-provider gpt-image-2 --explanation-style life --out ./outputs/economics-9214
 ```
 
-- [ ] OxfordAQA revised non-Science International AS/A-level code lookup sample works:
+- [ ] OxfordAQA revised non-Science International AS-A-level code lookup sample works:
 
 ```bash
-python -m intl_exam_guide generate --query 9725 --level a-level --out ./outputs/business-9725
+python -m intl_exam_guide generate --query 9725 --level a-level --language en --image-provider qwen-image-pro --explanation-style story --out ./outputs/business-9725
 ```
 
 ## Validation
 
+- [ ] `python -m pytest -q` passes.
+- [ ] `python -m compileall -q src tests scripts` passes.
+- [ ] Skill validation passes with the system `quick_validate.py` script.
+- [ ] A raw-key scan across the repository and release outputs reports
+  `raw_key_matches=0`:
+
+```bash
+python scripts/scan_for_raw_keys.py . ./outputs
+```
+
+- [ ] After the user confirms the image route and parameters, generated
+  infographic assets exist for all pending showcase visual briefs:
+
+```bash
+python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
+```
+
+- [ ] After infographic assets are generated, `python scripts/finalize_release_samples.py --outputs-root <outputs-dir>` regenerates the final Mathematics, Economics, and Chemistry HTML/PDF samples.
+- [ ] `python scripts/verify_release_samples.py --outputs-root <outputs-dir>` passes
+  for the final Mathematics, Economics, and Chemistry sample guides.
+- [ ] Final guide screenshots are recaptured for `docs/assets/sample-math-guide.png`,
+  `docs/assets/sample-economics-guide.png`, `docs/assets/sample-chemistry-guide.png`,
+  and `docs/assets/sample-guide-snapshot.png`.
+- [ ] The intro animation MP4 and GIF preview are regenerated after final guide
+  screenshots are recaptured:
+
+```bash
+python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
+```
+
 - [ ] `validation.json` has no `error` issues for the offline demo.
 - [ ] `validation.json` has no `error` issues for one International GCSE subject.
-- [ ] `validation.json` has no `error` issues for one International AS/A-level subject.
+- [ ] `validation.json` has no `error` issues for one International AS-A-level subject.
 - [ ] `validation.json` has no `error` issues for one non-Science International GCSE subject.
 - [ ] `validation.json` has no `error` issues for one revised non-Science
-  International AS/A-level code lookup subject.
+  International AS-A-level code lookup subject.
 - [ ] Live parser audit across discovered OxfordAQA qualification pages shows
   no missing topics, assessments, specification links, or listing/type conflicts.
 - [ ] `validation.json.review_summary` has the expected topic, guide, practice-card, diagram, and source-snippet counts.
@@ -73,9 +103,9 @@ python -m intl_exam_guide generate --query 9725 --level a-level --out ./outputs/
 - [ ] Generated HTML includes website listing metadata when discovered from a subject page.
 - [ ] Generated HTML includes one concept map per topic.
 - [ ] Generated HTML includes practice cards with command words, solution steps, and answer checkpoints.
-- [ ] Generated HTML includes the language policy section.
-- [ ] Template labels use bilingual `Chinese / English` wording.
-- [ ] Official topic titles remain in OxfordAQA English unless a reviewed glossary is provided.
+- [ ] Generated HTML records the selected output language in `run-options.json`.
+- [ ] Template labels follow the selected output language and do not use bilingual `Chinese / English` pairs.
+- [ ] Official source text remains traceable in structured files or a separated review appendix, not mixed into the student-facing topic body.
 - [ ] Generated PDF opens locally.
 
 ## Accuracy
@@ -87,6 +117,7 @@ python -m intl_exam_guide generate --query 9725 --level a-level --out ./outputs/
 ## 中文发布检查
 
 - [ ] 中文 README 能解释项目是什么、适合谁、怎么跑。
-- [ ] 中文 README 解释 International GCSE / International AS/A-level 的蓝色/红色 listing 映射。
+- [ ] 中文 README 解释 International GCSE / International AS-A-level 的蓝色/红色 listing 映射。
 - [ ] 准确性政策中明确说明“不编造 syllabus、不复制真题、不提交 PDF”。
+- [ ] 语言策略明确：生成前选择 `en` 或 `zh-CN`，正文、模板标签、例题框架和生图提示词跟随同一种语言，不做中英混排。
 - [ ] 给孩子正式使用前，需要老师或熟悉大纲的人复核深度例题。

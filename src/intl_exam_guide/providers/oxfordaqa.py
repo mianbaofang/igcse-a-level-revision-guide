@@ -98,7 +98,13 @@ class PageParser(HTMLParser):
 
 
 def clean_text(value: str) -> str:
+    value = normalize_extracted_symbols(value)
     return re.sub(r"\s+", " ", value).strip()
+
+
+def normalize_extracted_symbols(value: str) -> str:
+    # PDF extraction can duplicate the union sign in the OxfordAQA set-notation line.
+    return value.replace("A \u222a B, A \u222a B", "A \u222a B, A \u2229 B")
 
 
 def fetch_bytes(url: str, timeout: int = 30) -> bytes:
@@ -149,7 +155,7 @@ def listing_group_label(text: str, style_class: str | None = None) -> str | None
     if qtype == "international_gcse":
         return "blue International GCSE subject listing"
     if qtype == "international_as_a_level":
-        return "red International AS/A-level subject listing"
+        return "red International AS-A-level subject listing"
     return None
 
 
@@ -346,6 +352,9 @@ class OxfordAQAProvider:
         pdf_path.write_bytes(pdf_bytes)
         pages = extract_pdf_pages(pdf_path)
         text_path.write_text(extract_pdf_text(pdf_path), encoding="utf-8")
+        detailed_topics = extract_detailed_topics_from_pdf(pages)
+        if detailed_topics:
+            qualification.topics = detailed_topics
         attach_source_snippets(qualification, pages)
 
         qualification.source.specification_sha256 = digest
@@ -453,6 +462,212 @@ def topics_from_region(region: list[TextNode], default_title: str | None = None)
         topics.append(current)
 
     return clean_topics(topics)
+
+
+def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic]:
+    reference_topics: list[Topic] = []
+    numeric_topics: list[Topic] = []
+    current_ref: str | None = None
+    current_section: str | None = None
+    current_page: int | None = None
+    current_lines: list[str] = []
+    current_numeric_code: str | None = None
+    current_numeric_title: str | None = None
+    current_numeric_page: int | None = None
+    current_numeric_lines: list[str] = []
+    in_reference_content = False
+    in_numeric_content = False
+
+    def has_started_detailed_topics() -> bool:
+        return bool(reference_topics or numeric_topics or current_ref or current_numeric_code)
+
+    def flush_reference() -> None:
+        nonlocal current_ref, current_page, current_lines
+        if not current_ref or current_page is None:
+            current_lines = []
+            return
+        points = dedupe([line for line in current_lines if is_valid_detailed_content_line(line)])
+        if not points:
+            current_ref = None
+            current_page = None
+            current_lines = []
+            return
+        title = f"{current_ref} - {current_section}" if current_section else current_ref
+        snippet = clean_text(" ".join([current_ref, current_section or "", *points[:5]]))
+        reference_topics.append(
+            Topic(
+                title=title,
+                points=points[:8],
+                source_snippets=[
+                    SourceSnippet(
+                        page=current_page,
+                        text=snippet_around(snippet, current_ref, radius=420),
+                        matched_term=current_ref,
+                    )
+                ],
+            )
+        )
+        current_ref = None
+        current_page = None
+        current_lines = []
+
+    def flush_numeric() -> None:
+        nonlocal current_numeric_code, current_numeric_title, current_numeric_page, current_numeric_lines
+        if not current_numeric_code or not current_numeric_title or current_numeric_page is None:
+            current_numeric_lines = []
+            return
+        points = dedupe([line for line in current_numeric_lines if is_valid_detailed_content_line(line)])
+        if not points:
+            current_numeric_code = None
+            current_numeric_title = None
+            current_numeric_page = None
+            current_numeric_lines = []
+            return
+        title = f"{current_numeric_code} - {current_numeric_title}"
+        snippet = clean_text(" ".join([current_numeric_code, current_numeric_title, *points[:5]]))
+        numeric_topics.append(
+            Topic(
+                title=title,
+                points=points[:8],
+                source_snippets=[
+                    SourceSnippet(
+                        page=current_numeric_page,
+                        text=snippet_around(snippet, current_numeric_title, radius=420),
+                        matched_term=current_numeric_code,
+                    )
+                ],
+            )
+        )
+        current_numeric_code = None
+        current_numeric_title = None
+        current_numeric_page = None
+        current_numeric_lines = []
+
+    for page_number, page_text in pages:
+        for raw_line in page_text.splitlines():
+            line = clean_text(raw_line)
+            if not line:
+                continue
+            if line.startswith("3 Subject content"):
+                if "The content has been organised" in page_text:
+                    in_reference_content = True
+                continue
+            if (in_reference_content or in_numeric_content) and re.match(r"^4(\.|\s)", line) and has_started_detailed_topics():
+                flush_reference()
+                flush_numeric()
+                return choose_detailed_topics(reference_topics, numeric_topics)
+
+            numeric_match = re.match(r"^(3\.\d+(?:\.\d+){1,4})\s+(.+)$", line)
+            if numeric_match:
+                code = numeric_match.group(1)
+                title = strip_bullet(numeric_match.group(2))
+                in_numeric_content = True
+                if in_reference_content:
+                    flush_reference()
+                    current_section = title
+                if is_numeric_topic_heading(code, title):
+                    flush_numeric()
+                    current_numeric_code = code
+                    current_numeric_title = title
+                    current_numeric_page = page_number
+                    current_numeric_lines = []
+                continue
+
+            if not in_reference_content and not in_numeric_content:
+                continue
+
+            section_match = re.match(r"^3\.\d+(?:\.\d+)?\s+(.+)$", line)
+            if section_match:
+                flush_reference()
+                current_section = strip_bullet(section_match.group(1))
+                continue
+
+            if in_reference_content and is_reference_code(line):
+                flush_reference()
+                current_ref = line
+                current_page = page_number
+                current_lines = []
+                continue
+
+            if current_ref:
+                current_lines.append(line)
+            if current_numeric_code:
+                current_numeric_lines.append(line)
+
+    flush_reference()
+    flush_numeric()
+    return choose_detailed_topics(reference_topics, numeric_topics)
+
+
+def choose_detailed_topics(reference_topics: list[Topic], numeric_topics: list[Topic]) -> list[Topic]:
+    reference_clean = clean_detailed_topics(reference_topics)
+    if reference_clean:
+        return reference_clean
+    numeric_clean = clean_numeric_detailed_topics(numeric_topics)
+    if len(numeric_clean) < 6:
+        return []
+    return numeric_clean
+
+
+def is_numeric_topic_heading(code: str, title: str) -> bool:
+    if len(code.split(".")) < 3:
+        return False
+    if re.search(r"\s+\d{1,3}$", title):
+        return False
+    lower = title.lower()
+    if lower.startswith(("content", "scheme of assessment", "subject content")):
+        return False
+    return is_valid_topic_title(title)
+
+
+def clean_numeric_detailed_topics(topics: list[Topic]) -> list[Topic]:
+    cleaned = clean_topics(topics)
+    codes = [topic.title.split(" - ", 1)[0] for topic in cleaned]
+    leaf_topics: list[Topic] = []
+    for topic, code in zip(cleaned, codes, strict=False):
+        if any(other != code and other.startswith(f"{code}.") for other in codes):
+            continue
+        leaf_topics.append(topic)
+    return leaf_topics
+
+
+def is_reference_code(line: str) -> bool:
+    return re.fullmatch(r"[A-Z]{1,3}\d+[A-Z]?", line.strip()) is not None
+
+
+def is_valid_detailed_content_line(line: str) -> bool:
+    lower = line.lower()
+    ignored = {
+        "core content extension content",
+        "core content",
+        "extension content",
+        "content additional information",
+        "students should be able to",
+        "students should be able to:",
+        "students should be able to understand",
+        "students should be able to understand:",
+        "+",
+    }
+    if lower in ignored:
+        return False
+    ignored_prefixes = (
+        "visit oxfordaqa.com",
+        "oxfordaqa international",
+        "for exams ",
+        "page ",
+    )
+    if lower.startswith(ignored_prefixes):
+        return False
+    if re.fullmatch(r"\d+", lower):
+        return False
+    return is_valid_topic_point(line)
+
+
+def clean_detailed_topics(topics: list[Topic]) -> list[Topic]:
+    cleaned = clean_topics(topics)
+    if len(cleaned) < 6:
+        return []
+    return cleaned
 
 
 def topics_from_named_skill_section(nodes: list[TextNode]) -> list[Topic]:
@@ -712,7 +927,7 @@ def audience_note(qualification_type: str) -> str:
         )
     if qualification_type == "international_as_a_level":
         return (
-            "OxfordAQA International AS/A-levels are modular international qualifications "
+            "OxfordAQA International AS-A-levels are modular international qualifications "
             "for international students in schools following a British curriculum outside the UK. "
             "Unit availability and entry routes should be confirmed locally."
         )

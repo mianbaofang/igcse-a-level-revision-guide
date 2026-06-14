@@ -17,4 +17,6 @@ jobs:
       - name: Test
         run: python -m pytest
       - name: Compile
-        run: python -m compileall -q src tests
+        run: python -m compileall -q src tests scripts
+      - name: Raw key scan
+        run: python scripts/scan_for_raw_keys.py .

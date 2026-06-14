@@ -18,7 +18,7 @@ than generation speed or stylistic fluency.
 
 - Extract topic titles and syllabus summary points from the public page.
 - Record subject-page listing metadata for blue International GCSE and red
-  International AS/A-level entries when discovered from OxfordAQA subject pages.
+  International AS-A-level entries when discovered from OxfordAQA subject pages.
 - Download the public specification PDF at runtime.
 - Record source URLs and PDF hash.
 - Match topic-level source snippets from extracted PDF pages.
@@ -60,12 +60,12 @@ than generation speed or stylistic fluency.
 
 - 从公开页面抽取 topic titles 和 syllabus summary points。
 - 从 OxfordAQA subject 页面发现 qualification 时，记录蓝色 International GCSE
-  和红色 International AS/A-level listing 元数据。
+  和红色 International AS-A-level listing 元数据。
 - 运行时下载公开 specification PDF。
 - 记录 source URLs 和 PDF hash。
 - 从 PDF 页文本中匹配 topic-level source snippets。
-- 根据抽取出的 topic points 渲染确定性 concept maps。
-- 生成安全的 mini worked-example frames，以及带 command word、解题步骤、
+- 根据抽取出的 topic points 渲染确定性概念图。
+- 生成安全的 mini worked-example frames，以及带指令词、解题步骤、
   答案检查点的 practice cards。
 - 渲染精美 HTML/PDF 学习指南。
 

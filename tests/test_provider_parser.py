@@ -5,9 +5,11 @@ from intl_exam_guide.providers.oxfordaqa import (
     OxfordAQAProvider,
     PageParser,
     extract_assessments,
+    extract_detailed_topics_from_pdf,
     extract_topics,
     find_source_snippets,
     find_specification_url,
+    clean_text,
 )
 from intl_exam_guide.validation.checks import validate_plan
 
@@ -16,6 +18,11 @@ def parse(html: str) -> PageParser:
     parser = PageParser("https://www.oxfordaqa.com/example/")
     parser.feed(html)
     return parser
+
+
+def test_clean_text_repairs_set_notation_pdf_symbol_duplication():
+    text = clean_text("n(A), A\u2032, A \u222a B, A \u222a B, \u03be")
+    assert text == "n(A), A\u2032, A \u222a B, A \u2229 B, \u03be"
 
 
 def test_extract_topics_with_group_headings():
@@ -39,13 +46,115 @@ def test_extract_topics_without_group_headings():
     parser = parse(
         """
         <h2>Syllabus summary</h2>
-        <p>OxfordAQA International AS/A-level Computer Science covers the following topics:</p>
+        <p>OxfordAQA International AS-A-level Computer Science covers the following topics:</p>
         <ul><li>Procedural programming</li><li>Databases</li></ul>
         <h2>Teaching resources available</h2>
         """
     )
     topics = extract_topics(parser.nodes)
     assert [topic.title for topic in topics] == ["Procedural programming", "Databases"]
+
+
+def test_extract_detailed_topics_from_pdf_reference_codes():
+    pages = [
+        (
+            10,
+            """
+            3 Subject content
+            The content has been organised into broad topic areas and given a reference as follows:
+            3.1 Number
+            3.1.1 Structure and calculation
+            N1
+            Core content Extension content
+            order positive and negative integers, decimals and fractions
+            use the symbols =, !=, <, >
+            N2
+            Core content Extension content
+            apply the four operations to integers and fractions
+            N3
+            Core content Extension content
+            recognise and use inverse operations
+            3.2 Algebra
+            3.2.1 Notation and manipulation
+            A1
+            Core content Extension content
+            use letters to express generalised numbers
+            A2
+            Core content Extension content
+            substitute numbers for letters in formulae
+            A3
+            Core content Extension content
+            understand expressions, equations, and formulae
+            4 Scheme of Assessment
+            """,
+        )
+    ]
+    topics = extract_detailed_topics_from_pdf(pages)
+    assert [topic.title for topic in topics] == [
+        "N1 - Structure and calculation",
+        "N2 - Structure and calculation",
+        "N3 - Structure and calculation",
+        "A1 - Notation and manipulation",
+        "A2 - Notation and manipulation",
+        "A3 - Notation and manipulation",
+    ]
+    assert topics[0].points[:2] == [
+        "order positive and negative integers, decimals and fractions",
+        "use the symbols =, !=, <, >",
+    ]
+
+
+def test_extract_detailed_topics_from_pdf_numeric_sections():
+    pages = [
+        (
+            10,
+            """
+            3 Subject content
+            3.1.1 Economic foundations
+            Students study the central economic problem.
+            3.1.1.1 Economic activity
+            Content Additional information
+            Needs and wants
+            The central purpose of economic activity
+            Students should be able to understand:
+            the difference between a need and a want
+            the key economic decisions are what to produce, how to produce, and who benefits
+            3.1.1.2 The factors of production
+            Content Additional information
+            The factors of production
+            land, labour, capital and enterprise
+            3.1.2.1 Markets and allocation of resources
+            Content Additional information
+            Markets
+            Allocation of resources
+            Factor and product markets
+            3.1.3.1 Demand for goods and services
+            Content Additional information
+            Demand
+            The demand curve
+            3.1.3.2 Supply for goods and services
+            Content Additional information
+            Supply
+            The supply curve
+            3.2.2.1 Economic objectives of a government
+            Content Additional information
+            Full employment
+            Price stability
+            Economic growth
+            4 Scheme of assessment
+            """,
+        )
+    ]
+    topics = extract_detailed_topics_from_pdf(pages)
+    assert [topic.title for topic in topics] == [
+        "3.1.1.1 - Economic activity",
+        "3.1.1.2 - The factors of production",
+        "3.1.2.1 - Markets and allocation of resources",
+        "3.1.3.1 - Demand for goods and services",
+        "3.1.3.2 - Supply for goods and services",
+        "3.2.2.1 - Economic objectives of a government",
+    ]
+    assert "the difference between a need and a want" in topics[0].points
 
 
 def test_extract_topics_with_strong_headings_and_paragraph_points():
@@ -73,7 +182,7 @@ def test_extract_topics_with_capitalized_span_syllabus_and_span_points():
         """
         <h3>International AS and A-level Business (9725)</h3>
         <span>Syllabus Summary</span>
-        <span>OxfordAQA International AS/A-level Business covers the following topics:</span>
+        <span>OxfordAQA International AS-A-level Business covers the following topics:</span>
         <span>AS:</span>
         <span>What is business?</span>
         <span>Marketing</span>
@@ -148,7 +257,7 @@ def test_parser_captures_subject_listing_level_metadata():
     assert gcse.group_label == "blue International GCSE subject listing"
     assert gcse.style_class == "btn btn--type-8"
     assert alevel.qualification_type == "international_as_a_level"
-    assert alevel.group_label == "red International AS/A-level subject listing"
+    assert alevel.group_label == "red International AS-A-level subject listing"
 
 
 def test_listing_metadata_promotes_unknown_epq_type():
@@ -175,7 +284,7 @@ def test_listing_metadata_promotes_unknown_epq_type():
             text="International Extended Project Qualification (EPQ) (9695)",
             href=qualification.page_url,
             qualification_type="international_as_a_level",
-            group_label="red International AS/A-level subject listing",
+            group_label="red International AS-A-level subject listing",
         ),
     )
     assert qualification.qualification_type == "international_as_a_level"
@@ -195,7 +304,7 @@ def test_code_query_checks_detail_page_before_level_fallback():
                     qualification_type="international_as_a_level",
                 ),
                 Link(
-                    text="OxfordAQA International AS/A-level Business",
+                    text="OxfordAQA International AS-A-level Business",
                     href="https://example.test/business-revised/",
                     qualification_type="international_as_a_level",
                 ),
@@ -218,7 +327,7 @@ def test_code_query_checks_detail_page_before_level_fallback():
                 topics=[],
                 assessments=[],
                 source=SourceRecord(provider="test", page_url=page_url),
-                audience_note="International AS/A-level modular qualification for international students.",
+                audience_note="International AS-A-level modular qualification for international students.",
             )
 
     link = FakeProvider().find_qualification("9725", level="a-level")

@@ -1,0 +1,168 @@
+from __future__ import annotations
+
+import argparse
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Render the HTML intro animation to MP4 and GIF.")
+    parser.add_argument("--html", default="docs/project-intro-animation.html")
+    parser.add_argument("--mp4", default="docs/project-intro-animation.mp4")
+    parser.add_argument("--gif", default="docs/assets/intro-animation-preview.gif")
+    parser.add_argument("--fps", type=int, default=8)
+    parser.add_argument("--duration", type=float, default=24.0)
+    parser.add_argument("--width", type=int, default=1440)
+    parser.add_argument("--height", type=int, default=1000)
+    args = parser.parse_args()
+
+    html_path = Path(args.html).resolve()
+    mp4_path = Path(args.mp4).resolve()
+    gif_path = Path(args.gif).resolve()
+    if not html_path.exists():
+        raise SystemExit(f"missing animation html: {html_path}")
+
+    ffmpeg = find_executable("ffmpeg")
+    if not ffmpeg:
+        raise SystemExit("ffmpeg was not found on PATH")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        frames_dir = Path(tmp) / "frames"
+        frames_dir.mkdir()
+        capture_frames(
+            html_path=html_path,
+            frames_dir=frames_dir,
+            fps=args.fps,
+            duration=args.duration,
+            width=args.width,
+            height=args.height,
+        )
+        mp4_path.parent.mkdir(parents=True, exist_ok=True)
+        gif_path.parent.mkdir(parents=True, exist_ok=True)
+        render_mp4(ffmpeg, frames_dir, args.fps, mp4_path)
+        render_gif(ffmpeg, frames_dir, args.fps, gif_path)
+
+    print(mp4_path)
+    print(gif_path)
+    return 0
+
+
+def capture_frames(
+    html_path: Path,
+    frames_dir: Path,
+    fps: int,
+    duration: float,
+    width: int,
+    height: int,
+) -> None:
+    browser_path = find_browser()
+    if not browser_path:
+        raise SystemExit("Chrome or Edge was not found for frame capture")
+    frame_count = int(duration * fps)
+    profile_dir = frames_dir.parent / "chrome-profile"
+    for index in range(frame_count):
+        t = min(index / fps, duration - 0.001)
+        out = frames_dir / f"frame_{index:04d}.png"
+        url = f"{html_path.as_uri()}?t={t:.4f}"
+        command = [
+            browser_path,
+            "--headless=new",
+            "--disable-gpu",
+            "--no-first-run",
+            "--hide-scrollbars",
+            f"--user-data-dir={profile_dir}",
+            f"--window-size={width},{height}",
+            "--force-device-scale-factor=1",
+            "--virtual-time-budget=800",
+            f"--screenshot={out.resolve()}",
+            url,
+        ]
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
+
+
+def render_mp4(ffmpeg: str, frames_dir: Path, fps: int, output: Path) -> None:
+    command = [
+        ffmpeg,
+        "-y",
+        "-framerate",
+        str(fps),
+        "-i",
+        str(frames_dir / "frame_%04d.png"),
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-crf",
+        "21",
+        "-movflags",
+        "+faststart",
+        str(output),
+    ]
+    subprocess.run(command, check=True, capture_output=True, text=True)
+
+
+def render_gif(ffmpeg: str, frames_dir: Path, fps: int, output: Path) -> None:
+    palette = output.with_suffix(".palette.png")
+    subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(frames_dir / "frame_%04d.png"),
+            "-vf",
+            "fps=8,scale=960:-1:flags=lanczos,palettegen",
+            str(palette),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-framerate",
+                str(fps),
+                "-i",
+                str(frames_dir / "frame_%04d.png"),
+                "-i",
+                str(palette),
+                "-lavfi",
+                "fps=8,scale=960:-1:flags=lanczos[x];[x][1:v]paletteuse",
+                str(output),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        palette.unlink(missing_ok=True)
+
+
+def find_executable(name: str) -> str | None:
+    return shutil.which(name) or shutil.which(f"{name}.exe")
+
+
+def find_browser() -> str | None:
+    candidates = [
+        shutil.which("chrome"),
+        shutil.which("chrome.exe"),
+        shutil.which("msedge"),
+        shutil.which("msedge.exe"),
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    return None
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

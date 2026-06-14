@@ -7,8 +7,14 @@ from importlib import resources
 from pathlib import Path
 
 from intl_exam_guide.models import Qualification
-from intl_exam_guide.planning.guide_plan import build_guide_plan
+from intl_exam_guide.planning.guide_plan import (
+    IMAGE_PROVIDERS,
+    LANGUAGE_CHOICES,
+    STYLE_LABELS,
+    build_guide_plan,
+)
 from intl_exam_guide.providers.oxfordaqa import OxfordAQAProvider
+from intl_exam_guide.rendering.handbook_package import write_handbook_package
 from intl_exam_guide.rendering.html import render_html
 from intl_exam_guide.rendering.pdf import export_pdf
 from intl_exam_guide.validation.checks import issues_to_dict, review_summary, validate_plan
@@ -30,21 +36,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     generate.add_argument("--out", required=True, help="Output directory.")
     generate.add_argument("--questions-per-topic", type=int, default=2)
-    generate.add_argument(
-        "--image-provider",
-        choices=["deterministic-svg", "gpt-image-2", "qwen-image-pro", "sensenova-u1-fast", "custom"],
-        help="Optional provider recorded for complex infographic briefs.",
-    )
+    add_generation_choice_args(generate)
     generate.add_argument("--skip-pdf", action="store_true")
 
     demo = subcommands.add_parser("demo", help="Generate an offline synthetic demo guide.")
     demo.add_argument("--out", required=True, help="Output directory.")
     demo.add_argument("--questions-per-topic", type=int, default=2)
-    demo.add_argument(
-        "--image-provider",
-        choices=["deterministic-svg", "gpt-image-2", "qwen-image-pro", "sensenova-u1-fast", "custom"],
-        help="Optional provider recorded for complex infographic briefs.",
-    )
+    add_generation_choice_args(demo)
     demo.add_argument("--skip-pdf", action="store_true")
 
     args = parser.parse_args(argv)
@@ -70,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "generate":
+        validate_generation_choices(parser, args)
         out_dir = Path(args.out)
         source_dir = out_dir / "source"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -84,9 +83,16 @@ def main(argv: list[str] | None = None) -> int:
             args.questions_per_topic,
             args.skip_pdf,
             args.image_provider,
+            args.explanation_style,
+            args.language,
+            args.query,
+            args.image_model,
+            args.image_endpoint_url,
+            args.image_api_key_env,
         )
 
     if args.command == "demo":
+        validate_generation_choices(parser, args)
         out_dir = Path(args.out)
         out_dir.mkdir(parents=True, exist_ok=True)
         qualification = load_demo_qualification()
@@ -96,9 +102,61 @@ def main(argv: list[str] | None = None) -> int:
             args.questions_per_topic,
             args.skip_pdf,
             args.image_provider,
+            args.explanation_style,
+            args.language,
+            "demo science",
+            args.image_model,
+            args.image_endpoint_url,
+            args.image_api_key_env,
         )
 
     return 2
+
+
+def add_generation_choice_args(command: argparse.ArgumentParser) -> None:
+    command.add_argument(
+        "--image-provider",
+        required=True,
+        choices=sorted(IMAGE_PROVIDERS),
+        help=(
+            "User-selected visual route. Use prompt-queue only for a deliberate dry run; "
+            "final complex infographics need gpt-image-2, qwen-image-pro, sensenova-u1-fast, or custom."
+        ),
+    )
+    command.add_argument(
+        "--explanation-style",
+        required=True,
+        choices=sorted(STYLE_LABELS),
+        help="User-selected writing style for topic explanations and worked examples.",
+    )
+    command.add_argument(
+        "--language",
+        required=True,
+        choices=sorted(LANGUAGE_CHOICES),
+        help="User-selected guide language. Template labels and generated explanations should not be bilingual.",
+    )
+    command.add_argument("--image-model", help="Model name when --image-provider custom.")
+    command.add_argument("--image-endpoint-url", help="Custom image API endpoint URL.")
+    command.add_argument(
+        "--image-api-key-env",
+        help="Environment variable name that stores the custom image API key. Do not pass raw keys.",
+    )
+
+
+def validate_generation_choices(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    if args.image_provider != "custom":
+        return
+    missing = [
+        flag
+        for flag, value in [
+            ("--image-model", args.image_model),
+            ("--image-endpoint-url", args.image_endpoint_url),
+            ("--image-api-key-env", args.image_api_key_env),
+        ]
+        if not value
+    ]
+    if missing:
+        parser.error("--image-provider custom requires " + ", ".join(missing))
 
 
 def load_demo_qualification() -> Qualification:
@@ -116,11 +174,23 @@ def write_guide_outputs(
     questions_per_topic: int,
     skip_pdf: bool,
     image_provider: str | None,
+    explanation_style: str,
+    output_language: str,
+    requested_subject: str,
+    image_model: str | None,
+    image_endpoint_url: str | None,
+    image_api_key_env: str | None,
 ) -> int:
     plan = build_guide_plan(
         qualification,
         questions_per_topic=questions_per_topic,
         image_provider=image_provider,
+        explanation_style=explanation_style,
+        output_language=output_language,
+        requested_subject=requested_subject,
+        image_model=image_model,
+        image_endpoint_url=image_endpoint_url,
+        image_api_key_env=image_api_key_env,
     )
 
     qualification_path = out_dir / "qualification.json"
@@ -128,13 +198,21 @@ def write_guide_outputs(
     html_path = out_dir / "guide.html"
     pdf_path = out_dir / "guide.pdf"
     validation_path = out_dir / "validation.json"
+    run_options_path = out_dir / "run-options.json"
+    if pdf_path.exists():
+        pdf_path.unlink()
 
     qualification_path.write_text(
         json.dumps(qualification.to_dict(), ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    run_options_path.write_text(
+        json.dumps(plan.run_options.__dict__, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     plan_path.write_text(json.dumps(plan.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
-    render_html(plan, html_path)
+    package_manifest = write_handbook_package(plan, out_dir)
+    render_html(plan, html_path, out_dir / "images" / "visual_manifest.json")
 
     pdf_error: str | None = None
     if not skip_pdf:
@@ -143,16 +221,23 @@ def write_guide_outputs(
         except Exception as exc:  # pragma: no cover - depends on local browser
             pdf_error = str(exc)
 
-    issues = validate_plan(plan, html_path=html_path, pdf_path=None if skip_pdf else pdf_path)
+    issues = validate_plan(
+        plan,
+        html_path=html_path,
+        pdf_path=None if skip_pdf else pdf_path,
+        output_dir=out_dir,
+    )
     payload = {
         "qualification": qualification.title,
         "html": str(html_path),
         "pdf": str(pdf_path) if pdf_path.exists() else None,
         "pdf_error": pdf_error,
+        "package": package_manifest,
         "review_summary": review_summary(
             plan,
             html_path=html_path,
             pdf_path=None if skip_pdf else pdf_path,
+            output_dir=out_dir,
         ),
         "issues": issues_to_dict(issues),
     }
