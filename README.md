@@ -79,8 +79,8 @@ Before generation starts, the agent must confirm four choices with you:
 4. **Explanation style**: `formal`, `friendly`, `life`, `story`, `detective`, or
    `adventure`.
 
-Once those choices are confirmed, the Skill starts the real workflow: read the
-OxfordAQA syllabus source, turn it into teachable topic units, decide where
+Once those choices are confirmed, the Skill starts the real workflow: turn the
+selected OxfordAQA course requirements into teachable topic units, decide where
 visual explanation is needed, generate or queue the right graphics, and render
 an HTML/PDF guide with topic maps, worked examples, practice cards, answer
 checkpoints, and final revision questions.
@@ -114,8 +114,8 @@ English, while the exam clock kept moving. The knowledge itself can be learned;
 the hard part is reorganizing it under a new language, a new exam style, and real
 time pressure.
 
-So I turned AI into a revision skill: first read the official specification, then
-break the knowledge into understandable structures, examples, checkpoints, and
+So I turned AI into a revision skill: take the chosen course, break the
+knowledge into understandable structures, examples, diagrams, checkpoints, and
 reviewable practice. The goal is not to let AI learn for a child. The goal is to
 lower the noise around learning so a student can face schoolwork with more calm
 and control.
@@ -147,9 +147,8 @@ three layers:
 
 The AI analyzes which topic points and practice examples need visual
 explanation. Those selected items carry a `visual_brief`: what diagram is
-needed, which source points it must stay inside, whether SVG is enough, which
-image provider the user selected when an infographic is needed, and the prompt
-queue for producing reviewed charts.
+needed, whether SVG is enough, which image provider the user selected when an
+infographic is needed, and the prompt queue for producing reviewed charts.
 
 ## Optional Image Generation
 
@@ -219,9 +218,7 @@ outputs/chemistry-9202/
   qualification.json         extracted qualification metadata
   validation.json            quality gate report
   handbook-package.json      manifest for sections and visual assets
-  source/
-    oxfordaqa-9202-specification.pdf   downloaded at runtime, do not commit
-    oxfordaqa-9202-specification.txt   extracted text, do not commit
+  source/                    optional local reference cache, do not commit
 ```
 
 ## Supported Scope
@@ -241,7 +238,7 @@ Pearson Edexcel, and Cambridge International.
 Within OxfordAQA, subjects are not registered one by one. Any discovered
 International GCSE or International AS-A-level qualification page should use the
 same provider/parser pipeline. Specialist subject profiles only improve example
-and visual choices; unprofiled subjects fall back to source-bound generic
+and visual choices; unprofiled subjects fall back to syllabus-aligned generic
 examples instead of borrowing another subject's template.
 
 OxfordAQA's subject index lists International GCSE and International AS-A-level
@@ -284,25 +281,20 @@ Generated guides use the output language selected before generation:
 This prevents the generator from producing half-Chinese, half-English handbook
 pages.
 
-## Accuracy Model
+## Guide Generation Model
 
-The generator separates reliable extraction from optional authoring:
+The generator separates course intake from creative teaching:
 
-1. **Discovery**: find the public qualification page and specification link.
-2. **Extraction**: download the PDF, extract page text, parse topics and assessment.
-3. **Source matching**: attach page-level snippets to each topic where possible.
-4. **Guide planning**: create source-bound topic blocks, diagram briefs, and practice cards.
-5. **Rendering**: embed deterministic SVG concept maps from extracted syllabus points.
-6. **Validation**: fail or warn on missing source, topic, assessment, diagram, guide, or output coverage.
+1. **Course intake**: find the selected OxfordAQA course and read its current requirements.
+2. **Topic planning**: turn the course into teachable topic blocks, examples, and review tasks.
+3. **Visual decision**: decide whether each concept needs no image, simple SVG, or a richer infographic model.
+4. **Student guide writing**: keep the chosen language and explanation style consistent across the handbook.
+5. **Rendering**: build the HTML guide and PDF export.
+6. **Validation**: warn when topics, examples, visuals, or output files are incomplete.
 
-Current worked examples are original source-bound practice items, not copied
-past-paper questions. Each card records a command word, difficulty, focus point,
-public solution steps, and answer checkpoints. A future LLM authoring layer can
-deepen examples only if it cites extracted source snippets and passes review.
-
-`validation.json` includes both machine-readable issues and a `review_summary`
-with topic counts, practice-card counts, diagram counts, PDF/source-snippet
-coverage, listing metadata, and audience-note checks.
+Current worked examples are original practice items, not copied past-paper
+questions. Each card records a command word, difficulty, focus point, solution
+steps, and answer checkpoints.
 
 ## CLI
 

@@ -14,6 +14,7 @@ def main() -> int:
     parser.add_argument("--gif", default="docs/assets/intro-animation-preview.gif")
     parser.add_argument("--fps", type=int, default=8)
     parser.add_argument("--duration", type=float, default=24.0)
+    parser.add_argument("--start-offset", type=float, default=0.6)
     parser.add_argument("--width", type=int, default=1440)
     parser.add_argument("--height", type=int, default=1000)
     args = parser.parse_args()
@@ -36,6 +37,7 @@ def main() -> int:
             frames_dir=frames_dir,
             fps=args.fps,
             duration=args.duration,
+            start_offset=args.start_offset,
             width=args.width,
             height=args.height,
         )
@@ -54,16 +56,17 @@ def capture_frames(
     frames_dir: Path,
     fps: int,
     duration: float,
+    start_offset: float,
     width: int,
     height: int,
 ) -> None:
     browser_path = find_browser()
     if not browser_path:
         raise SystemExit("Chrome or Edge was not found for frame capture")
-    frame_count = int(duration * fps)
+    frame_count = max(1, int((duration - start_offset) * fps))
     profile_dir = frames_dir.parent / "chrome-profile"
     for index in range(frame_count):
-        t = min(index / fps, duration - 0.001)
+        t = min(start_offset + index / fps, duration - 0.001)
         out = frames_dir / f"frame_{index:04d}.png"
         url = f"{html_path.as_uri()}?t={t:.4f}"
         command = [

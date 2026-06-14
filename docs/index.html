@@ -672,11 +672,13 @@
       background: #0f1724;
       border: 1px solid rgba(255,255,255,.14);
     }
-    .motion-preview img {
+    .motion-preview img,
+    .motion-preview video {
       display: block;
       width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
+      aspect-ratio: 144 / 100;
+      object-fit: contain;
+      background: #111927;
     }
     .motion-caption {
       display: flex;
@@ -839,7 +841,7 @@
         <div class="origin-copy">
           <div class="quote">不是替孩子学习，而是把学习路上的噪音降下来。</div>
           <p>这个项目最早不是为了做一个“工具”，而是为了帮一个真实的孩子轻一点地走过转轨期。我的儿子今年要参加 International GCSE 大考；他从公办体系转到国际课程还不到一年，课堂语言几乎一下从全中文切换到全英文。知识点本身可以慢慢学，但新的语言、新的考试方式和临近大考的时间压力叠在一起，很容易让孩子觉得自己被推着走。</p>
-          <p>我用 Codex 做了一个学习、复习用的 Skill：让它先读官方大纲，再把知识点拆成能理解的结构、例题和检查点。这个项目的初衷很简单：利用人工智能帮助孩子更轻松、更有掌控感地面对学业。</p>
+          <p>我用 Codex 做了一个学习、复习用的 Skill：让它围绕对应课程要求，把知识点拆成能理解的结构、例题、图解和检查点。这个项目的初衷很简单：利用人工智能帮助孩子更轻松、更有掌控感地面对学业。</p>
           <p class="origin-note">所以这个项目的重点不是炫技，而是把“看不懂、记不住、不会用”的复习压力，拆成孩子能读、能练、能看图理解的一页页手册。</p>
         </div>
       </div>
@@ -1079,10 +1081,13 @@
         </div>
         <div class="motion-stage" aria-label="Animated introduction preview">
           <a class="motion-preview" href="project-intro-animation.html" aria-label="Open intro animation">
-            <img src="assets/intro-animation-preview.gif?v=2" alt="Animated introduction preview with guide screenshots">
+            <video muted loop playsinline preload="metadata" poster="assets/sample-math-guide.png?v=5" data-autoplay-preview>
+              <source src="project-intro-animation.mp4?v=5" type="video/mp4">
+              <img src="assets/intro-animation-preview.gif?v=5" alt="Animated introduction preview with guide screenshots">
+            </video>
           </a>
           <div class="motion-caption">
-            <span>Autoplay GIF preview</span>
+            <span>Autoplay video preview</span>
             <span>HTML / MP4</span>
           </div>
         </div>
@@ -1095,5 +1100,28 @@
       Repository homepage preview. Student-facing pages are generated separately as <code>guide.html</code>.
     </div>
   </footer>
+  <script>
+    document.querySelectorAll("video[data-autoplay-preview]").forEach((video) => {
+      video.muted = true;
+      video.playsInline = true;
+      let wasVisible = false;
+      const playIfVisible = () => {
+        const rect = video.getBoundingClientRect();
+        const visible = rect.top < window.innerHeight * .86 && rect.bottom > window.innerHeight * .14;
+        if (visible) {
+          if (!wasVisible) video.currentTime = 0;
+          wasVisible = true;
+          video.play().catch(() => {});
+        } else {
+          wasVisible = false;
+          video.pause();
+        }
+      };
+      window.addEventListener("scroll", playIfVisible, { passive: true });
+      window.addEventListener("resize", playIfVisible);
+      window.addEventListener("load", playIfVisible, { once: true });
+      setTimeout(playIfVisible, 250);
+    });
+  </script>
 </body>
 </html>

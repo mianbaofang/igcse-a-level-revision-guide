@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" role="img" aria-labelledby="title desc">
   <title id="title">Generated output anatomy</title>
-  <desc id="desc">Anatomy of the generated revision guide.</desc>
+  <desc id="desc">Anatomy of the student-facing revision guide.</desc>
   <rect width="1100" height="520" rx="24" fill="#f7f9fc"/>
   <text x="52" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="800" fill="#172033">Guide anatomy</text>
-  <text x="52" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#5b677a">Every visible section maps back to extracted source metadata.</text>
+  <text x="52" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#5b677a">Topic explanation, worked examples, visuals, and review checks in one handbook.</text>
   <g font-family="Segoe UI, Arial, sans-serif">
     <rect x="60" y="132" width="310" height="308" rx="18" fill="#124f9b"/>
     <rect x="60" y="402" width="310" height="38" rx="0" fill="#d99a24"/>
@@ -22,8 +22,8 @@
     <rect x="462" y="284" width="250" height="56" rx="12" fill="#f8e3e8" stroke="#e0a2ae"/>
     <text x="480" y="318" font-size="14" font-weight="700" fill="#172033">pitfall + checklist</text>
     <rect x="736" y="284" width="250" height="56" rx="12" fill="#eef9f4" stroke="#9ed6bf"/>
-    <text x="754" y="318" font-size="14" font-weight="700" fill="#172033">source snippets</text>
+    <text x="754" y="318" font-size="14" font-weight="700" fill="#172033">review checks</text>
     <rect x="462" y="364" width="524" height="34" rx="10" fill="#172033"/>
-    <text x="480" y="386" font-size="13" fill="#fff">validation.json: topics, assessment, cards, snippets, HTML/PDF</text>
+    <text x="480" y="386" font-size="13" fill="#fff">validation.json: topics, examples, visuals, HTML/PDF</text>
   </g>
 </svg>

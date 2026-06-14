@@ -74,8 +74,8 @@ https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/sk
 4. **讲解风格**：`formal` 正经严谨、`friendly` 轻松愉快、`life` 生活场景、
    `story` 故事性强、`detective` 侦探推理、`adventure` 原创闯关感。
 
-这四项确认完以后，Agent 才会根据 Skill 开始真正生成：读取 OxfordAQA 大纲来源，
-整理知识点和例题，判断哪些内容需要图文结合讲解，选择 SVG 或信息图模型生成图片，
+这四项确认完以后，Agent 才会根据 Skill 开始真正生成：围绕所选 OxfordAQA
+课程要求整理知识点和例题，判断哪些内容需要图文结合讲解，选择 SVG 或信息图模型生成图片，
 最后输出带知识地图、例题、练习卡、答案检查点和复习题的 HTML/PDF 学习指南。
 
 当前范围故意保持清楚：现在只实现 OxfordAQA。后续路线图只优先扩国内常用场景中的
@@ -105,8 +105,8 @@ Pearson Edexcel 与 Cambridge International / CAIE。
 学，但新的语言、新的考试方式和临近大考的时间压力叠在一起，很容易让孩子
 觉得自己被推着走。
 
-我用 Codex 做了一个学习、复习用的 Skill：让它先读官方大纲，再把知识点拆成能
-理解的结构、例题和检查点。这个项目的初衷很简单：不是替孩子学习，而是把
+我用 Codex 做了一个学习、复习用的 Skill：让它围绕对应课程要求，把知识点拆成能
+理解的结构、例题、图解和检查点。这个项目的初衷很简单：不是替孩子学习，而是把
 学习路上的噪音降下来，利用人工智能帮助孩子更轻松、更有掌控感地面对学业。
 
 这个项目的承诺很简单：让复习变得更好读、更有画面、更容易检查。官方大纲和校验
@@ -140,7 +140,7 @@ International AS-A-level 通常是 modular qualification，也就是按 unit 组
   不直接复刻受保护角色或世界观。
 
 AI 会分析哪些知识点和例题需要图文结合讲解。被选中的条目会生成 `visual_brief`：
-需要什么图、必须绑定哪些 syllabus source points、SVG 是否足够、如果需要信息图则
+需要什么图、SVG 是否足够、如果需要信息图则
 用户选择哪个生图模型，以及用于生成图表的 prompt queue。
 
 ## 可选生图能力
@@ -206,9 +206,7 @@ outputs/chemistry-9202/
   qualification.json         抽取出的 qualification 元数据
   validation.json            质量检查报告
   handbook-package.json      sections 与 images 的交付清单
-  source/
-    oxfordaqa-9202-specification.pdf   运行时下载，不应提交到仓库
-    oxfordaqa-9202-specification.txt   抽取文本，不应提交到仓库
+  source/                    本地参考缓存，不应提交到仓库
 ```
 
 ## 当前能力
@@ -228,7 +226,7 @@ International / CAIE。
 在 OxfordAQA 内部，不需要为几十门课逐门写死配置。只要能从官网发现
 International GCSE 或 International AS-A-level qualification page，就应走同一套
 provider/parser 流程。专门 subject profile 只是提升例题和图文判断质量；暂未做
-profile 的科目会回退到基于官方大纲的通用例题，不会借用其他学科模板。
+profile 的科目会回退到基于课程要求的通用例题，不会借用其他学科模板。
 
 在 OxfordAQA subject 页面里，工具也会记录网站分组来源：
 `btn--type-8` 视为蓝色 International GCSE listing，
@@ -264,24 +262,19 @@ qualification type 的冲突。
 
 这样做是为了避免手册读起来一半中文一半英文。
 
-## 准确性设计
+## 手册生成模型
 
 工具分成六层：
 
-1. **发现**：找到公开 qualification 页面与 specification PDF 链接。
-2. **抽取**：下载 PDF，抽取页码文本，解析 topic 和 assessment。
-3. **来源匹配**：给每个 topic 匹配 PDF 页码级 source snippets。
-4. **指南规划**：生成 topic essence、类比、mini worked example、diagram brief 和 practice cards。
-5. **图解渲染**：用抽取出的官方大纲点生成确定性 SVG 概念图。
-6. **校验**：检查 source、topic、assessment、diagram、guide block、HTML/PDF 是否完整。
+1. **课程读取**：找到所选 OxfordAQA 课程，并读取当前课程要求。
+2. **知识规划**：整理 topic block、讲解重点、例题和复习任务。
+3. **图文判断**：判断每个知识点和例题是否不需要图、适合 SVG，还是需要复杂信息图模型。
+4. **学生化写作**：按用户选择的语言和讲解风格生成正文，避免中英文混搭。
+5. **交付渲染**：生成可阅读 HTML 和可打印 PDF。
+6. **完整性检查**：检查 topic、例题、图文资源和输出文件是否完整。
 
-当前的 worked examples 是来源绑定的原创练习，不复制真题。每张卡片会记录
-指令词、难度、聚焦知识点、公开解题步骤和答案检查点。未来如果接入 LLM 深度生成题目，必须引用抽取出的 source
-snippets，并通过审核。
-
-`validation.json` 不只包含 issues，也包含 `review_summary`：topic 数量、
-practice card 数量、diagram 数量、PDF source snippet 覆盖、网站 listing 元数据、
-audience note 是否说明 international students / outside UK 等都会列出来。
+当前的 worked examples 是原创练习，不复制真题。每张卡片会记录指令词、难度、
+聚焦知识点、解题步骤和答案检查点。
 
 ## CLI 用法
 
