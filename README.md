@@ -15,6 +15,8 @@
   ·
   <a href="docs/SKILL_EXPLAINED.md">Skill explained</a>
   ·
+  <a href="docs/IMAGE_MODEL_GUIDE.md">Image models</a>
+  ·
   <a href="docs/EXAMPLES.md">Examples</a>
   ·
   <a href="docs/ACCURACY_POLICY.md">Accuracy policy</a>
@@ -75,7 +77,7 @@ roadmap.
 
 <p align="center">
   <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">
-    <img src="docs/assets/intro-animation-preview.png" alt="International Exam Guide intro animation preview" width="100%">
+    <img src="docs/assets/intro-animation-preview.gif" alt="International Exam Guide intro animation preview" width="100%">
   </a>
 </p>
 
@@ -115,6 +117,46 @@ beautiful revision materials without losing source traceability.
 | Generated cover | Pipeline |
 |---|---|
 | <img src="docs/assets/output-anatomy.svg" alt="Generated guide anatomy" width="100%"> | <img src="docs/assets/pipeline.svg" alt="Pipeline diagram" width="100%"> |
+
+## Visual And Narrative Modes
+
+The guide should not read like a sleepy syllabus extract. The renderer now has
+three layers:
+
+- **Deterministic SVG basics** for concept maps, particle models, pH scales,
+  energy curves, and other reproducible diagrams.
+- **User-selected infographic image models** for complex geometry, lab
+  apparatus, circuits, economics charts, and bilingual text-heavy visuals.
+- **Narrative explanation templates** such as life-scene analogies, detective
+  reasoning, and anime-quest style study missions. These use original framing by
+  default and should not copy protected characters or worlds.
+
+The AI analyzes which topic points and practice examples need visual
+explanation. Those selected items carry a `visual_brief`: what diagram is
+needed, which source points it must stay inside, whether SVG is enough, which
+image provider the user selected when an infographic is needed, and the prompt
+queue for producing reviewed charts.
+
+## Optional Image Generation
+
+The current MVP uses deterministic SVG drafts for simple visual needs so
+syllabus facts stay traceable. When the AI marks a point as needing a richer
+infographic, lab apparatus, bilingual visual, or visual explanation, the agent
+should ask the user to choose an image provider before generating complex
+charts.
+
+Recommended starting points:
+
+- **OpenAI `gpt-image-2`** as the default high-quality provider when the OpenAI
+  stack is available.
+- **Qwen-Image-2.0 / Qwen Image 2.0 Pro** for Chinese/English text-heavy
+  infographic experiments.
+- **SenseNova U1 / SenseNova-U1-8B-MoT variants** for open-source or local
+  infographic experiments.
+
+See [Image Model Guide](docs/IMAGE_MODEL_GUIDE.md). Image generation must stay
+illustrative: it cannot introduce new syllabus facts that are not in the source
+specification.
 
 ## Developer Quick Start
 

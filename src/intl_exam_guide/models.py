@@ -123,10 +123,24 @@ class TopicGuide:
 
 
 @dataclass
+class VisualBrief:
+    topic_title: str
+    focus_point: str
+    trigger: str
+    visual_type: str
+    complexity: str
+    image_provider: str
+    prompt: str
+    source_points: list[str]
+    source_snippets: list[SourceSnippet] = field(default_factory=list)
+
+
+@dataclass
 class GuidePlan:
     qualification: Qualification
     topic_guides: list[TopicGuide]
     practice_items: list[PracticeItem]
+    visual_briefs: list[VisualBrief]
     diagram_briefs: list[str]
     revision_stages: list[str]
 

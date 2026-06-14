@@ -15,6 +15,8 @@
   ·
   <a href="docs/SKILL_EXPLAINED.md">Skill 图解</a>
   ·
+  <a href="docs/IMAGE_MODEL_GUIDE.md">生图模型</a>
+  ·
   <a href="docs/EXAMPLES.md">示例</a>
   ·
   <a href="docs/ACCURACY_POLICY.md">准确性政策</a>
@@ -71,7 +73,7 @@ Pearson Edexcel 与 Cambridge International / CAIE。
 
 <p align="center">
   <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">
-    <img src="docs/assets/intro-animation-preview.png" alt="International Exam Guide 介绍动画预览" width="100%">
+    <img src="docs/assets/intro-animation-preview.gif" alt="International Exam Guide 介绍动画预览" width="100%">
   </a>
 </p>
 
@@ -118,6 +120,34 @@ International AS/A-level 通常是 modular qualification，也就是按 unit 组
 | 生成指南结构 | 生成流水线 |
 |---|---|
 | <img src="docs/assets/output-anatomy.svg" alt="生成指南结构" width="100%"> | <img src="docs/assets/pipeline.svg" alt="生成流水线" width="100%"> |
+
+## 图文与讲解风格
+
+手册不能像 syllabus 摘录一样催眠。现在的渲染层分三层：
+
+- **确定性 SVG 基础图**：概念地图、粒子模型、pH 标尺、能量曲线等可复现图形。
+- **用户选择的信息图生图模型**：复杂几何、实验装置、电路、经济学图表、双语文字信息图。
+- **叙事讲解模板**：生活场景、侦探推理、动漫闯关感等讲法。默认使用原创表达，
+  不直接复刻受保护角色或世界观。
+
+AI 会分析哪些知识点和例题需要图文结合讲解。被选中的条目会生成 `visual_brief`：
+需要什么图、必须绑定哪些 syllabus source points、SVG 是否足够、如果需要信息图则
+用户选择哪个生图模型，以及用于生成图表的 prompt queue。
+
+## 可选生图能力
+
+当前 MVP 对简单视觉需求使用确定性 SVG 草图，保证 syllabus 事实仍然可追溯。如果
+AI 判断某个知识点需要实验装置图、结构示意图、流程图、双语信息图或复杂视觉解释，
+agent 应先让用户选择 image provider，再生成复杂图表。
+
+推荐起点：
+
+- **OpenAI `gpt-image-2`**：有 OpenAI / Codex 环境时作为默认高质量方案。
+- **Qwen-Image-2.0 / Qwen Image 2.0 Pro**：适合中文/英文文字较多的信息图实验。
+- **SenseNova U1 / SenseNova-U1-8B-MoT variants**：适合开源、本地或快速信息图实验。
+
+详见 [生图模型建议](docs/IMAGE_MODEL_GUIDE.md)。生图只负责解释性插图，不能引入
+官方 specification 里没有的 syllabus 事实。
 
 ## 开发者快速开始
 

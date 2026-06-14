@@ -12,10 +12,15 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert (output_dir / "qualification.json").exists()
     html = (output_dir / "guide.html").read_text(encoding="utf-8")
     assert html.count('class="topic-diagram"') == 3
+    assert html.count('class="visual-example"') == 3
     assert "Concept map / 图文解释" in html
+    assert "Visual worked example / 图形例题" in html
+    assert "Image prompt / 生图提示词" in html
     assert "practice card" in html
     assert "Public solution steps" in html
     assert "Answer checkpoints" in html
     validation = json.loads((output_dir / "validation.json").read_text(encoding="utf-8"))
     assert validation["qualification"] == "International GCSE Demo Science (9000)"
+    assert validation["review_summary"]["visual_briefs"] == 3
+    assert validation["review_summary"]["visual_examples_in_html"] == 3
     assert validation["issues"] == []

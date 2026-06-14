@@ -30,11 +30,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     generate.add_argument("--out", required=True, help="Output directory.")
     generate.add_argument("--questions-per-topic", type=int, default=2)
+    generate.add_argument(
+        "--image-provider",
+        choices=["deterministic-svg", "gpt-image-2", "qwen-image-pro", "sensenova-u1-fast", "custom"],
+        help="Optional provider recorded for complex infographic briefs.",
+    )
     generate.add_argument("--skip-pdf", action="store_true")
 
     demo = subcommands.add_parser("demo", help="Generate an offline synthetic demo guide.")
     demo.add_argument("--out", required=True, help="Output directory.")
     demo.add_argument("--questions-per-topic", type=int, default=2)
+    demo.add_argument(
+        "--image-provider",
+        choices=["deterministic-svg", "gpt-image-2", "qwen-image-pro", "sensenova-u1-fast", "custom"],
+        help="Optional provider recorded for complex infographic briefs.",
+    )
     demo.add_argument("--skip-pdf", action="store_true")
 
     args = parser.parse_args(argv)
@@ -68,13 +78,25 @@ def main(argv: list[str] | None = None) -> int:
         qualification = provider.parse_qualification(link.href)
         qualification = provider.apply_listing_metadata(qualification, link)
         qualification = provider.download_specification(qualification, source_dir)
-        return write_guide_outputs(qualification, out_dir, args.questions_per_topic, args.skip_pdf)
+        return write_guide_outputs(
+            qualification,
+            out_dir,
+            args.questions_per_topic,
+            args.skip_pdf,
+            args.image_provider,
+        )
 
     if args.command == "demo":
         out_dir = Path(args.out)
         out_dir.mkdir(parents=True, exist_ok=True)
         qualification = load_demo_qualification()
-        return write_guide_outputs(qualification, out_dir, args.questions_per_topic, args.skip_pdf)
+        return write_guide_outputs(
+            qualification,
+            out_dir,
+            args.questions_per_topic,
+            args.skip_pdf,
+            args.image_provider,
+        )
 
     return 2
 
@@ -93,8 +115,13 @@ def write_guide_outputs(
     out_dir: Path,
     questions_per_topic: int,
     skip_pdf: bool,
+    image_provider: str | None,
 ) -> int:
-    plan = build_guide_plan(qualification, questions_per_topic=questions_per_topic)
+    plan = build_guide_plan(
+        qualification,
+        questions_per_topic=questions_per_topic,
+        image_provider=image_provider,
+    )
 
     qualification_path = out_dir / "qualification.json"
     plan_path = out_dir / "guide-plan.json"

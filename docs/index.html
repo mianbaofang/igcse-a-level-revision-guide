@@ -978,6 +978,32 @@
       </div>
     </section>
 
+    <section class="band alt" id="visual-story">
+      <div class="shell">
+        <div class="section-head">
+          <h2>孩子愿意看的手册，不能只有文字。</h2>
+          <p>流程是：先根据大纲生成基础知识点和例题；再由 AI 判断哪些知识点或例题需要图文结合；简单图走 SVG，复杂信息图再让用户选择生图模型。</p>
+        </div>
+        <div class="language">
+          <article>
+            <h3>不是文字模板</h3>
+            <p>被 AI 判断为需要图的 topic，必须有图文学习单元：图/信息图、情境问题、讲解风格、答题步骤和 source check。</p>
+            <div class="sample">Visual worked example / 图形例题</div>
+          </article>
+          <article>
+            <h3>模型由用户选择</h3>
+            <p>只有 AI 判断需要复杂信息图时，才询问用户选择 GPT Image、Qwen Image、SenseNova 或自定义模型。</p>
+            <div class="sample">visual_brief + image provider</div>
+          </article>
+          <article>
+            <h3>讲解模板更生动</h3>
+            <p>同一知识点可以用生活场景、侦探推理、动漫闯关感等方式讲，但默认不复刻具体受保护 IP。</p>
+            <div class="sample">Life Scene / Detective / Anime Quest</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section class="band alt" id="language">
       <div class="shell">
         <div class="section-head">
@@ -1041,8 +1067,8 @@
             <span>Skill explained<small>Skill 工作流、输入输出和来源追溯机制。</small></span>
             <span>MD</span>
           </a>
-          <a class="doc-link" href="RELEASE_CHECKLIST.md">
-            <span>Release checklist<small>发布前检查清单与开源维护流程。</small></span>
+          <a class="doc-link" href="IMAGE_MODEL_GUIDE.md">
+            <span>Image model guide<small>可选生图模型与插图安全边界。</small></span>
             <span>MD</span>
           </a>
         </div>

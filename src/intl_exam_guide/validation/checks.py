@@ -30,6 +30,8 @@ def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path
         issues.append(ValidationIssue("warning", "Practice coverage is below one item per topic."))
     if len(plan.topic_guides) != len(qualification.topics):
         issues.append(ValidationIssue("error", "Topic guide coverage does not match topic count."))
+    if not plan.visual_briefs:
+        issues.append(ValidationIssue("warning", "No topics were selected for visual explanation."))
 
     guide_topics = {guide.topic_title for guide in plan.topic_guides}
     practice_topics = {item.topic_title for item in plan.practice_items}
@@ -70,6 +72,18 @@ def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path
         if not item.source_points:
             issues.append(ValidationIssue("error", f"Practice item has no source points: {item.topic_title}"))
 
+    for brief in plan.visual_briefs:
+        if not brief.focus_point.strip():
+            issues.append(ValidationIssue("error", f"Visual brief is missing a focus point: {brief.topic_title}"))
+        if not brief.visual_type.strip():
+            issues.append(ValidationIssue("error", f"Visual brief is missing a visual type: {brief.topic_title}"))
+        if not brief.trigger.strip():
+            issues.append(ValidationIssue("error", f"Visual brief is missing the selection reason: {brief.topic_title}"))
+        if not brief.image_provider.strip():
+            issues.append(ValidationIssue("error", f"Visual brief is missing an image provider: {brief.topic_title}"))
+        if not brief.prompt.strip():
+            issues.append(ValidationIssue("error", f"Visual brief is missing an image prompt: {brief.topic_title}"))
+
     if qualification.qualification_type == "international_gcse":
         if qualification.source.listing_qualification_type and qualification.source.listing_qualification_type != "international_gcse":
             issues.append(ValidationIssue("error", "Source listing metadata conflicts with International GCSE type."))
@@ -108,6 +122,10 @@ def validate_plan(plan: GuidePlan, html_path: Path | None = None, pdf_path: Path
             for phrase in required_phrases:
                 if phrase not in html:
                     issues.append(ValidationIssue("error", f"HTML missing required section phrase: {phrase}"))
+            if plan.visual_briefs:
+                for phrase in ["Visual worked example", "Image prompt"]:
+                    if phrase not in html:
+                        issues.append(ValidationIssue("error", f"HTML missing required visual phrase: {phrase}"))
             diagram_count = html.count('class="topic-diagram"')
             if diagram_count < len(qualification.topics):
                 issues.append(
@@ -144,11 +162,13 @@ def review_summary(
         "topics": len(qualification.topics),
         "assessments": len(qualification.assessments),
         "topic_guides": len(plan.topic_guides),
+        "visual_briefs": len(plan.visual_briefs),
         "practice_cards": len(plan.practice_items),
         "topics_with_practice": len(topic_titles & practice_topics),
         "topics_with_guides": len(topic_titles & guide_topics),
         "topics_with_pdf_source_snippets": topics_with_source,
         "topic_diagrams_in_html": html.count('class="topic-diagram"') if html else 0,
+        "visual_examples_in_html": html.count('class="visual-example"') if html else 0,
         "has_html": bool(html_path and html_path.exists()),
         "has_pdf": bool(pdf_path and pdf_path.exists()),
         "has_listing_metadata": bool(

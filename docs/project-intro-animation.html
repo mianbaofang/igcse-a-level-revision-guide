@@ -75,6 +75,10 @@
       letter-spacing: 0;
       text-wrap: balance;
     }
+    #scene-guide h2 {
+      max-width: 1080px;
+      font: 700 clamp(38px, 3.5vw, 62px)/1.02 var(--display);
+    }
     .lead {
       max-width: 790px;
       margin-top: 2.6vh;
@@ -105,6 +109,37 @@
       background: rgba(255,255,255,.08);
       font: 900 clamp(18px, 1.6vw, 28px)/1 var(--mono);
     }
+
+    .hero-board {
+      position: absolute;
+      right: 7vw;
+      top: 11vh;
+      width: min(520px, 34vw);
+      display: grid;
+      gap: 16px;
+    }
+    .hero-card {
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      padding: 18px;
+      box-shadow: 10px 14px 0 rgba(0,0,0,.16);
+    }
+    .hero-card b {
+      display: block;
+      color: #f0cf84;
+      font: 900 12px/1 var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .hero-card span {
+      display: block;
+      height: 11px;
+      margin: 10px 0;
+      background: rgba(255,255,255,.24);
+    }
+    .hero-card span:nth-child(3) { width: 74%; background: rgba(22,107,99,.72); }
+    .hero-card span:nth-child(4) { width: 52%; background: rgba(197,138,38,.78); }
 
     .bridge {
       position: absolute;
@@ -150,6 +185,30 @@
       border-top: 2px solid var(--gold);
       transform: rotate(45deg);
     }
+    .origin-notes {
+      position: absolute;
+      right: 7vw;
+      top: 14vh;
+      width: min(460px, 32vw);
+      display: grid;
+      gap: 14px;
+    }
+    .note-card {
+      border-left: 4px solid var(--gold);
+      background: rgba(255,255,255,.09);
+      padding: 16px 18px;
+      color: rgba(255,255,255,.78);
+      font-size: clamp(15px, 1vw, 18px);
+      line-height: 1.42;
+    }
+    .note-card strong {
+      display: block;
+      color: #fff;
+      font: 800 13px/1 var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
 
     .source-wall {
       position: absolute;
@@ -186,6 +245,32 @@
       background: var(--red);
       box-shadow: 0 0 0 999px rgba(184,66,79,.04);
     }
+    .source-stack {
+      position: absolute;
+      left: 7vw;
+      bottom: 11vh;
+      width: min(580px, 40vw);
+      display: grid;
+      gap: 14px;
+    }
+    .source-chip {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      padding: 15px 17px;
+    }
+    .source-chip b {
+      color: #f0cf84;
+      font: 900 12px/1 var(--mono);
+      letter-spacing: .08em;
+    }
+    .source-chip span {
+      color: rgba(255,255,255,.72);
+      font-size: clamp(15px, 1vw, 18px);
+    }
 
     .pipeline {
       position: absolute;
@@ -219,33 +304,71 @@
       font-size: clamp(14px, 1vw, 17px);
       line-height: 1.5;
     }
+    .pipeline-strip {
+      position: absolute;
+      left: 7vw;
+      right: 7vw;
+      top: 31vh;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+    .pipeline-strip span {
+      min-height: 58px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.07);
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,.72);
+      font: 800 12px/1.2 var(--mono);
+      text-align: center;
+      padding: 8px;
+    }
 
     .guide-spread {
       position: absolute;
-      inset: 18vh 7vw 10vh;
+      inset: 20vh 6vw 8vh;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 36px;
-      perspective: 1800px;
+      grid-template-columns: minmax(0, 1.38fr) minmax(280px, .62fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .guide-screenshot {
+      min-height: 0;
+      margin: 0;
+      overflow: hidden;
+      background: var(--white);
+      border: 1px solid rgba(255,255,255,.5);
+      box-shadow: 24px 30px 0 rgba(0,0,0,.22);
+      transform: rotateZ(-.35deg);
+    }
+    .guide-screenshot img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: top left;
+      filter: saturate(1.03) contrast(1.02);
     }
     .guide-page {
       background: var(--white);
       color: var(--ink);
       border: 1px solid rgba(255,255,255,.4);
-      padding: 34px;
-      box-shadow: 22px 32px 0 rgba(0,0,0,.23);
+      padding: 24px;
+      box-shadow: 18px 24px 0 rgba(0,0,0,.22);
+      display: flex;
+      flex-direction: column;
     }
-    .guide-page.left { transform: rotateY(8deg) rotateZ(-1deg); }
-    .guide-page.right { transform: rotateY(-8deg) rotateZ(1deg); }
+    .guide-page.right { transform: rotateZ(.7deg); }
     .guide-page h3 {
       margin: 0 0 18px;
       color: var(--oxford);
-      font: 800 clamp(30px, 3vw, 58px)/1.05 var(--display);
+      font: 800 clamp(26px, 2.1vw, 40px)/1.05 var(--display);
     }
     .guide-tag {
       display: inline-flex;
       align-items: center;
-      min-height: 34px;
+      min-height: 30px;
       padding: 0 10px;
       margin: 0 8px 10px 0;
       background: #e8f2ee;
@@ -254,26 +377,27 @@
     }
     .guide-tag.red { background: #f5e7e9; color: var(--red); }
     .guide-tag.gold { background: #f7edd5; color: #7c560f; }
-    .diagram {
-      height: 190px;
-      margin-top: 18px;
-      border: 1px solid #d9ded9;
-      background:
-        linear-gradient(90deg, transparent 49%, rgba(17,25,39,.12) 50%, transparent 51%),
-        linear-gradient(0deg, transparent 49%, rgba(17,25,39,.12) 50%, transparent 51%),
-        var(--paper);
-      position: relative;
+    .guide-points {
+      margin-top: 16px;
+      display: grid;
+      gap: 9px;
+      padding: 0;
+      list-style: none;
     }
-    .dot {
-      position: absolute;
-      width: 46px;
-      height: 46px;
-      border: 2px solid var(--oxford);
-      background: var(--white);
+    .guide-points li {
+      border-left: 4px solid var(--gold);
+      padding: 10px 0 10px 12px;
+      color: #3e4a58;
+      font-size: 16px;
+      line-height: 1.35;
+      background: #f4f8f5;
     }
-    .dot.a { left: 15%; top: 20%; }
-    .dot.b { left: 58%; top: 38%; background: #f7edd5; }
-    .dot.c { left: 34%; top: 64%; background: #e8f2ee; }
+    .guide-points strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--red);
+      font-size: 15px;
+    }
 
     .scope-row {
       position: absolute;
@@ -304,6 +428,38 @@
       color: #f0cf84;
       font: 900 12px/1 var(--mono);
     }
+    .scope-matrix {
+      position: absolute;
+      right: 7vw;
+      top: 11vh;
+      width: min(520px, 34vw);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .scope-matrix div {
+      display: grid;
+      grid-template-columns: 1fr 82px 82px;
+      gap: 8px;
+      align-items: center;
+      color: rgba(255,255,255,.75);
+      font-size: 15px;
+    }
+    .scope-matrix b {
+      color: #fff;
+      font: 900 12px/1 var(--mono);
+      letter-spacing: .08em;
+    }
+    .ok, .soon, .no {
+      text-align: center;
+      padding: 8px 4px;
+      font: 900 11px/1 var(--mono);
+    }
+    .ok { background: rgba(22,107,99,.42); color: #cdece5; }
+    .soon { background: rgba(197,138,38,.36); color: #ffe1a7; }
+    .no { background: rgba(184,66,79,.28); color: #ffd2d8; }
 
     .final-lock {
       position: absolute;
@@ -323,6 +479,24 @@
       color: rgba(255,255,255,.72);
       font-size: clamp(20px, 1.6vw, 30px);
       line-height: 1.5;
+    }
+    .final-actions {
+      margin: 34px auto 0;
+      max-width: 880px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .final-actions span {
+      min-height: 92px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      color: rgba(255,255,255,.82);
+      font: 900 14px/1.28 var(--mono);
+      text-transform: uppercase;
     }
 
     .watermark {
@@ -416,20 +590,21 @@
 
     <section class="scene" id="scene-guide">
       <div class="kicker">Guide output</div>
-      <h2>学生看到的是学习指南，维护者看到的是可追溯数据。</h2>
+      <h2>手册不只是文字，而是图形、题目和故事化讲解。</h2>
       <div class="guide-spread">
-        <div class="guide-page left">
-          <h3>知识地图 / Knowledge Map</h3>
-          <span class="guide-tag">Topic points</span>
-          <span class="guide-tag red">Source page</span>
-          <div class="diagram"><span class="dot a"></span><span class="dot b"></span><span class="dot c"></span></div>
-        </div>
+        <figure class="guide-screenshot">
+          <img src="assets/sample-guide-snapshot.png" alt="Generated revision guide screenshot showing a visual worked example and story modes">
+        </figure>
         <div class="guide-page right">
-          <h3>Practice Card / 练习卡</h3>
-          <span class="guide-tag gold">Command word</span>
-          <span class="guide-tag">Answer frame</span>
-          <span class="guide-tag red">Checkpoints</span>
-          <p style="margin-top:24px;color:#4c5868;font-size:24px;line-height:1.45;">Official topic titles stay in English. Template labels use bilingual wording. Chinese topic names require a reviewed glossary.</p>
+          <h3>图文学习页 / Visual Guide</h3>
+          <span class="guide-tag">SVG basics</span>
+          <span class="guide-tag gold">Infographic models</span>
+          <span class="guide-tag red">Story modes</span>
+          <ul class="guide-points">
+            <li><strong>先判断图文需求</strong>AI 先生成知识点和例题，再判断哪些内容没有图会讲不清。</li>
+            <li><strong>再选择生成方式</strong>简单结构图用 SVG；复杂信息图才让用户选择 GPT Image、Qwen Image 或 SenseNova。</li>
+            <li><strong>讲解不催眠</strong>支持生活场景、侦探推理、动漫闯关感等模板，但不默认复刻具体 IP。</li>
+          </ul>
         </div>
       </div>
     </section>
@@ -507,10 +682,16 @@
 
       const guide = fade(t, 15.0, 16.0, 19.1, 19.8);
       setScene(el["scene-guide"], guide, mix(42, 0, guide));
+      const shot = document.querySelector(".guide-screenshot");
+      if (shot) {
+        const p = expoOut(clamp((t - 16.0) / 1.0));
+        shot.style.opacity = p;
+        shot.style.transform = `rotateZ(-.35deg) translateY(${mix(70, 0, p)}px) scale(${mix(.985, 1, p)})`;
+      }
       document.querySelectorAll(".guide-page").forEach((page, i) => {
-        const p = expoOut(clamp((t - 16.0 - i * .25) / 1.0));
+        const p = expoOut(clamp((t - 16.25 - i * .2) / 1.0));
         page.style.opacity = p;
-        page.style.transform = `${i === 0 ? "rotateY(8deg) rotateZ(-1deg)" : "rotateY(-8deg) rotateZ(1deg)"} translateY(${mix(70, 0, p)}px)`;
+        page.style.transform = `rotateZ(.7deg) translateY(${mix(70, 0, p)}px)`;
       });
 
       const scope = fade(t, 19.0, 20.0, 22.1, 22.8);
@@ -558,7 +739,7 @@
 
     window.__seek = (t) => {
       time = clamp(t, 0, DURATION - 0.001);
-      lastTick = null;
+      lastTick = performance.now();
       render(time);
     };
 

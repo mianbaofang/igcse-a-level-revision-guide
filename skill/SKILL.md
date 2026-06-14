@@ -37,6 +37,20 @@ Handle repository setup, CLI execution, validation checks, and PDF export as the
 agent. Do not ask the user to install dependencies unless the local environment
 is genuinely missing the required runtime and cannot proceed.
 
+For student-facing guides, do not produce a text-only template. Before
+generating complex visuals, ask the user which infographic/image model to use:
+
+- `deterministic-svg` for offline concept maps and simple diagrams;
+- `gpt-image-2` for high-quality polished educational visuals;
+- `qwen-image-pro` for Chinese/English text-heavy infographics;
+- `sensenova-u1-fast` for fast infographic drafts or local experiments;
+- `custom` if the user has another provider.
+
+If the user has not chosen a model, run the guide with visual briefs and SVG
+drafts only, then present the image prompt queue for confirmation. Do not claim
+that complex infographics have been generated until the selected model has
+actually produced reviewed image assets.
+
 ## Repository Access
 
 This skill may be installed from the repository's `skill/` directory, which
@@ -61,11 +75,16 @@ https://github.com/ethanzhangliang-creator/international-exam-guide.git
 5. Check `validation.json` before presenting the guide.
 6. If the guide will be used with children, require subject-specialist review for
    worked examples before treating it as final exam preparation material.
+7. Preserve the visual and narrative learning layer: after the base topic guide
+   and practice items are generated, analyze which knowledge points or examples
+   need visual explanation. Use deterministic SVG for simple diagrams. For
+   complex infographic needs, ask the user to choose an image model and keep
+   source-bound prompts without copying protected IP.
 
 ## Commands
 
 ```bash
-PYTHONPATH=src python -m intl_exam_guide generate --query chemistry --level igcse --out ./outputs/chemistry-9202
+PYTHONPATH=src python -m intl_exam_guide generate --query chemistry --level igcse --image-provider qwen-image-pro --out ./outputs/chemistry-9202
 ```
 
 Use `--skip-pdf` only when no local browser or Playwright runtime is available.
@@ -79,3 +98,7 @@ Use `--skip-pdf` only when no local browser or Playwright runtime is available.
   extraction, source download, or HTML validation fails.
 - Do not invent syllabus facts. If a topic needs deeper explanation, generate it
   from the extracted specification text and mark it for review.
+- Use AI image generation only as an optional illustration layer. Prefer
+  deterministic SVG concept maps for source-traceable syllabus structure. If an
+  AI image model is used, record the model, prompt, source topic, caption, and
+  review status; never let an illustration introduce unsupported syllabus facts.

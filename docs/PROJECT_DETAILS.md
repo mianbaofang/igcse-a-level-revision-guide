@@ -27,8 +27,14 @@ goal is to make one thing reliable:
 - **Explicit language policy**: official syllabus names stay in OxfordAQA
   English, while template labels are bilingual; topic translations require a
   reviewed glossary or subject-specialist pass.
-- **Deterministic diagrams**: concept maps use extracted topic points instead of
-  unsourced illustration prompts.
+- **Visual learning layer**: the generator first builds source-bound knowledge
+  points and practice examples, then analyzes which items need visual
+  explanation. Simple visuals use deterministic SVG; complex lab, geometry,
+  circuit, economics, or bilingual infographic assets are routed to a
+  user-selected image model with recorded prompt/source metadata.
+- **Narrative explanation modes**: topic blocks can be explained as life
+  scenes, detective reasoning, or anime-quest style study missions while
+  avoiding protected-IP copying by default.
 - **Child-safety mindset**: the generator avoids fully invented numerical
   answers until a reviewed authoring layer is available.
 - **International qualification structure**: International GCSE is handled as
@@ -90,8 +96,11 @@ They are useful positioning context, but they are not official provider facts.
 2. Add provider fixtures with synthetic test PDFs.
 3. Add a reviewed authoring adapter for deeper worked examples.
 4. Add richer subject-specific SVG diagram templates for common question types.
-5. Add visual regression snapshots for generated HTML.
-6. Add Pearson Edexcel, then Cambridge International / CAIE, only after
+5. Add configurable explanation-style presets for different student audiences.
+6. Add an optional image-provider adapter for reviewed educational
+   illustrations, with model/prompt/source metadata recorded for every asset.
+7. Add visual regression snapshots for generated HTML.
+8. Add Pearson Edexcel, then Cambridge International / CAIE, only after
    OxfordAQA is stable.
 
 ## 中文
@@ -118,7 +127,11 @@ GCSE 与 International AS/A-level 学科生成可追溯来源的复习指南。
 - **页码级追溯**：topic block 可以显示匹配到的 source snippets。
 - **明确语言策略**：官方 syllabus 名称保留 OxfordAQA 英文原文，模板标签采用双语；
   topic 中文翻译需要经过 glossary 或学科老师复核。
-- **确定性图解**：concept maps 只使用抽取出的 topic points，不添加无来源内容。
+- **图文学习层**：先生成可追溯的基础知识点和例题，再由 AI 判断哪些条目需要图文
+  结合讲解。简单图用确定性 SVG；复杂实验装置、几何、电路、经济学图表或双语信息图
+  交给用户选择的生图模型，并记录 prompt/source metadata。
+- **叙事讲解模式**：topic block 可以切换成生活场景、侦探推理、动漫闯关感等讲法，
+  默认不复刻受保护 IP。
 - **给孩子用的谨慎逻辑**：在没有审核 authoring layer 前，不编造完整数值答案。
 - **区分资格结构**：International GCSE 按 linear qualification 处理；
   International AS/A-level 按 modular qualification 处理。
@@ -172,6 +185,9 @@ International AS/A-level provider。国内市场路线图是：
 2. 用合成 PDF fixtures 补测试，避免提交 OxfordAQA PDF。
 3. 增加经过审核的 authoring adapter，生成更深度 worked examples。
 4. 为常见题型增加更专业的学科 SVG 图解模板。
-5. 增加 HTML 视觉回归检查。
-6. OxfordAQA 稳定后，按 Pearson Edexcel、Cambridge International / CAIE
+5. 增加可配置的 explanation-style presets，适配不同学生的阅读偏好。
+6. 增加可选 image-provider adapter，用于经过复核的教学插图，并记录每张图的
+   model、prompt、source metadata 和 review status。
+7. 增加 HTML 视觉回归检查。
+8. OxfordAQA 稳定后，按 Pearson Edexcel、Cambridge International / CAIE
    的顺序扩 provider。
