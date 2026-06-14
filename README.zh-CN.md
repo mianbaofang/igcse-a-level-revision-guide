@@ -7,9 +7,9 @@
 <p align="center">
   <a href="README.md">English README</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">项目主页</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">项目主页</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">介绍动画</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">介绍动画</a>
   ·
   <a href="docs/PROJECT_DETAILS.md">项目详情</a>
   ·
@@ -45,7 +45,7 @@ Agent 会返回包含知识点讲解、例题、信息图、复习题的 HTML/PD
 把这个链接发给你的 Codex/Agent：
 
 ```text
-https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide/tree/main/skill
+https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
 ```
 
 然后说：
@@ -84,17 +84,17 @@ Pearson Edexcel 与 Cambridge International / CAIE。
 ## 24 秒介绍动画
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
     <img src="docs/assets/intro-animation-preview.gif" alt="IGCSE & A-Level AI Revision Guide Skill 介绍动画预览" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">打开可播放 HTML 介绍动画</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">打开可播放 HTML 介绍动画</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.mp4">播放或下载 MP4</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.mp4">播放或下载 MP4</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">打开项目主页</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">打开项目主页</a>
 </p>
 
 ## 为什么要做这个工具
@@ -153,7 +153,7 @@ provider，再生成复杂图表。
 
 - **OpenAI `gpt-image-2`**：有 OpenAI / Codex 环境时作为高质量选项。
 - **Qwen-Image-2.0 / Qwen Image 2.0 Pro**：适合中文/英文文字较多的信息图实验。
-- **SenseNova U1 / SenseNova-U1-8B-MoT variants**：适合开源、本地或快速信息图实验。
+- **SenseNova U1 Fast**：适合快速信息图草稿、本地或自定义 provider 实验。
 
 详见 [生图模型建议](docs/IMAGE_MODEL_GUIDE.md)。生图只负责解释选中的知识点，
 不能额外编出考试结论或不受支持的事实。
@@ -276,101 +276,39 @@ qualification type 的冲突。
 当前的 worked examples 是原创练习，不复制真题。每张卡片会记录指令词、难度、
 聚焦知识点、解题步骤和答案检查点。
 
-## CLI 用法
+## Agent 使用方式
 
-列出 subject pages：
-
-```bash
-python -m intl_exam_guide discover
-```
-
-列出某个 subject 下的 qualifications：
-
-```bash
-python -m intl_exam_guide discover --subject-url https://www.oxfordaqa.com/subjects/science/
-```
-
-输出为 tab 分隔列：
+普通用户不需要看命令行。把 Skill 链接给 AI agent，然后用自然语言提出需求即可，例如：
 
 ```text
-title    qualification_type    subject_heading    website_group    url
+请安装这个 Skill，帮我生成一份中文 OxfordAQA International GCSE
+Mathematics 9260 复习手册，需要图文例题，并导出 PDF。
 ```
 
-生成 International GCSE 指南：
+真正开始前，agent 应先确认四件事：
 
-```bash
-python -m intl_exam_guide generate --query chemistry --level igcse --language en --image-provider gpt-image-2 --explanation-style friendly --out ./outputs/chemistry-9202
-```
+- 科目和考试阶段；
+- 输出语言；
+- 复杂信息图使用哪种生图方式；
+- 知识点和例题的讲解风格。
 
-生成离线 demo：
+确认后，agent 负责官网大纲获取、知识点整理、例题讲解、图文生成、HTML 排版、
+PDF 导出和最终检查。
 
-```bash
-python -m intl_exam_guide demo --language en --image-provider deterministic-svg --explanation-style friendly --out ./outputs/demo-science --skip-pdf
-```
+## 公开展示样板
 
-生成 International AS-A-level 指南：
+首页展示的数学、经济、化学截图只是为了让用户直观看到最终手册长什么样，
+不是一套需要用户理解的发布流程，也不是项目只支持这三门课。只要是当前版本
+支持的 OxfordAQA qualification，都应该走同一套“官网大纲 -> 学习手册 ->
+图文补充 -> PDF 交付”的流程。
 
-```bash
-python -m intl_exam_guide generate --query chemistry --level a-level --language en --image-provider prompt-queue --explanation-style detective --out ./outputs/chemistry-9620
-```
-
-生成非 Science 的 International GCSE 指南：
-
-```bash
-python -m intl_exam_guide generate --query economics --level igcse --language en --image-provider gpt-image-2 --explanation-style life --out ./outputs/economics-9214
-```
-
-用考试代码生成非 Science 的修订版 International AS-A-level 指南：
-
-```bash
-python -m intl_exam_guide generate --query 9725 --level a-level --language en --image-provider qwen-image-pro --explanation-style story --out ./outputs/business-9725
-```
-
-没有浏览器运行环境时跳过 PDF：
-
-```bash
-python -m intl_exam_guide generate --query 9202 --level igcse --language en --image-provider deterministic-svg --explanation-style friendly --out ./outputs/chemistry-9202 --skip-pdf
-```
-
-### 三份展示样板发布流程
-
-GitHub 首页和介绍动画应使用已经完成的学生手册截图，而不是占位页面。三份展示样板
-的发布流程是：
-
-这三份只是公开展示样板，不是科目支持范围。只要是 OxfordAQA 的
-International GCSE 或 International AS-A-level qualification page，都应走同一套
-官网发现、PDF 大纲抽取、内容生成、图文需求判断、验证和 PDF 导出流程。
-
-```bash
-python scripts/verify_release_samples.py --outputs-root ./outputs --allow-pending
-# 用户确认 GPT Image 2 Codex-only Router 参数后，生成 pending infographics。
-python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
-# 如果图片生成在手册目录外，先导入：
-# python scripts/import_infographic_assets.py ./outputs/chemistry-9202 --asset-dir ./generated-infographics/chemistry-9202 --provider "custom-image-model"
-python scripts/finalize_release_samples.py --outputs-root ./outputs
-python scripts/verify_release_samples.py --outputs-root ./outputs
-python scripts/capture_release_assets.py --outputs-root ./outputs --docs-assets docs/assets
-python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
-```
-
-最终 showcase 验收要求 Mathematics 9260、Economics 9214、Chemistry 9202
-都有完整的 `guide.html`、`guide.pdf`、已生成信息图、单语 HTML，以及匹配的
-topic/例题数量。这只证明公开样例已经完成，实际科目范围以 OxfordAQA
-qualification page discovery 和 provider/parser 流程为准。
-
-仓库会提交源码、Skill 包、文档、截图和介绍动画资源。完整的
-`outputs/*-sample/` 手册目录属于可复现发布产物，因为带大量图片的
-HTML/PDF 包体积较大，所以不直接提交进仓库。
-
-## Codex Skill
-
-仓库内置 `skill/` 目录，可以作为 Codex skill 使用。
+## Codex Skill仓库内置 `skill/` 目录，可以作为 Codex skill 使用。
 
 <p align="center">
   <img src="docs/assets/skill-system.svg" alt="Skill 系统图" width="100%">
 </p>
 
-Skill 保持简洁，只描述 agent 什么时候使用、如何运行 CLI、如何检查输出；
+Skill 保持简洁，只描述 agent 什么时候使用、需要确认哪些选项、如何检查输出；
 稳定、容易出错的步骤交给 Python 包执行。详见
 [Skill 图解说明](docs/SKILL_EXPLAINED.md)。
 

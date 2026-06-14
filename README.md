@@ -7,9 +7,9 @@
 <p align="center">
   <a href="README.zh-CN.md">中文 README</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">Project site</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">Project site</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Intro video</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Intro video</a>
   ·
   <a href="docs/PROJECT_DETAILS.md">Project details</a>
   ·
@@ -47,7 +47,7 @@ worked examples, infographics, and review questions.
 Send this link to your Codex/agent:
 
 ```text
-https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide/tree/main/skill
+https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
 ```
 
 Then say:
@@ -92,17 +92,17 @@ roadmap.
 ## 24-Second Intro
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
     <img src="docs/assets/intro-animation-preview.gif" alt="IGCSE & A-Level AI Revision Guide Skill intro animation preview" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Open the live HTML intro</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Open the live HTML intro</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.mp4">Play or download the MP4</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.mp4">Play or download the MP4</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">Open the project home page</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">Open the project home page</a>
 </p>
 
 ## Why This Exists
@@ -163,8 +163,8 @@ Recommended starting points:
   available.
 - **Qwen-Image-2.0 / Qwen Image 2.0 Pro** for Chinese/English text-heavy
   infographic experiments.
-- **SenseNova U1 / SenseNova-U1-8B-MoT variants** for open-source or local
-  infographic experiments.
+- **SenseNova U1 Fast** for fast infographic drafts and local/provider
+  experiments.
 
 See [Image Model Guide](docs/IMAGE_MODEL_GUIDE.md). Images explain the selected
 topic; they must not invent extra exam claims or unsupported facts.
@@ -296,99 +296,32 @@ Current worked examples are original practice items, not copied past-paper
 questions. Each card records a command word, difficulty, focus point, solution
 steps, and answer checkpoints.
 
-## CLI
+## Agent Workflow
 
-The CLI mirrors the Skill preflight step, so guide generation requires an output
-language, an image route, and an explanation style. Normal users can let their
-agent choose and run these flags after confirmation.
-
-List subject pages:
-
-```bash
-python -m intl_exam_guide discover
-```
-
-List qualifications under a subject:
-
-```bash
-python -m intl_exam_guide discover --subject-url https://www.oxfordaqa.com/subjects/science/
-```
-
-This prints tab-separated columns:
+Most users do not need the command line. Give the Skill link to an AI agent,
+then ask for a subject guide in plain language, for example:
 
 ```text
-title    qualification_type    subject_heading    website_group    url
+Install this Skill, then generate a Chinese OxfordAQA International GCSE
+Mathematics 9260 revision handbook with visual worked examples and PDF output.
 ```
 
-Generate an International GCSE guide:
+The agent should confirm four choices before it starts:
 
-```bash
-python -m intl_exam_guide generate --query chemistry --level igcse --language en --image-provider gpt-image-2 --explanation-style friendly --out ./outputs/chemistry-9202
-```
+- subject and qualification;
+- output language;
+- image route for complex infographics;
+- explanation style.
 
-Generate the offline demo:
+After that, the agent handles discovery, syllabus reading, guide writing,
+visual generation, HTML rendering, PDF export, and final checks.
 
-```bash
-python -m intl_exam_guide demo --language en --image-provider deterministic-svg --explanation-style friendly --out ./outputs/demo-science --skip-pdf
-```
+## Public Samples
 
-Generate an International AS-A-level guide:
-
-```bash
-python -m intl_exam_guide generate --query chemistry --level a-level --language en --image-provider prompt-queue --explanation-style detective --out ./outputs/chemistry-9620
-```
-
-Generate a non-science International GCSE guide:
-
-```bash
-python -m intl_exam_guide generate --query economics --level igcse --language en --image-provider gpt-image-2 --explanation-style life --out ./outputs/economics-9214
-```
-
-Generate a revised non-science International AS-A-level guide by code:
-
-```bash
-python -m intl_exam_guide generate --query 9725 --level a-level --language en --image-provider qwen-image-pro --explanation-style story --out ./outputs/business-9725
-```
-
-Skip PDF export when no browser runtime is available:
-
-```bash
-python -m intl_exam_guide generate --query 9202 --level igcse --language en --image-provider deterministic-svg --explanation-style friendly --out ./outputs/chemistry-9202 --skip-pdf
-```
-
-### Showcase Sample Release
-
-The public homepage and intro animation should use screenshots from completed
-student guides, not placeholder pages. For the three showcase samples, the
-release flow is:
-
-These samples are release showcases only. They are not the subject support
-matrix: any OxfordAQA International GCSE or International AS-A-level
-qualification page should run through the same discovery, PDF extraction,
-content generation, visual-needs analysis, validation, and PDF export pipeline.
-
-```bash
-python scripts/verify_release_samples.py --outputs-root ./outputs --allow-pending
-# After the user confirms GPT Image 2 Codex-only Router parameters:
-python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
-# If images were generated outside the package, import them with:
-# python scripts/import_infographic_assets.py ./outputs/chemistry-9202 --asset-dir ./generated-infographics/chemistry-9202 --provider "custom-image-model"
-python scripts/finalize_release_samples.py --outputs-root ./outputs
-python scripts/verify_release_samples.py --outputs-root ./outputs
-python scripts/capture_release_assets.py --outputs-root ./outputs --docs-assets docs/assets
-python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
-```
-
-Final showcase verification requires Mathematics 9260, Economics 9214, and
-Chemistry 9202 to have complete `guide.html`, `guide.pdf`, generated
-infographic assets, single-language HTML, and matching topic/practice-card
-counts. This check proves the public examples are complete; it does not limit
-the generator to those three subjects.
-
-The repository intentionally commits the source code, skill package,
-documentation, screenshots, and intro animation assets. Full generated
-`outputs/*-sample/` guide folders are reproducible release artifacts and are
-not committed because image-rich HTML/PDF packages are large.
+The homepage shows Mathematics, Economics, and Chemistry screenshots only as
+visual examples of the final handbook quality. They are not a fixed publishing
+process and they are not the subject support limit. Any supported OxfordAQA
+qualification should follow the same syllabus-to-handbook workflow.
 
 ## Codex Skill
 

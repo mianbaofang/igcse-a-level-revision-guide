@@ -28,7 +28,7 @@ The end user should not need to run Python commands. They can install the skill
 by giving an agent this link:
 
 ```text
-https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide/tree/main/skill
+https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
 ```
 
 After installation, plain-language requests are enough, for example:
@@ -128,7 +128,7 @@ ask the user which infographic/image route to use:
 - `deterministic-svg` for offline concept maps and simple diagrams only;
 - `gpt-image-2` for high-quality polished educational visuals;
 - `qwen-image-pro` for text-heavy Chinese or English infographics;
-- `sensenova-u1-fast` for fast infographic drafts or local experiments;
+- SenseNova U1 Fast (`sensenova-u1-fast`) for fast infographic drafts or local/provider experiments;
 - `custom` if the user has another provider, URL, model name, and key env var.
 
 If the user has not chosen an output language, image route, and explanation
@@ -155,7 +155,7 @@ If the full repository is not available, clone or otherwise fetch this public
 repository into a workspace directory, then run commands from that checkout:
 
 ```text
-https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide.git
+https://github.com/mianbaofang/igcse-a-level-revision-guide.git
 ```
 
 ## Workflow

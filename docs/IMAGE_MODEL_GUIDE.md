@@ -51,7 +51,7 @@ and should not copy protected characters, dialogue, or fictional worlds.
 |---|---|---|
 | OpenAI `gpt-image-2` | High-quality option for Codex/OpenAI workflows, visual explanations, edits, and polished guide illustrations. | Official OpenAI docs list text and image input, image output, flexible sizes, and image generation/edit endpoints. Check cost, moderation, and organization verification requirements. |
 | Qwen-Image-2.0 / Qwen Image 2.0 Pro | Chinese or English text-heavy infographics, poster-like layouts, PPT-style visual explanations, and China-market experiments. | Treat API availability, provider endpoint, license, and deployment constraints as configurable. |
-| SenseNova U1 / SenseNova-U1-8B-MoT variants | Open-source or local experiments, dense visual communication, interleaved image-text, and fast infographic drafts. | Use as an experimental provider until this project has its own visual benchmark set. The official repo describes 8-step inference variants and infographic-focused checkpoints. |
+| SenseNova U1 Fast | Fast infographic drafts, local/provider experiments, dense visual communication, and interleaved image-text tests. | Use as an experimental provider until this project has its own visual benchmark set. |
 
 Do not hard-code one provider. Use a provider interface so schools, tutors, or
 agents can choose based on availability, cost, privacy, and language quality.
@@ -100,8 +100,8 @@ Each generated image should store:
 ## Importing External Assets
 
 The open-source repository does not hard-code private image APIs. If an agent or
-teacher generates infographic files with GPT Image, Qwen Image, SenseNova, or a
-custom provider, name each file with the manifest ID, for example:
+teacher generates infographic files with GPT Image, Qwen Image, SenseNova U1
+Fast, or a custom provider, name each file with the manifest ID, for example:
 
 ```text
 visual_001.png
@@ -146,7 +146,8 @@ python scripts/verify_release_samples.py --outputs-root ./outputs
   OpenAI stack is available.
 - Use Qwen-Image-2.0 or Qwen Image 2.0 Pro when Chinese typography or
   text-heavy infographic layout is the main evaluation point.
-- Use SenseNova U1 variants for open-source, local, or low-latency experiments.
+- Use SenseNova U1 Fast for fast infographic drafts, local experiments, or
+  low-latency provider tests.
 - Do not recreate official exam paper diagrams, mark scheme diagrams, or
   copyrighted textbook illustrations.
 - Do not add labels, mechanisms, equations, or facts that are absent from the
@@ -206,7 +207,7 @@ the source point.
 |---|---|---|
 | OpenAI `gpt-image-2` | Codex/OpenAI 工作流里的高质量选项，适合复习手册插图、视觉解释和编辑。 | OpenAI 官方文档说明它支持文本和图像输入、图像输出、灵活尺寸，并支持生成和编辑接口。注意成本、内容审核和组织验证要求。 |
 | Qwen-Image-2.0 / Qwen Image 2.0 Pro | 中文或英文文字较多的信息图、海报式解释、PPT 风格知识图、国内场景实验。 | API、服务商、许可和部署限制应做成配置，不要写死。 |
-| SenseNova U1 / SenseNova-U1-8B-MoT variants | 开源、本地、快速信息图草稿、密集图文表达实验。 | 在本项目建立自己的视觉基准前，建议作为实验性 provider。官方仓库提到 8-step 推理变体和 infographic checkpoints。 |
+| SenseNova U1 Fast | 快速信息图草稿、本地或自定义 provider 实验、密集图文表达测试。 | 在本项目建立自己的视觉基准前，建议作为实验性 provider。 |
 
 不要把项目绑定到单一 provider。更好的做法是设计一个 provider interface，让学校、
 老师、家长或 agent 按可用性、成本、隐私和所选语言的排版质量来选择。
@@ -216,6 +217,6 @@ the source point.
 - 知识地图、topic 依赖关系和 source-bound 结构优先用确定性 SVG。
 - 需要精美插图且 OpenAI 环境可用时，优先用 `gpt-image-2`。
 - 需要中文排版或文字密集型信息图时，可以评估 Qwen-Image-2.0 / Qwen Image 2.0 Pro。
-- 需要开源、本地或低延迟实验时，可以评估 SenseNova U1 variants。
+- 需要快速信息图草稿、本地实验或低延迟 provider 测试时，可以评估 SenseNova U1 Fast。
 - 不要复刻官方真题图、mark scheme 图或教材版权插图。
 - 不要让图片添加 specification 中没有的标签、机制、公式或考试结论，除非经过学科老师复核。
