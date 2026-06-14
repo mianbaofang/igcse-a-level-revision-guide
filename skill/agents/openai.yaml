@@ -1,3 +1,3 @@
-display_name: International Exam Guide
-short_description: Build image-rich OxfordAQA International GCSE and International AS-A-level study handbooks after confirming subject, output language, image route, and explanation style.
+display_name: IGCSE & A-Level AI Revision Guide
+short_description: Build image-rich OxfordAQA IGCSE and A-Level study handbooks after confirming subject, output language, image route, and explanation style.
 default_prompt: Ask me to confirm the subject, output language, image provider, and explanation style, then generate an OxfordAQA study/revision handbook with explanations, worked examples, visuals, PDF output, and validation.

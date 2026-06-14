@@ -188,7 +188,7 @@ def test_skill_instructions_include_required_preflight_choices():
     text = skill_path.read_text(encoding="utf-8")
 
     assert text.startswith("---\n")
-    assert "name: international-exam-guide" in text
+    assert "name: igcse-a-level-revision-guide" in text
     assert "description:" in text
     assert "Subject choice" in text
     assert "Output language" in text

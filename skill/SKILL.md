@@ -1,9 +1,9 @@
 ---
-name: international-exam-guide
-description: Generate OxfordAQA International GCSE and International AS-A-level study/revision handbooks with syllabus-based explanations, worked examples, visual learning units, review questions, HTML output, and optional PDF export.
+name: igcse-a-level-revision-guide
+description: Generate image-rich IGCSE and A-Level revision handbooks for OxfordAQA International GCSE and International AS-A-level subjects, with syllabus-based explanations, worked examples, visual learning units, review questions, HTML output, and optional PDF export.
 ---
 
-# International Exam Guide
+# IGCSE & A-Level AI Revision Guide Skill
 
 Use this skill when the user asks for an International GCSE or International
 AS-A-level subject study/revision guide, especially for OxfordAQA. Treat IGCSE
@@ -28,7 +28,7 @@ The end user should not need to run Python commands. They can install the skill
 by giving an agent this link:
 
 ```text
-https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill
+https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide/tree/main/skill
 ```
 
 After installation, plain-language requests are enough, for example:
@@ -155,7 +155,7 @@ If the full repository is not available, clone or otherwise fetch this public
 repository into a workspace directory, then run commands from that checkout:
 
 ```text
-https://github.com/ethanzhangliang-creator/international-exam-guide.git
+https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide.git
 ```
 
 ## Workflow

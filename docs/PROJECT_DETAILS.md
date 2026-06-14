@@ -2,7 +2,7 @@
 
 ## English
 
-International Exam Guide is an open-source Skill and Python pipeline for
+IGCSE & A-Level AI Revision Guide Skill is an open-source Skill and Python pipeline for
 generating image-rich study/revision handbooks for OxfordAQA International GCSE
 and International AS-A-level subjects.
 
@@ -129,7 +129,7 @@ They are useful positioning context, but they are not official provider facts.
 
 ## 中文
 
-International Exam Guide 是一个开源流水线，用来为 OxfordAQA International
+IGCSE & A-Level AI Revision Guide Skill 是一个开源流水线，用来为 OxfordAQA International
 GCSE 与 International AS-A-level 学科生成可追溯来源的复习指南。
 
 它不是泛泛的 AI 教育平台。核心原理对各学科通用：以官方 specification 为输入，

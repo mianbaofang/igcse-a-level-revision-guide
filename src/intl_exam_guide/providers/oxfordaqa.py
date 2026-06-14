@@ -14,7 +14,7 @@ from intl_exam_guide.parsing.pdf_text import extract_pdf_pages, extract_pdf_text
 
 BASE_URL = "https://www.oxfordaqa.com"
 SUBJECTS_URL = f"{BASE_URL}/subjects/"
-USER_AGENT = "international-exam-guide/0.1 (+https://github.com/) source-traceable"
+USER_AGENT = "igcse-a-level-revision-guide/0.1 (+https://github.com/) source-traceable"
 
 
 @dataclass

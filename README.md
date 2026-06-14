@@ -1,15 +1,15 @@
-# International Exam Guide
+# IGCSE & A-Level AI Revision Guide Skill
 
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="International Exam Guide hero" width="100%">
+  <img src="docs/assets/hero.svg" alt="IGCSE & A-Level AI Revision Guide Skill hero" width="100%">
 </p>
 
 <p align="center">
   <a href="README.zh-CN.md">中文 README</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/">Project site</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">Project site</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">Intro video</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Intro video</a>
   ·
   <a href="docs/PROJECT_DETAILS.md">Project details</a>
   ·
@@ -31,7 +31,7 @@
   <img alt="OxfordAQA" src="https://img.shields.io/badge/provider-OxfordAQA-D99A24">
 </p>
 
-International Exam Guide is a Codex Skill for turning an OxfordAQA
+IGCSE & A-Level AI Revision Guide Skill is a Codex Skill for turning an OxfordAQA
 International GCSE or International AS-A-level subject into a printable,
 image-rich revision guide.
 
@@ -47,7 +47,7 @@ worked examples, infographics, and review questions.
 Send this link to your Codex/agent:
 
 ```text
-https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill
+https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide/tree/main/skill
 ```
 
 Then say:
@@ -92,17 +92,17 @@ roadmap.
 ## 24-Second Intro
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">
-    <img src="docs/assets/intro-animation-preview.gif" alt="International Exam Guide intro animation preview" width="100%">
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
+    <img src="docs/assets/intro-animation-preview.gif" alt="IGCSE & A-Level AI Revision Guide Skill intro animation preview" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">Open the live HTML intro</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Open the live HTML intro</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.mp4">Play or download the MP4</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.mp4">Play or download the MP4</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/">Open the project home page</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">Open the project home page</a>
 </p>
 
 ## Why This Exists

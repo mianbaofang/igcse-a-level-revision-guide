@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "international-exam-guide"
+name = "igcse-a-level-revision-guide"
 version = "0.1.0"
-description = "Generate image-rich International GCSE and International AS-A-level revision guides with worked examples and PDF output."
+description = "Generate image-rich IGCSE and A-Level revision guides with worked examples, infographics, and PDF output."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -20,6 +20,7 @@ dev = ["pytest>=8.0", "ruff>=0.5"]
 
 [project.scripts]
 intl-exam-guide = "intl_exam_guide.cli:main"
+igcse-a-level-guide = "intl_exam_guide.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

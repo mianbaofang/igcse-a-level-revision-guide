@@ -1,15 +1,15 @@
-# International Exam Guide
+# IGCSE & A-Level AI Revision Guide Skill
 
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="International Exam Guide 封面" width="100%">
+  <img src="docs/assets/hero.svg" alt="IGCSE & A-Level AI Revision Guide Skill 封面" width="100%">
 </p>
 
 <p align="center">
   <a href="README.md">English README</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/">项目主页</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">项目主页</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">介绍动画</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">介绍动画</a>
   ·
   <a href="docs/PROJECT_DETAILS.md">项目详情</a>
   ·
@@ -31,7 +31,7 @@
   <img alt="OxfordAQA" src="https://img.shields.io/badge/provider-OxfordAQA-D99A24">
 </p>
 
-International Exam Guide 是一个 Codex Skill，用来把 OxfordAQA
+IGCSE & A-Level AI Revision Guide Skill 是一个 Codex Skill，用来把 OxfordAQA
 International GCSE 或 International AS-A-level 科目变成图文并茂、可打印的
 学习/复习手册。
 
@@ -45,7 +45,7 @@ Agent 会返回包含知识点讲解、例题、信息图、复习题的 HTML/PD
 把这个链接发给你的 Codex/Agent：
 
 ```text
-https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill
+https://github.com/ethanzhangliang-creator/igcse-a-level-revision-guide/tree/main/skill
 ```
 
 然后说：
@@ -84,17 +84,17 @@ Pearson Edexcel 与 Cambridge International / CAIE。
 ## 24 秒介绍动画
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">
-    <img src="docs/assets/intro-animation-preview.gif" alt="International Exam Guide 介绍动画预览" width="100%">
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
+    <img src="docs/assets/intro-animation-preview.gif" alt="IGCSE & A-Level AI Revision Guide Skill 介绍动画预览" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.html">打开可播放 HTML 介绍动画</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.html">打开可播放 HTML 介绍动画</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/project-intro-animation.mp4">播放或下载 MP4</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/project-intro-animation.mp4">播放或下载 MP4</a>
   ·
-  <a href="https://ethanzhangliang-creator.github.io/international-exam-guide/">打开项目主页</a>
+  <a href="https://ethanzhangliang-creator.github.io/igcse-a-level-revision-guide/">打开项目主页</a>
 </p>
 
 ## 为什么要做这个工具
