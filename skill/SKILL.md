@@ -16,6 +16,41 @@ they need their own provider references and parser checks before generation.
 Do not run the OxfordAQA provider against Edexcel, Cambridge, or generic AQA UK
 pages.
 
+## User-Facing Use
+
+The end user should not need to run Python commands. They can install the skill
+by giving an agent this link:
+
+```text
+https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill
+```
+
+After installation, plain-language requests are enough, for example:
+
+```text
+帮我生成 OxfordAQA Chemistry International GCSE 复习手册，并导出 PDF。
+帮我生成 Chemistry 9202 学习手册。
+帮我生成 OxfordAQA Business International AS/A-level revision guide。
+```
+
+Handle repository setup, CLI execution, validation checks, and PDF export as the
+agent. Do not ask the user to install dependencies unless the local environment
+is genuinely missing the required runtime and cannot proceed.
+
+## Repository Access
+
+This skill may be installed from the repository's `skill/` directory, which
+contains the agent instructions but not the Python engine. Before running the
+generator, check whether the current workspace has `pyproject.toml` and
+`src/intl_exam_guide`.
+
+If the full repository is not available, clone or otherwise fetch this public
+repository into a workspace directory, then run commands from that checkout:
+
+```text
+https://github.com/ethanzhangliang-creator/international-exam-guide.git
+```
+
 ## Workflow
 
 1. Identify the qualification board, subject, level, and code if available.

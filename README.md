@@ -9,6 +9,8 @@
   ·
   <a href="docs/index.html">Project site</a>
   ·
+  <a href="docs/project-intro-animation.html">Intro video</a>
+  ·
   <a href="docs/PROJECT_DETAILS.md">Project details</a>
   ·
   <a href="docs/SKILL_EXPLAINED.md">Skill explained</a>
@@ -27,20 +29,63 @@
   <img alt="OxfordAQA" src="https://img.shields.io/badge/provider-OxfordAQA-D99A24">
 </p>
 
-International Exam Guide currently generates source-traceable, print-ready
-revision guides for OxfordAQA International GCSE and International AS/A-level
-subjects.
+International Exam Guide is a Codex Skill for generating source-traceable,
+print-ready revision guides for OxfordAQA International GCSE and International
+AS/A-level subjects.
 
-Give it a subject or qualification code. It finds the public OxfordAQA
-qualification page, downloads the public course specification PDF at runtime,
-extracts syllabus and assessment structure, attaches page-level source snippets,
-and renders a polished HTML/PDF guide with topic maps, inline concept diagrams,
-practice cards, public solution steps, answer checkpoints, diagram briefs, and
+For parents, students, tutors, and teachers: you do **not** need to install
+Python, run commands, or understand the codebase. Give the Skill link to your
+Codex/agent, ask it to install the Skill, then request a subject guide in plain
+language. The agent handles the official syllabus download, guide generation,
+validation, and PDF export.
+
+## Start Here: Use the Skill
+
+Send this link to your Codex/agent:
+
+```text
+https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill
+```
+
+Then say:
+
+```text
+请安装这个 Skill，然后帮我生成 OxfordAQA Chemistry International GCSE 复习手册，并导出 PDF。
+```
+
+After installation, normal prompts are enough:
+
+```text
+帮我生成 OxfordAQA Biology International GCSE 学习手册。
+帮我生成 Chemistry 9202 复习手册，并导出 PDF。
+帮我生成 OxfordAQA Business International AS/A-level revision guide。
+```
+
+The Skill will ask the agent to find the public OxfordAQA qualification page,
+download the public course specification PDF, extract the syllabus and
+assessment structure, attach page-level source snippets, and render an HTML/PDF
+guide with topic maps, example frames, practice cards, answer checkpoints, and
 validation checks.
 
-The roadmap is deliberately China-market focused. The MVP is OxfordAQA only;
-future provider work should add Pearson Edexcel and Cambridge International
-(CAIE) before considering any other UK awarding organisation.
+Current scope is intentionally narrow: OxfordAQA is implemented now. Pearson
+Edexcel and Cambridge International / CAIE are planned next for the China-market
+roadmap.
+
+## 24-Second Intro
+
+<p align="center">
+  <a href="docs/project-intro-animation.html">
+    <img src="docs/assets/intro-animation-preview.png" alt="International Exam Guide intro animation preview" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/project-intro-animation.html">Open the HTML intro</a>
+  ·
+  <a href="docs/project-intro-animation.mp4">Play or download the MP4</a>
+  ·
+  <a href="docs/index.html">Open the project home page</a>
+</p>
 
 ## Why This Exists
 
@@ -71,7 +116,10 @@ beautiful revision materials without losing source traceability.
 |---|---|
 | <img src="docs/assets/output-anatomy.svg" alt="Generated guide anatomy" width="100%"> | <img src="docs/assets/pipeline.svg" alt="Pipeline diagram" width="100%"> |
 
-## Quick Start
+## Developer Quick Start
+
+This section is only for developers who want to run or modify the Python engine
+directly. Normal Skill users can skip it.
 
 Run the offline synthetic demo first:
 

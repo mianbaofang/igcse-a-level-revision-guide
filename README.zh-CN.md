@@ -9,6 +9,8 @@
   ·
   <a href="docs/index.html">项目主页</a>
   ·
+  <a href="docs/project-intro-animation.html">介绍动画</a>
+  ·
   <a href="docs/PROJECT_DETAILS.md">项目详情</a>
   ·
   <a href="docs/SKILL_EXPLAINED.md">Skill 图解</a>
@@ -27,18 +29,59 @@
   <img alt="OxfordAQA" src="https://img.shields.io/badge/provider-OxfordAQA-D99A24">
 </p>
 
-International Exam Guide 当前是一个面向 OxfordAQA International GCSE 与
-International AS/A-level 的开源复习指南生成器。
+International Exam Guide 是一个 Codex Skill，用来生成可追溯来源、可打印的
+OxfordAQA International GCSE 与 International AS/A-level 复习手册。
 
-输入学科或考试代码后，它会自动找到 OxfordAQA 公开 qualification 页面，
-在运行时下载公开 course specification PDF，抽取 syllabus 和考试结构，
-为 topic 匹配 PDF 页码级 source snippets，并生成一份漂亮、可打印、
-带 inline concept diagrams、practice cards、解题步骤与答案检查点、
-可追溯来源的 HTML/PDF 学习指南。
+如果你是家长、学生、老师或辅导老师，不需要自己安装 Python，也不需要看懂代码。
+把下面的 Skill 链接发给 Codex/Agent，让它安装；之后你只要用普通中文说
+“帮我生成某个科目的复习手册”，Agent 就会自动下载官方大纲、生成 HTML/PDF，
+并检查输出是否完整。
 
-产品边界必须写清楚：当前 MVP 只实现 OxfordAQA，不等于覆盖全部英国
-A-level 考试局。后续路线图只优先扩国内常用三大考试局中的另外两个：
+## 普通用户从这里开始
+
+把这个链接发给你的 Codex/Agent：
+
+```text
+https://github.com/ethanzhangliang-creator/international-exam-guide/tree/main/skill
+```
+
+然后说：
+
+```text
+请安装这个 Skill，然后帮我生成 OxfordAQA Chemistry International GCSE 复习手册，并导出 PDF。
+```
+
+安装好以后，直接这样提需求就可以：
+
+```text
+帮我生成 OxfordAQA Biology International GCSE 学习手册。
+帮我生成 Chemistry 9202 复习手册，并导出 PDF。
+帮我生成 OxfordAQA Business International AS/A-level revision guide。
+```
+
+Agent 会根据 Skill 自动找到 OxfordAQA 公开 qualification 页面，下载公开
+course specification PDF，抽取 syllabus 和考试结构，为 topic 匹配 PDF
+页码级 source snippets，并生成带知识地图、例题框架、练习卡、答案检查点和
+validation report 的 HTML/PDF 学习指南。
+
+当前范围故意保持清楚：现在只实现 OxfordAQA。后续路线图只优先扩国内常用场景中的
 Pearson Edexcel 与 Cambridge International / CAIE。
+
+## 24 秒介绍动画
+
+<p align="center">
+  <a href="docs/project-intro-animation.html">
+    <img src="docs/assets/intro-animation-preview.png" alt="International Exam Guide 介绍动画预览" width="100%">
+  </a>
+</p>
+
+<p align="center">
+  <a href="docs/project-intro-animation.html">打开 HTML 介绍动画</a>
+  ·
+  <a href="docs/project-intro-animation.mp4">播放或下载 MP4</a>
+  ·
+  <a href="docs/index.html">打开项目主页</a>
+</p>
 
 ## 为什么要做这个工具
 
@@ -76,7 +119,9 @@ International AS/A-level 通常是 modular qualification，也就是按 unit 组
 |---|---|
 | <img src="docs/assets/output-anatomy.svg" alt="生成指南结构" width="100%"> | <img src="docs/assets/pipeline.svg" alt="生成流水线" width="100%"> |
 
-## 快速开始
+## 开发者快速开始
+
+这一节只给想修改 Python 引擎或二次开发的人看。普通 Skill 用户可以跳过。
 
 先运行离线 synthetic demo：
 
