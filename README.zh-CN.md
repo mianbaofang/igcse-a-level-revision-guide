@@ -11,6 +11,8 @@
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">介绍动画</a>
   ·
+  <a href="docs/HANDOFF.md">接手说明</a>
+  ·
   <a href="docs/PROJECT_DETAILS.md">项目详情</a>
   ·
   <a href="docs/SKILL_EXPLAINED.md">Skill 图解</a>
@@ -302,7 +304,9 @@ PDF 导出和最终检查。
 支持的 OxfordAQA qualification，都应该走同一套“官网大纲 -> 学习手册 ->
 图文补充 -> PDF 交付”的流程。
 
-## Codex Skill仓库内置 `skill/` 目录，可以作为 Codex skill 使用。
+## Codex Skill
+
+仓库内置 `skill/` 目录，可以作为 Codex skill 使用。
 
 <p align="center">
   <img src="docs/assets/skill-system.svg" alt="Skill 系统图" width="100%">
@@ -338,7 +342,7 @@ src/intl_exam_guide/
   rendering/      HTML 与 PDF 渲染
   validation/     完整性与安全性检查
 skill/            Codex skill wrapper
-docs/             项目详情、skill 图解、准确性政策、调研记录
+docs/             接手说明、项目详情、skill 图解、准确性政策、调研记录
 tests/            parser 与 pipeline 测试
 ```
 

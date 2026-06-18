@@ -11,6 +11,8 @@
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">Intro video</a>
   ·
+  <a href="docs/HANDOFF.md">Agent handoff</a>
+  ·
   <a href="docs/PROJECT_DETAILS.md">Project details</a>
   ·
   <a href="docs/SKILL_EXPLAINED.md">Skill explained</a>
@@ -363,7 +365,7 @@ src/intl_exam_guide/
   rendering/      HTML and PDF rendering
   validation/     completeness and safety checks
 skill/            Codex skill wrapper
-docs/             project, skill, accuracy, and research notes
+docs/             handoff, project, skill, accuracy, and research notes
 tests/            parser and pipeline tests
 ```
 
