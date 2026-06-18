@@ -13,7 +13,7 @@ from intl_exam_guide.planning.guide_plan import (
     STYLE_LABELS,
     build_guide_plan,
 )
-from intl_exam_guide.providers.oxfordaqa import OxfordAQAProvider
+from intl_exam_guide.providers import PROVIDER_NAMES, get_provider, infer_provider_from_url
 from intl_exam_guide.rendering.handbook_package import write_handbook_package
 from intl_exam_guide.rendering.html import render_html
 from intl_exam_guide.rendering.pdf import export_pdf
@@ -24,11 +24,21 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="intl-exam-guide")
     subcommands = parser.add_subparsers(dest="command", required=True)
 
-    discover = subcommands.add_parser("discover", help="List OxfordAQA subject pages or qualifications.")
-    discover.add_argument("--subject-url", help="Optional OxfordAQA subject page URL.")
+    discover = subcommands.add_parser("discover", help="List exam-board subject pages or qualifications.")
+    discover.add_argument(
+        "--provider",
+        default="oxfordaqa",
+        help=f"Exam board provider ({', '.join(PROVIDER_NAMES)}).",
+    )
+    discover.add_argument("--subject-url", help="Optional provider subject page URL.")
 
     generate = subcommands.add_parser("generate", help="Generate a revision guide.")
     generate.add_argument("--query", required=True, help="Subject name, code, slug, or qualification URL.")
+    generate.add_argument(
+        "--provider",
+        default=None,
+        help=f"Exam board provider ({', '.join(PROVIDER_NAMES)}). Inferred from --query URL when omitted.",
+    )
     generate.add_argument(
         "--level",
         choices=["gcse", "igcse", "a-level", "alevel", "as-a-level"],
@@ -46,9 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     demo.add_argument("--skip-pdf", action="store_true")
 
     args = parser.parse_args(argv)
-    provider = OxfordAQAProvider()
 
     if args.command == "discover":
+        provider = get_provider(args.provider)
         if args.subject_url:
             for item in provider.list_qualifications(args.subject_url):
                 print(
@@ -69,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "generate":
         validate_generation_choices(parser, args)
+        provider = get_provider(resolve_provider(args.provider, args.query))
         out_dir = Path(args.out)
         source_dir = out_dir / "source"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -157,6 +168,15 @@ def validate_generation_choices(parser: argparse.ArgumentParser, args: argparse.
     ]
     if missing:
         parser.error("--image-provider custom requires " + ", ".join(missing))
+
+
+def resolve_provider(provider: str | None, query: str) -> str:
+    """Return provider name: explicit choice, URL inference, or OxfordAQA default."""
+    if provider:
+        return provider
+    if query.lower().startswith(("http://", "https://")):
+        return infer_provider_from_url(query) or "oxfordaqa"
+    return "oxfordaqa"
 
 
 def load_demo_qualification() -> Qualification:

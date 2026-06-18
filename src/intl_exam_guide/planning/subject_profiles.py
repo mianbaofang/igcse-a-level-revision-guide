@@ -7,7 +7,7 @@ from typing import Literal
 from intl_exam_guide.models import Topic
 
 
-ExampleDomain = Literal["mathematics", "chemistry", "economics", "generic"]
+ExampleDomain = Literal["mathematics", "chemistry", "economics", "accounting", "generic"]
 
 AMBIGUOUS_SUBJECT_AREAS = {
     "combined science",
@@ -48,6 +48,12 @@ ECONOMICS = SubjectProfile(
     example_domain="economics",
     description="Economics and business concepts such as markets, production, finance, and policy.",
 )
+ACCOUNTING = SubjectProfile(
+    name="accounting-finance",
+    family="business-finance",
+    example_domain="accounting",
+    description="Accounting records, double entry, statements, reconciliation, ratios, and analysis.",
+)
 GENERIC = SubjectProfile(
     name="generic",
     family="generic",
@@ -68,6 +74,8 @@ def resolve_subject_profile(
         return MATHEMATICS
     if has_terms(declared, ["economics", "business"]):
         return ECONOMICS
+    if has_terms(declared, ["accounting", "bookkeeping", "book keeping", "finance", "financial"]):
+        return ACCOUNTING
     if has_terms(declared, ["chemistry"]):
         return CHEMISTRY
     if declared and declared not in AMBIGUOUS_SUBJECT_AREAS:
@@ -80,6 +88,8 @@ def resolve_subject_profile(
 
     if looks_like_economics(text):
         return ECONOMICS
+    if looks_like_accounting(text):
+        return ACCOUNTING
     if looks_like_chemistry(text):
         return CHEMISTRY
     return GENERIC
@@ -214,6 +224,37 @@ def looks_like_economics(text: str) -> bool:
             "supply",
             "trade",
             "want",
+        ],
+    )
+
+
+def looks_like_accounting(text: str) -> bool:
+    return has_terms(
+        text,
+        [
+            "accounting",
+            "bookkeeping",
+            "book keeping",
+            "ledger",
+            "ledgers",
+            "double entry",
+            "trial balance",
+            "bank reconciliation",
+            "control account",
+            "source document",
+            "prime entry",
+            "depreciation",
+            "irrecoverable",
+            "receivables",
+            "payables",
+            "financial statements",
+            "income statement",
+            "statement of financial position",
+            "partnership",
+            "manufacturing account",
+            "ratio analysis",
+            "trade receivable days",
+            "trade payable days",
         ],
     )
 

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from intl_exam_guide.models import AssessmentPaper, Qualification, SourceRecord, SourceSnippet, Topic
 from intl_exam_guide.parsing.pdf_text import extract_pdf_pages, extract_pdf_text
+from intl_exam_guide.providers.base import ExamBoardProvider, Link
 
 BASE_URL = "https://www.oxfordaqa.com"
 SUBJECTS_URL = f"{BASE_URL}/subjects/"
@@ -18,19 +19,17 @@ USER_AGENT = "igcse-a-level-revision-guide/0.1 (+https://github.com/) source-tra
 
 
 @dataclass
-class Link:
-    text: str
-    href: str
-    qualification_type: str | None = None
-    subject_heading: str | None = None
-    group_label: str | None = None
-    style_class: str | None = None
-
-
-@dataclass
 class TextNode:
     tag: str
     text: str
+
+
+@dataclass
+class NumericContentSection:
+    code: str
+    title: str
+    page: int
+    lines: list[str]
 
 
 class PageParser(HTMLParser):
@@ -182,8 +181,9 @@ def filter_candidates_by_level(candidates: list[Link], level_norm: str | None) -
     return candidates
 
 
-class OxfordAQAProvider:
+class OxfordAQAProvider(ExamBoardProvider):
     name = "oxfordaqa"
+    supported_levels = ("international_gcse", "international_as_a_level")
 
     def discover_subject_pages(self) -> list[Link]:
         parser = parse_page(SUBJECTS_URL)
@@ -467,6 +467,7 @@ def topics_from_region(region: list[TextNode], default_title: str | None = None)
 def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic]:
     reference_topics: list[Topic] = []
     numeric_topics: list[Topic] = []
+    numeric_sections: list[NumericContentSection] = []
     current_ref: str | None = None
     current_section: str | None = None
     current_page: int | None = None
@@ -475,11 +476,23 @@ def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic
     current_numeric_title: str | None = None
     current_numeric_page: int | None = None
     current_numeric_lines: list[str] = []
+    current_section_code: str | None = None
+    current_section_title: str | None = None
+    current_section_page: int | None = None
+    current_section_lines: list[str] = []
+    section_title_may_continue = False
     in_reference_content = False
     in_numeric_content = False
 
     def has_started_detailed_topics() -> bool:
-        return bool(reference_topics or numeric_topics or current_ref or current_numeric_code)
+        return bool(
+            reference_topics
+            or numeric_topics
+            or numeric_sections
+            or current_ref
+            or current_numeric_code
+            or current_section_code
+        )
 
     def flush_reference() -> None:
         nonlocal current_ref, current_page, current_lines
@@ -543,6 +556,29 @@ def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic
         current_numeric_page = None
         current_numeric_lines = []
 
+    def flush_section() -> None:
+        nonlocal current_section_code, current_section_title, current_section_page, current_section_lines, section_title_may_continue
+        if not current_section_code or not current_section_title or current_section_page is None:
+            current_section_lines = []
+            return
+        points = dedupe(
+            [line for line in current_section_lines if is_valid_detailed_content_line(line)]
+        )
+        if points:
+            numeric_sections.append(
+                NumericContentSection(
+                    code=current_section_code,
+                    title=current_section_title,
+                    page=current_section_page,
+                    lines=points,
+                )
+            )
+        current_section_code = None
+        current_section_title = None
+        current_section_page = None
+        current_section_lines = []
+        section_title_may_continue = False
+
     for page_number, page_text in pages:
         for raw_line in page_text.splitlines():
             line = clean_text(raw_line)
@@ -555,16 +591,30 @@ def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic
             if (in_reference_content or in_numeric_content) and re.match(r"^4(\.|\s)", line) and has_started_detailed_topics():
                 flush_reference()
                 flush_numeric()
-                return choose_detailed_topics(reference_topics, numeric_topics)
+                flush_section()
+                return choose_detailed_topics(reference_topics, numeric_topics, numeric_sections)
 
-            numeric_match = re.match(r"^(3\.\d+(?:\.\d+){1,4})\s+(.+)$", line)
+            numeric_match = re.match(r"^(3\.\d+(?:\.\d+){0,4})\s+(.+)$", line)
             if numeric_match:
                 code = numeric_match.group(1)
                 title = strip_bullet(numeric_match.group(2))
+                if re.search(r"\s+\d{1,3}$", title):
+                    continue
                 in_numeric_content = True
+                code_depth = len(code.split("."))
                 if in_reference_content:
                     flush_reference()
                     current_section = title
+                if code_depth == 2:
+                    flush_section()
+                    current_section_code = code
+                    current_section_title = title
+                    current_section_page = page_number
+                    current_section_lines = []
+                    section_title_may_continue = True
+                elif current_section_code:
+                    current_section_lines.append(line)
+                    section_title_may_continue = False
                 if is_numeric_topic_heading(code, title):
                     flush_numeric()
                     current_numeric_code = code
@@ -575,6 +625,18 @@ def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic
 
             if not in_reference_content and not in_numeric_content:
                 continue
+
+            if (
+                current_section_code
+                and current_section_title
+                and section_title_may_continue
+                and not current_section_lines
+                and is_section_title_continuation(line)
+            ):
+                current_section_title = clean_text(f"{current_section_title} {line}")
+                section_title_may_continue = False
+                continue
+            section_title_may_continue = False
 
             section_match = re.match(r"^3\.\d+(?:\.\d+)?\s+(.+)$", line)
             if section_match:
@@ -593,20 +655,176 @@ def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic
                 current_lines.append(line)
             if current_numeric_code:
                 current_numeric_lines.append(line)
+            if current_section_code:
+                current_section_lines.append(line)
 
     flush_reference()
     flush_numeric()
-    return choose_detailed_topics(reference_topics, numeric_topics)
+    flush_section()
+    return choose_detailed_topics(reference_topics, numeric_topics, numeric_sections)
 
 
-def choose_detailed_topics(reference_topics: list[Topic], numeric_topics: list[Topic]) -> list[Topic]:
+def choose_detailed_topics(
+    reference_topics: list[Topic],
+    numeric_topics: list[Topic],
+    numeric_sections: list[NumericContentSection] | None = None,
+) -> list[Topic]:
     reference_clean = clean_detailed_topics(reference_topics)
     if reference_clean:
         return reference_clean
     numeric_clean = clean_numeric_detailed_topics(numeric_topics)
-    if len(numeric_clean) < 6:
-        return []
-    return numeric_clean
+    if len(numeric_clean) >= 6:
+        return numeric_clean
+    section_topics = expand_numeric_sections(numeric_sections or [])
+    if len(section_topics) >= 6:
+        return section_topics
+    return numeric_clean if numeric_clean and all(topic.points for topic in numeric_clean) else []
+
+
+def expand_numeric_sections(sections: list[NumericContentSection]) -> list[Topic]:
+    topics: list[Topic] = []
+    used_titles: set[str] = set()
+    for section in sections:
+        for index, (unit_title, unit_points) in enumerate(split_section_units(section.lines), start=1):
+            if not unit_points:
+                continue
+            title = unique_topic_title(f"{section.code}.{index} - {unit_title}", used_titles)
+            snippet = clean_text(" ".join([section.code, section.title, *unit_points[:5]]))
+            topics.append(
+                Topic(
+                    title=title,
+                    points=unit_points[:8],
+                    source_snippets=[
+                        SourceSnippet(
+                            page=section.page,
+                            text=snippet_around(snippet, unit_points[0], radius=420),
+                            matched_term=section.code,
+                        )
+                    ],
+                )
+            )
+    return clean_topics(topics)
+
+
+def split_section_units(lines: list[str]) -> list[tuple[str, list[str]]]:
+    merged = merge_wrapped_lines(lines)
+    units: list[tuple[str, list[str]]] = []
+    current_title: str | None = None
+    current_points: list[str] = []
+
+    def flush() -> None:
+        nonlocal current_title, current_points
+        if current_title and current_points:
+            units.append((current_title, dedupe(current_points)))
+        current_title = None
+        current_points = []
+
+    for raw_line in merged:
+        is_bullet = raw_line.strip().startswith(("•", "-", "*"))
+        line = strip_bullet(raw_line)
+        if not is_valid_detailed_content_line(line):
+            continue
+        if not is_bullet and starts_new_teachable_unit(line):
+            flush()
+            current_title = concise_unit_title(line)
+            current_points = [line]
+            continue
+        if current_title is None:
+            current_title = concise_unit_title(line)
+            current_points = [line]
+        else:
+            current_points.append(line)
+    flush()
+    return units
+
+
+def merge_wrapped_lines(lines: list[str]) -> list[str]:
+    merged: list[str] = []
+    for raw_line in lines:
+        line = clean_text(raw_line)
+        if not line:
+            continue
+        if merged and is_wrapped_continuation(merged[-1], line):
+            merged[-1] = clean_text(f"{merged[-1]} {line}")
+        else:
+            merged.append(line)
+    return merged
+
+
+def is_wrapped_continuation(previous: str, current: str) -> bool:
+    if current.strip().startswith(("•", "-", "*")):
+        return False
+    current_lower = current.lower()
+    if (
+        previous.strip().startswith(("•", "-", "*"))
+        and not previous.rstrip().endswith((".", ")", ":"))
+        and current
+        and current[0].islower()
+    ):
+        return True
+    if previous.rstrip().endswith((".", ":")):
+        return False
+    if current and current[0].islower():
+        return True
+    continuation_prefixes = (
+        "and ",
+        "or ",
+        "for ",
+        "from ",
+        "of ",
+        "to ",
+        "with ",
+        "using ",
+        "including ",
+    )
+    return current_lower.startswith(continuation_prefixes)
+
+
+def starts_new_teachable_unit(line: str) -> bool:
+    lower = line.lower()
+    if lower in {"content", "additional information"}:
+        return False
+    continuation_prefixes = (
+        "including ",
+        "could include",
+        "will include",
+        "may include",
+        "note:",
+        "the benefits",
+        "limitations will include",
+    )
+    return not lower.startswith(continuation_prefixes)
+
+
+def is_section_title_continuation(line: str) -> bool:
+    lower = line.lower()
+    if lower.startswith(("content ", "content additional", "students ", "visit ")):
+        return False
+    return bool(line and line[0].islower() and is_valid_topic_title(line))
+
+
+def concise_unit_title(line: str) -> str:
+    title = re.split(
+        r"\.\s+| including | could include | will include | may include ",
+        line,
+        maxsplit=1,
+    )[0]
+    title = title.strip().rstrip(".:")
+    if len(title) > 88:
+        title = title[:85].rstrip() + "..."
+    return title or "Specification point"
+
+
+def unique_topic_title(title: str, used_titles: set[str]) -> str:
+    if title not in used_titles:
+        used_titles.add(title)
+        return title
+    index = 2
+    while f"{title} ({index})" in used_titles:
+        index += 1
+    unique = f"{title} ({index})"
+    used_titles.add(unique)
+    return unique
 
 
 def is_numeric_topic_heading(code: str, title: str) -> bool:
@@ -654,6 +872,7 @@ def is_valid_detailed_content_line(line: str) -> bool:
         "visit oxfordaqa.com",
         "oxfordaqa international",
         "for exams ",
+        "for international ",
         "page ",
     )
     if lower.startswith(ignored_prefixes):
@@ -949,6 +1168,9 @@ def dedupe(values: list[str]) -> list[str]:
 
 def attach_source_snippets(qualification: Qualification, pages: list[tuple[int, str]]) -> None:
     for topic in qualification.topics:
+        if topic.source_snippets:
+            topic.source_snippets = topic.source_snippets[:3]
+            continue
         terms = [topic.title, *topic.points[:6]]
         topic.source_snippets = find_source_snippets(pages, terms, max_snippets=3)
     for paper in qualification.assessments:
@@ -963,12 +1185,17 @@ def find_source_snippets(
 ) -> list[SourceSnippet]:
     snippets: list[SourceSnippet] = []
     used_pages: set[int] = set()
+    searchable_pages = [
+        (page_number, page_text)
+        for page_number, page_text in pages
+        if not is_likely_index_page(page_number, page_text)
+    ]
     for raw_term in terms:
         term = raw_term.strip()
         if len(term) < 4:
             continue
         term_norm = normalize_for_search(term)
-        for page_number, page_text in pages:
+        for page_number, page_text in searchable_pages:
             if page_number in used_pages:
                 continue
             page_norm = normalize_for_search(page_text)
@@ -986,6 +1213,26 @@ def find_source_snippets(
         if len(snippets) >= max_snippets:
             break
     return snippets
+
+
+def is_likely_index_page(page_number: int, page_text: str) -> bool:
+    if page_number <= 3:
+        return True
+    text = normalize_for_search(page_text)
+    syllabus_body_markers = (
+        "content additional information",
+        "students should",
+        "students must",
+    )
+    if any(marker in text for marker in syllabus_body_markers):
+        return False
+    index_markers = (
+        "contents",
+        "specification at a glance",
+        "scheme of assessment",
+        "general administration",
+    )
+    return sum(marker in text for marker in index_markers) >= 2
 
 
 def normalize_for_search(value: str) -> str:

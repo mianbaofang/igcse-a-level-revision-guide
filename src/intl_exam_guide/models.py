@@ -24,6 +24,12 @@ class AssessmentPaper:
     title: str
     details: list[str] = field(default_factory=list)
     source_snippets: list[SourceSnippet] = field(default_factory=list)
+    # Multi-provider fields (Phase 2): component/unit code, duration, marks, weighting, route.
+    code: str | None = None
+    duration: str | None = None
+    marks: str | None = None
+    weighting: str | None = None
+    route_tags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -39,6 +45,13 @@ class SourceRecord:
     specification_path: str | None = None
     extracted_text_path: str | None = None
     downloaded_at: str | None = None
+    # Multi-provider fields (Phase 2): version, teaching dates, syllabus year range.
+    qualification_family: str | None = None
+    issue_version: str | None = None
+    first_teaching: str | None = None
+    first_assessment: str | None = None
+    syllabus_year_range: str | None = None
+    selected_exam_year: str | None = None
 
 
 @dataclass
@@ -53,6 +66,13 @@ class Qualification:
     assessments: list[AssessmentPaper]
     source: SourceRecord
     audience_note: str
+    # Multi-provider fields (Phase 2).
+    provider: str | None = None
+    qualification_family: str | None = None
+    selected_exam_year: str | None = None
+    route_tags: list[str] = field(default_factory=list)
+    command_words: list[str] = field(default_factory=list)
+    assessment_objectives: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -78,6 +98,11 @@ class Qualification:
                 source_snippets=[
                     SourceSnippet(**snippet) for snippet in paper.get("source_snippets", [])
                 ],
+                code=paper.get("code"),
+                duration=paper.get("duration"),
+                marks=paper.get("marks"),
+                weighting=paper.get("weighting"),
+                route_tags=paper.get("route_tags", []),
             )
             for paper in data.get("assessments", [])
         ]
@@ -92,6 +117,12 @@ class Qualification:
             assessments=assessments,
             source=source,
             audience_note=data["audience_note"],
+            provider=data.get("provider"),
+            qualification_family=data.get("qualification_family"),
+            selected_exam_year=data.get("selected_exam_year"),
+            route_tags=data.get("route_tags", []),
+            command_words=data.get("command_words", []),
+            assessment_objectives=data.get("assessment_objectives", []),
         )
 
 

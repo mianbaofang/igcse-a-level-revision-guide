@@ -1,9 +1,10 @@
-from intl_exam_guide.models import Qualification, SourceRecord, Topic
+from intl_exam_guide.models import Qualification, SourceRecord, SourceSnippet, Topic
 from intl_exam_guide.planning.guide_plan import build_guide_plan
 from intl_exam_guide.providers.oxfordaqa import (
     Link,
     OxfordAQAProvider,
     PageParser,
+    attach_source_snippets,
     extract_assessments,
     extract_detailed_topics_from_pdf,
     extract_topics,
@@ -155,6 +156,68 @@ def test_extract_detailed_topics_from_pdf_numeric_sections():
         "3.2.2.1 - Economic objectives of a government",
     ]
     assert "the difference between a need and a want" in topics[0].points
+
+
+def test_extract_detailed_topics_from_pdf_expands_body_tables_without_leaf_codes():
+    pages = [
+        (
+            2,
+            """
+            Contents
+            3 Subject content 10
+            3.1 Sources and recording of data 10
+            3.2 Verification of accounting records 12
+            3.3 Development of the accounting model 13
+            4 Scheme of assessment 19
+            """,
+        ),
+        (
+            10,
+            """
+            3 Subject content
+            Students must demonstrate a good understanding of accounting principles.
+            3.1 Sources and recording of data
+            Content Additional information
+            The double entry system including understanding of the use
+            and the preparation of source documents.
+            Source documents are:
+            • purchase invoices
+            • sales invoices
+            Books of prime entry are:
+            • purchases journal
+            • sales journal
+            Ledger accounts may be subdivided into:
+            • receivables ledgers
+            • payables ledgers
+            The accounting equation.
+            Prepare and understand accounting records based on source documents.
+            3.2 Verification of accounting records
+            Content Additional information
+            Verification of the double entry records.
+            Verification techniques are:
+            • trial balance
+            • bank reconciliation statements
+            Prepare and understand the use of a trial balance.
+            Explain the use and limitations of a trial balance.
+            3.3 Development of the accounting model
+            Content Additional information
+            General accounting concepts used in the preparation of accounting records.
+            Concepts are:
+            • business entity
+            • prudence
+            Explain and apply the straight line and reducing balance methods of calculating depreciation.
+            4 Scheme of assessment
+            """,
+        ),
+    ]
+    topics = extract_detailed_topics_from_pdf(pages)
+    titles = [topic.title for topic in topics]
+    assert len(topics) >= 8
+    assert any("Source documents" in title for title in titles), titles
+    assert any("Books of prime entry" in title for title in titles), titles
+    assert any("trial balance" in " ".join(topic.points).lower() for topic in topics)
+    assert all(topic.points for topic in topics)
+    assert {snippet.page for topic in topics for snippet in topic.source_snippets} == {10}
 
 
 def test_extract_topics_with_strong_headings_and_paragraph_points():
@@ -350,12 +413,48 @@ def test_find_source_snippets_returns_page_references():
         [
             (1, "Intro text"),
             (2, "Atomic structure includes atoms, isotopes, and electron configuration."),
+            (8, "Atomic structure includes atoms, isotopes, and electron configuration."),
         ],
         ["Atomic structure", "isotopes"],
     )
-    assert snippets[0].page == 2
+    assert snippets[0].page == 8
     assert snippets[0].matched_term == "Atomic structure"
     assert "electron configuration" in snippets[0].text
+
+
+def test_attach_source_snippets_preserves_body_snippets_and_skips_contents_page():
+    qualification = Qualification(
+        title="International GCSE Accounting (9215)",
+        code="9215",
+        qualification_type="international_gcse",
+        subject_area="Accounting",
+        page_url="https://example.test/accounting/",
+        summary=[],
+        topics=[
+            Topic(
+                title="3.3.3 - The use of accounting concepts",
+                points=["The use of accounting concepts in a variety of situations."],
+                source_snippets=[
+                    SourceSnippet(
+                        page=12,
+                        text="Content Additional information The use of accounting concepts in a variety of situations.",
+                        matched_term="3.3",
+                    )
+                ],
+            )
+        ],
+        assessments=[],
+        source=SourceRecord(provider="test", page_url="https://example.test/accounting/"),
+        audience_note="International GCSE linear qualification for international students.",
+    )
+    attach_source_snippets(
+        qualification,
+        [
+            (2, "Contents The use of accounting concepts in a variety of situations 12"),
+            (12, "Content Additional information The use of accounting concepts in a variety of situations."),
+        ],
+    )
+    assert [snippet.page for snippet in qualification.topics[0].source_snippets] == [12]
 
 
 def test_validate_plan_checks_generated_guide_blocks():

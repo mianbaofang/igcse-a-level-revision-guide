@@ -108,8 +108,17 @@ def validate_plan(
             issues.append(ValidationIssue("error", f"Missing authored guide block for topic: {topic.title}"))
         if topic.title not in practice_topics:
             issues.append(ValidationIssue("error", f"Missing practice item for topic: {topic.title}"))
+        if not topic.points:
+            issues.append(ValidationIssue("error", f"Syllabus topic has no extracted body points: {topic.title}"))
         if not topic.source_snippets:
             issues.append(ValidationIssue("warning", f"No PDF source snippet matched for topic: {topic.title}"))
+        elif all(is_contents_or_index_snippet(snippet) for snippet in topic.source_snippets):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Topic source snippets look like contents/index pages, not syllabus body: {topic.title}",
+                )
+            )
 
     for guide in plan.topic_guides:
         required = [
@@ -142,8 +151,15 @@ def validate_plan(
         if is_placeholder_practice_question(item.question):
             issues.append(
                 ValidationIssue(
-                    "warning",
+                    "error",
                     f"Practice item is an authoring frame, not a concrete worked example: {item.topic_title}",
+                )
+            )
+        if is_cross_subject_borrowed_practice(item.question, qualification.subject_area):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Practice item appears to borrow a different subject template: {item.topic_title}",
                 )
             )
 
@@ -347,6 +363,46 @@ def is_placeholder_practice_question(question: str) -> bool:
         "how the syllabus idea" in text
         and "could be used in an exam question" in text
     )
+
+
+def is_contents_or_index_snippet(snippet: object) -> bool:
+    text = getattr(snippet, "text", "").lower()
+    page = getattr(snippet, "page", 999)
+    syllabus_body_markers = [
+        "content additional information",
+        "students should",
+        "prepare and",
+        "understand",
+        "calculate",
+        "explain",
+    ]
+    if any(marker in text for marker in syllabus_body_markers):
+        return False
+    contents_markers = [
+        "contents",
+        "specification at a glance",
+        "scheme of assessment",
+        "general administration",
+    ]
+    return page <= 3 or sum(marker in text for marker in contents_markers) >= 2
+
+
+def is_cross_subject_borrowed_practice(question: str, subject_area: str | None) -> bool:
+    area = (subject_area or "").lower()
+    if any(term in area for term in ["math", "mathematics", "further mathematics"]):
+        return False
+    question_lower = question.lower()
+    borrowed_math_markers = [
+        "mean and range",
+        "median and range",
+        "right-angled triangle",
+        "find the hypotenuse",
+        "solve 3(",
+        "nth term",
+        "straight line y =",
+        "drink is mixed using juice and water in the ratio",
+    ]
+    return any(marker in question_lower for marker in borrowed_math_markers)
 
 
 def mixed_language_label_matches(html: str) -> list[str]:

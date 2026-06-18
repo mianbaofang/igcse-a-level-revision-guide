@@ -401,10 +401,34 @@ def test_subject_profiles_are_broad_not_per_course_definitions():
         Topic(title="2.1 - Portfolio development", points=[]),
         "portfolio annotation and creative process",
     )
+    accounting_profile = resolve_subject_profile(
+        "Accounting",
+        Topic(title="3.1.2 - Books of prime entry", points=[]),
+        "source documents ledger accounts double entry",
+    )
 
     assert maths_profile.family == "mathematics"
     assert economics_profile.family == "social-science"
+    assert accounting_profile.family == "business-finance"
+    assert accounting_profile.example_domain == "accounting"
     assert generic_profile.example_domain == "generic"
+
+
+def test_accounting_examples_do_not_borrow_mathematics_templates():
+    question, _, steps, _ = concrete_example(
+        Topic(
+            title="3.1.2 - Sources and recording of data",
+            points=["Source documents are purchase invoices and sales invoices."],
+        ),
+        "Source documents are purchase invoices and sales invoices.",
+        0,
+        "Accounting",
+    )
+    combined = " ".join([question, *steps]).lower()
+    assert "mean and range" not in combined
+    assert "median and range" not in combined
+    assert "purchase invoice" in combined or "sales invoice" in combined
+    assert "ledger" in combined
 
 
 def test_unknown_subject_uses_generic_fallback_instead_of_cross_subject_templates():
