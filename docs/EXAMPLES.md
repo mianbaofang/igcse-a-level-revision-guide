@@ -117,8 +117,8 @@ python scripts/generate_pending_infographics_router.py ./outputs/mathematics-926
 python scripts/finalize_release_samples.py --outputs-root ./outputs
 python scripts/verify_release_samples.py --outputs-root ./outputs
 python scripts/capture_release_assets.py --outputs-root ./outputs --docs-assets docs/assets
-python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
-python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 docs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 outputs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 outputs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
 ```
 
 If your image provider writes files outside the guide package, import them first.
@@ -164,7 +164,7 @@ Business 9725 示例用于覆盖修订版 A-level 页面结构：subject listing
 9202 三份样板。`--allow-pending` 只适合信息图还没生成时做预检查；最终发布前必须
 去掉这个参数，并确认三份手册都已经导出 PDF、合并信息图、截图更新到 `docs/assets/`。
 这三份只是公开展示和回归验证样例，不是 OxfordAQA 科目支持上限。
-截图更新后，再用 `scripts/render_intro_animation.py` 重新导出介绍动画 MP4 和 GIF。
+截图更新后，再用 `scripts/render_intro_animation.py` 重新导出介绍动画 GIF；MP4 仅在需要视频文件时导出到 `outputs/`。
 
 如果你的生图服务把图片输出到手册目录外，可以先用
 `scripts/import_infographic_assets.py` 导入。文件名需要以 manifest ID 开头，

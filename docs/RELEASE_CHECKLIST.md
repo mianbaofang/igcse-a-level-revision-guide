@@ -109,12 +109,13 @@ python scripts/generate_pending_infographics_router.py ./outputs/mathematics-926
 - [ ] Final guide screenshots are recaptured for `docs/assets/sample-math-guide.png`,
   `docs/assets/sample-economics-guide.png`, `docs/assets/sample-chemistry-guide.png`,
   and `docs/assets/sample-guide-snapshot.png`.
-- [ ] The intro animation MP4 and GIF preview are regenerated after final guide
-  screenshots are recaptured:
+- [ ] The intro animation HTML and GIF preview are regenerated after final guide
+  screenshots are recaptured. MP4 export is optional and should stay out of the
+  repo unless the release explicitly needs a downloadable video file:
 
 ```bash
-python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
-python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 docs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 outputs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 outputs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
 ```
 
 - [ ] `validation.json` has no `error` issues for the offline demo.

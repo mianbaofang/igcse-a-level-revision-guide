@@ -26,7 +26,7 @@ const providerData = [
     tag: "01",
     title: "AQA",
     accent: "#d89b33",
-    points: ["Discover courses from the official catalogue", "Read public specification PDFs", "Keep source URLs and file checks"],
+    points: ["Discover courses from the official catalogue", "Read public specification PDFs", "Turn syllabus detail into handbook sections"],
   },
   {
     tag: "02",
@@ -41,6 +41,8 @@ const providerData = [
     points: ["Match candidates from the official subject index", "Confirm exam year on multi-year syllabus pages", "Stop and ask when the year is unclear"],
   },
 ];
+
+const TOTAL_DURATION = 48;
 
 function useSceneMotion(start, end, inY = 36) {
   const time = useTime();
@@ -62,7 +64,7 @@ function VideoLabel() {
 
 function Background() {
   const time = useTime();
-  const drift = interpolate([0, 32], [0, -120], Easing.linear)(time);
+  const drift = interpolate([0, TOTAL_DURATION], [0, -150], Easing.linear)(time);
   return (
     <div className="stage">
       <div className="grid-lines" style={{ transform: `translate3d(${drift}px, ${drift * 0.35}px, 0)` }}></div>
@@ -92,9 +94,9 @@ function IntroScene() {
       "--accent": boardData[index].accent,
     };
   };
-  const orbit = interpolate([0, 6.2], [0, 38], Easing.easeInOutSine)(time);
+  const orbit = interpolate([0, 5.0], [0, 38], Easing.easeInOutSine)(time);
   return (
-    <SceneFrame start={0} end={6.2}>
+    <SceneFrame start={0} end={5.2}>
       <div className="orbit" style={{ transform: `rotate(${orbit}deg) scale(${1 + Math.sin(time * 0.7) * 0.025})` }}></div>
       <div className="kicker">v0.2.11 · Three-Board Support</div>
       <h1 className="headline">Three common international exam boards now run in one workflow.</h1>
@@ -114,9 +116,69 @@ function IntroScene() {
   );
 }
 
+function OriginScene() {
+  const time = useTime();
+  const notes = [
+    ["Real origin", "A student moved from Chinese-medium classes into English-medium international courses before the exam year."],
+    ["What AI helps with", "It does not study for the child; it turns topics, examples, visuals, and checkpoints into readable pages."],
+    ["Open-source goal", "Package the method as a Skill so other families and agents can generate subject handbooks too."],
+  ];
+  return (
+    <SceneFrame start={4.8} end={9.7}>
+      <div className="kicker">Why This Skill Exists</div>
+      <h2 className="headline provider-headline">It started by making exam revision feel smaller for one real student.</h2>
+      <div className="origin-layout">
+        <div className="quote-panel">
+          <strong>Not replacing study,</strong>
+          <span>but reducing the noise around it.</span>
+        </div>
+        <div className="story-points">
+          {notes.map((note, index) => {
+            const p = clamp((time - 5.4 - index * 0.22) / 0.65, 0, 1);
+            return (
+              <article key={note[0]} style={{ opacity: p, transform: `translateY(${(1 - p) * 34}px)` }}>
+                <b>{note[0]}</b>
+                <p>{note[1]}</p>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </SceneFrame>
+  );
+}
+
+function UsageScene() {
+  const time = useTime();
+  const steps = [
+    ["01", "Give the Skill link to an agent", "OpenClaw, Hermes, or another Skill-compatible agent can use it."],
+    ["02", "Ask in one sentence", "For example: generate an AQA IGCSE Accounting revision handbook in English."],
+    ["03", "Confirm the choices", "Exam board, subject or year, output language, and explanation style."],
+    ["04", "Receive the handbook", "HTML, PDF, generation records, visual queue, and validation output."],
+  ];
+  return (
+    <SceneFrame start={9.4} end={14.4}>
+      <div className="kicker">How A User Runs It</div>
+      <h2 className="headline route-headline">It is not a complex install flow; the agent follows the handbook workflow.</h2>
+      <div className="usage-steps">
+        {steps.map((step, index) => {
+          const p = clamp((time - 10.0 - index * 0.16) / 0.58, 0, 1);
+          return (
+            <article key={step[0]} style={{ opacity: p, transform: `translateY(${(1 - Easing.easeOutCubic(p)) * 48}px)` }}>
+              <div>{step[0]}</div>
+              <h3>{step[1]}</h3>
+              <p>{step[2]}</p>
+            </article>
+          );
+        })}
+      </div>
+    </SceneFrame>
+  );
+}
+
 function PreflightScene() {
   const time = useTime();
-  const sourceT = clamp((time - 6.7) / 3.2, 0, 1);
+  const sourceT = clamp((time - 14.9) / 3.2, 0, 1);
   const rows = [
     ["Exam board", "AQA / Edexcel / CAIE"],
     ["Subject", "Qualification level, subject name, code, or official URL"],
@@ -125,13 +187,13 @@ function PreflightScene() {
     ["Explanation style", "Serious, light, life-scene, story, detective, or challenge mode"],
   ];
   return (
-    <SceneFrame start={5.7} end={12.0}>
+    <SceneFrame start={14.1} end={19.1}>
       <div className="kicker">Confirm first, then generate</div>
       <h2 className="headline">Confirm the required choices before generation starts.</h2>
       <div className="choice-grid">
         <div className="control-panel">
           {rows.map((row, index) => {
-            const p = clamp((time - 6.3 - index * 0.18) / 0.55, 0, 1);
+            const p = clamp((time - 14.7 - index * 0.18) / 0.55, 0, 1);
             return (
               <div className="choice-row" key={row[0]} style={{ opacity: p, transform: `translateX(${(1 - p) * -34}px)` }}>
                 <b>{row[0]}</b>
@@ -162,13 +224,13 @@ function PreflightScene() {
 function ProviderScene() {
   const time = useTime();
   return (
-    <SceneFrame start={12.1} end={17.1}>
+    <SceneFrame start={18.8} end={23.8}>
       <div className="kicker">How The Three Boards Are Supported</div>
       <h2 className="headline provider-headline">Each board uses its own official source.</h2>
       <p className="lead provider-lead">AQA can discover courses from the official catalogue; Edexcel matches candidates from official pages; CAIE matches from the official subject index. If there is no unique match, the user chooses.</p>
       <div className="provider-system">
         {providerData.map((provider, index) => {
-          const p = clamp((time - 12.0 - index * 0.28) / 0.75, 0, 1);
+          const p = clamp((time - 19.2 - index * 0.28) / 0.75, 0, 1);
           return (
             <article className="provider-column" key={provider.title} style={{ "--accent": provider.accent, opacity: p, transform: `translateY(${(1 - Easing.easeOutBack(p)) * 86}px)` }}>
               <div className="tag">{provider.tag}</div>
@@ -184,9 +246,65 @@ function ProviderScene() {
   );
 }
 
+function SyllabusScene() {
+  const time = useTime();
+  const steps = [
+    ["Official page", "Find the exam-board subject page or use the URL supplied by the user"],
+    ["Syllabus PDF", "Download the public specification or syllabus"],
+    ["Topic extraction", "Extract topics, assessment structure, page numbers, and source snippets"],
+    ["Handbook plan", "Generate explanations, examples, revision checks, and visual briefs"],
+    ["Quality checks", "Missing topics, examples, sources, or visual blocks are surfaced"],
+  ];
+  return (
+    <SceneFrame start={23.5} end={28.3}>
+      <div className="kicker">From Syllabus To Handbook</div>
+      <h2 className="headline route-headline">Protect the official source first, then make it readable for students.</h2>
+      <div className="pipeline-board">
+        {steps.map((step, index) => {
+          const p = clamp((time - 24.0 - index * 0.14) / 0.6, 0, 1);
+          return (
+            <article className="pipeline-step" key={step[0]} style={{ opacity: p, transform: `translateY(${(1 - p) * 42}px)` }}>
+              <b>{String(index + 1).padStart(2, "0")}</b>
+              <h3>{step[0]}</h3>
+              <p>{step[1]}</p>
+            </article>
+          );
+        })}
+      </div>
+    </SceneFrame>
+  );
+}
+
+function LanguageStyleScene() {
+  const time = useTime();
+  const cards = [
+    ["Language lock", "Choose Chinese or English first; labels, examples, and visual prompts stay in one language."],
+    ["Explanation style", "Formal, friendly, life-scene, story, detective, or challenge mode."],
+    ["Worked examples", "Each topic gets practice cards with steps, answer frames, and common pitfalls."],
+    ["Visual judgment", "AI decides which topics need diagrams or infographics instead of leaving the handbook text-only."],
+  ];
+  return (
+    <SceneFrame start={28.0} end={32.8}>
+      <div className="kicker">Make The Handbook Readable</div>
+      <h2 className="headline provider-headline">Language, tone, examples, and visuals all need explicit rules.</h2>
+      <div className="style-grid">
+        {cards.map((card, index) => {
+          const p = clamp((time - 28.6 - index * 0.16) / 0.58, 0, 1);
+          return (
+            <article className="style-card" key={card[0]} style={{ opacity: p, transform: `translateX(${(1 - p) * 42}px)` }}>
+              <h3>{card[0]}</h3>
+              <p>{card[1]}</p>
+            </article>
+          );
+        })}
+      </div>
+    </SceneFrame>
+  );
+}
+
 function SamplesScene() {
   const time = useTime();
-  const wallPan = interpolate([18.0, 24.4], [0, -36], Easing.easeInOutSine)(time);
+  const wallPan = interpolate([38.5, 43.0], [0, -36], Easing.easeInOutSine)(time);
   const stats = [
     ["7", "local regression samples pass with clean quality checks"],
     ["357", "knowledge explanations generated across the three boards"],
@@ -194,14 +312,14 @@ function SamplesScene() {
     ["0", "complex infographics are no longer pretended as generated"],
   ];
   return (
-    <SceneFrame start={17.4} end={24.1}>
+    <SceneFrame start={38.0} end={43.1}>
       <div className="sample-scene">
         <div className="sample-copy">
           <div className="kicker">Real Handbook Samples</div>
           <h2 className="headline sample-headline">The samples are deliverable revision handbooks.</h2>
           <div className="stat-list">
             {stats.map((stat, index) => {
-              const p = clamp((time - 18.1 - index * 0.18) / 0.55, 0, 1);
+              const p = clamp((time - 38.7 - index * 0.18) / 0.55, 0, 1);
               return (
                 <div className="stat" key={stat[1]} style={{ opacity: p, transform: `translateX(${(1 - p) * -32}px)` }}>
                   <b>{stat[0]}</b>
@@ -247,12 +365,12 @@ function VisualRouteScene() {
     },
   ];
   return (
-    <SceneFrame start={24.4} end={29.3}>
+    <SceneFrame start={32.5} end={38.2}>
       <div className="kicker">Visual Routing Must Be Honest</div>
       <h2 className="headline route-headline">Generate the handbook first, then handle complex visuals.</h2>
       <div className="visual-routing">
         {cards.map((card, index) => {
-          const p = clamp((time - 24.7 - index * 0.18) / 0.7, 0, 1);
+          const p = clamp((time - 33.0 - index * 0.18) / 0.7, 0, 1);
           return (
             <article className="route-card" key={card.title} style={{ opacity: p, transform: `translateY(${(1 - Easing.easeOutCubic(p)) * 58}px)` }}>
               <h3>{card.title}</h3>
@@ -266,12 +384,40 @@ function VisualRouteScene() {
   );
 }
 
+function QualityScene() {
+  const time = useTime();
+  const metrics = [
+    ["topics", "topic coverage"],
+    ["practice", "worked-example coverage"],
+    ["svg_fallback", "SVG fallback assets"],
+    ["pending_images", "pending external infographics"],
+  ];
+  return (
+    <SceneFrame start={42.8} end={46.2}>
+      <div className="kicker">Validate Before Delivery</div>
+      <h2 className="headline provider-headline">The run does not end at generation; the quality summary exposes gaps.</h2>
+      <div className="quality-grid">
+        {metrics.map((metric, index) => {
+          const p = clamp((time - 43.3 - index * 0.12) / 0.5, 0, 1);
+          return (
+            <article className="quality-card" key={metric[0]} style={{ opacity: p, transform: `scale(${0.92 + p * 0.08})` }}>
+              <b>{metric[0]}</b>
+              <span>{metric[1]}</span>
+              <i></i>
+            </article>
+          );
+        })}
+      </div>
+    </SceneFrame>
+  );
+}
+
 function ClosingScene() {
   const time = useTime();
-  const p = clamp((time - 29.4) / 1.0, 0, 1);
+  const p = clamp((time - 46.0) / 1.0, 0, 1);
   const boxes = ["Knowledge explanation", "Worked examples", "Visual needs", "Exam metadata"];
   return (
-    <SceneFrame start={29.5} end={32}>
+    <SceneFrame start={45.8} end={TOTAL_DURATION}>
       <div className="final-lockup">
         <div>
           <div className="kicker">Handbook Generation Around Official Syllabuses</div>
@@ -297,26 +443,31 @@ function ClosingScene() {
 
 function Footer() {
   const time = useTime();
-  const p = `${Math.min(100, (time / 32) * 100)}%`;
+  const p = `${Math.min(100, (time / TOTAL_DURATION) * 100)}%`;
   return (
     <div className="footer-mark">
       <span>IGCSE & A-Level AI Revision Handbook Skill · v0.2.11</span>
       <div className="progress-line" style={{ "--p": p }}><span></span></div>
-      <span>{Math.floor(time).toString().padStart(2, "0")} / 32s</span>
+      <span>{Math.floor(time).toString().padStart(2, "0")} / {TOTAL_DURATION}s</span>
     </div>
   );
 }
 
 function App() {
   return (
-    <Stage width={1920} height={1080} duration={32} background="#080b10">
+    <Stage width={1920} height={1080} duration={TOTAL_DURATION} background="#080b10">
       <VideoLabel />
       <Background />
       <IntroScene />
+      <OriginScene />
+      <UsageScene />
       <PreflightScene />
       <ProviderScene />
-      <SamplesScene />
+      <SyllabusScene />
+      <LanguageStyleScene />
       <VisualRouteScene />
+      <SamplesScene />
+      <QualityScene />
       <ClosingScene />
       <Footer />
     </Stage>

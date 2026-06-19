@@ -143,27 +143,24 @@ Animation files:
 - README GIF previews:
   - `docs/assets/intro-animation-preview.gif`
   - `docs/assets/intro-animation-preview-en.gif`
-- MP4 files:
-  - `docs/project-intro-animation.mp4`
-  - `docs/project-intro-animation-en.mp4`
 
 Rules:
 
 - Chinese README must show Chinese animation/GIF.
 - English README must show English animation/GIF.
 - Stage size is `1920x1080`.
-- Stage duration is `32` seconds.
+- Stage duration is `48` seconds.
 - README GIF preview should be 16:9, normally `960x540`.
 - HTML animation must autoplay in page, not require opening raw code.
 - If animation source text changes, regenerate the relevant preview GIF.
-- Full MP4 regeneration is optional unless the MP4 is part of the release
-  deliverable being reviewed.
+- MP4 export is optional and should not be committed unless a release explicitly
+  needs a downloadable video file.
 
 Render command:
 
 ```powershell
-python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
-python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 docs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 outputs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 outputs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
 ```
 
 For quick README preview refresh, a shorter preview may be rendered, but the

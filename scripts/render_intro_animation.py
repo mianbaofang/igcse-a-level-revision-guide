@@ -10,10 +10,10 @@ from pathlib import Path
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render the HTML intro animation to MP4 and GIF.")
     parser.add_argument("--html", default="docs/project-intro-animation.html")
-    parser.add_argument("--mp4", default="docs/project-intro-animation.mp4")
+    parser.add_argument("--mp4", default="outputs/project-intro-animation.mp4")
     parser.add_argument("--gif", default="docs/assets/intro-animation-preview.gif")
     parser.add_argument("--fps", type=int, default=8)
-    parser.add_argument("--duration", type=float, default=32.0)
+    parser.add_argument("--duration", type=float, default=48.0)
     parser.add_argument("--start-offset", type=float, default=0.6)
     parser.add_argument("--width", type=int, default=1920)
     parser.add_argument("--height", type=int, default=1080)
