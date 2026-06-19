@@ -196,15 +196,6 @@ def resolve_provider(provider: str | None, query: str) -> str:
     return "oxfordaqa"
 
 
-def resolve_provider(provider: str | None, query: str) -> str:
-    """Return provider name: explicit choice, URL inference, or OxfordAQA default."""
-    if provider:
-        return provider
-    if query.lower().startswith(("http://", "https://")):
-        return infer_provider_from_url(query) or "oxfordaqa"
-    return "oxfordaqa"
-
-
 def load_demo_qualification() -> Qualification:
     data = json.loads(
         resources.files("intl_exam_guide")

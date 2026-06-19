@@ -208,6 +208,15 @@ def validate_plan(
                 )
             )
 
+    duplicate_question_topics = duplicate_practice_question_topics(plan.practice_items)
+    for topic_title in duplicate_question_topics:
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Practice items repeat the same question for topic: {topic_title}",
+            )
+        )
+
     for brief in plan.visual_briefs:
         if not brief.focus_point.strip():
             issues.append(ValidationIssue("error", f"Visual brief is missing a focus point: {brief.topic_title}"))
@@ -419,7 +428,48 @@ def is_placeholder_practice_question(question: str) -> bool:
 
 
 def has_zh_placeholder_text(values: list[str]) -> bool:
-    return any("官方大纲要求" in value for value in values)
+    placeholder_patterns = [
+        r"官方大纲要求",
+        r"本单元第\s*\d+\s*个细分要求",
+        r"第\s*\d+\s*个细分要求",
+        r"知识单元\s*\d+",
+        r"知识点\s*\d+",
+    ]
+    return any(
+        re.search(pattern, value)
+        for value in values
+        for pattern in placeholder_patterns
+    )
+
+
+def duplicate_practice_question_topics(items: object) -> list[str]:
+    if not isinstance(items, list):
+        return []
+    questions_by_topic: dict[str, set[str]] = {}
+    counts_by_topic: dict[str, int] = {}
+    for item in items:
+        topic_title = getattr(item, "topic_title", "")
+        question = normalize_practice_question(getattr(item, "question", ""))
+        if not topic_title or not question:
+            continue
+        questions_by_topic.setdefault(topic_title, set()).add(question)
+        counts_by_topic[topic_title] = counts_by_topic.get(topic_title, 0) + 1
+    return [
+        topic_title
+        for topic_title, count in counts_by_topic.items()
+        if len(questions_by_topic.get(topic_title, set())) < count
+    ]
+
+
+def normalize_practice_question(question: str) -> str:
+    text = re.sub(
+        r"^(Case file: |Real-life prompt: |Warm-up prompt: |Exam-style prompt: "
+        r"|Story prompt: |Checkpoint challenge: |案件线索：|生活场景题：|热身题："
+        r"|考试题：|故事题：|闯关挑战：)",
+        "",
+        question,
+    )
+    return re.sub(r"\s+", " ", text).strip().lower()
 
 
 def is_contents_or_index_snippet(snippet: object) -> bool:

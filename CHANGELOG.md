@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.7 - 2026-06-19
+
+### Fixed
+
+- Removed public local-machine notes and private paths from the repository
+  entry points so a clean GitHub clone no longer points agents at private
+  working folders.
+- Removed a duplicate CLI provider resolver.
+- Strengthened validation so Chinese placeholder text such as generic numbered
+  syllabus points and duplicate practice questions are reported as errors.
+- Split several Chinese point labels for demo science topics so repeated topic
+  cards do not collapse into identical practice prompts.
+
 ## 0.2.6 - 2026-06-19
 
 ### Fixed
@@ -67,7 +80,7 @@
 ### Changed
 
 - Updated the public naming convention to use the familiar exam-board names
-  AQA, Edexcel, and CAIE across the Skill, README, homepage copy, handoff notes,
+  AQA, Edexcel, and CAIE across the Skill, README, homepage copy, project docs,
   and hero artwork, while keeping the full official names as explanatory notes:
   OxfordAQA / Oxford International AQA, Pearson Edexcel, and Cambridge
   International / CAIE.

@@ -585,12 +585,51 @@ def test_validation_rejects_chinese_syllabus_placeholder_text():
         output_language="zh-CN",
         requested_subject="chemistry",
     )
-    plan.topic_guides[0].essence = "第 1 个官方大纲要求"
+    plan.topic_guides[0].essence = "本单元第 1 个细分要求"
+    plan.practice_items[0].question = "围绕“知识点 1”完成一道原创练习。"
 
     issues = validate_plan(plan)
 
     assert any(
         issue.severity == "error" and "generic syllabus placeholder" in issue.message
+        for issue in issues
+    )
+
+
+def test_validation_rejects_duplicate_practice_questions_per_topic():
+    plan = build_guide_plan(
+        sample_qualification(),
+        questions_per_topic=2,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="chemistry",
+    )
+    plan.practice_items[1].question = plan.practice_items[0].question
+
+    issues = validate_plan(plan)
+
+    assert any(
+        issue.severity == "error" and "repeat the same question" in issue.message
+        for issue in issues
+    )
+
+
+def test_downloaded_specification_with_too_few_topics_is_an_error():
+    qualification = sample_qualification()
+    qualification.source.specification_path = "source/spec.pdf"
+
+    plan = build_guide_plan(
+        qualification,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="chemistry",
+    )
+    issues = validate_plan(plan)
+
+    assert any(
+        issue.severity == "error" and "Only 1 syllabus topics" in issue.message
         for issue in issues
     )
 

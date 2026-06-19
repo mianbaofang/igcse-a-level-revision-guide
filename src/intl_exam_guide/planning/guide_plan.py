@@ -40,6 +40,17 @@ RECOMMENDED_IMAGE_MODEL_LABELS = {
 LANGUAGE_CHOICES = {"en", "zh-CN"}
 
 ZH_POINT_KEYWORDS = [
+    (("si units", "standard prefixes"), "SI 单位与词头"),
+    (("record measurements", "precision"), "测量记录精度"),
+    (("mean values", "anomalous"), "平均值与异常值"),
+    (("tables and graphs", "represent data"), "表格与图像表示数据"),
+    (("speed", "distance travelled", "per unit time"), "速度概念"),
+    (("distance-time",), "距离-时间图像"),
+    (("balanced and unbalanced forces",), "平衡力与非平衡力"),
+    (("force and motion relationships",), "力与运动关系"),
+    (("observable properties",), "可观察性质"),
+    (("physical changes", "chemical changes"), "物理变化与化学变化"),
+    (("conservation of mass",), "质量守恒"),
     (("source document", "purchase invoice", "sales invoice", "invoice"), "原始凭证与发票"),
     (("prime entry", "purchases journal", "sales journal"), "初始记录账簿"),
     (("ledger", "double entry"), "分类账与复式记账"),
@@ -302,28 +313,28 @@ def styled_explanation(
         return (
             f"这一节要把 '{primary}' 变成生活中看得见、说得清、用得上的判断动作。",
             f"把“{unit}”放进真实场景：先观察发生了什么，再用官方大纲点解释为什么。",
-            f"例题先找生活场景里的数据或现象，再把它翻译成公式、定义、图像或因果关系。",
+            "例题先找生活场景里的数据或现象，再把它翻译成公式、定义、图像或因果关系。",
             "常见失分点是只写课本词，没有把它和题目里的真实情境连起来。",
         )
     if explanation_style == "story":
         return (
             f"这一节像一段小故事：'{primary}' 是主线，题目给出的条件是推动故事往前走的线索。",
             f"把“{unit}”拆成开头、冲突和解决：看懂概念，遇到题目障碍，再用正确方法收束答案。",
-            f"例题先讲清楚题目场景，再一步步把线索收集成答案。",
+            "例题先讲清楚题目场景，再一步步把线索收集成答案。",
             "常见失分点是跳过中间推理，让答案像突然出现的结尾。",
         )
     if explanation_style == "detective":
         return (
             f"这一节的核心是用“{primary}”破案：题干是现场，数据是线索，指令词是结案要求。",
             f"把“{unit}”当成一宗小案子：先锁定证据，再判断哪条大纲规则能解释它。",
-            f"例题按侦探流程走：圈线索，选证据，排除误解，最后写出能回到题问的结论。",
+            "例题按侦探流程走：圈线索，选证据，排除误解，最后写出能回到题问的结论。",
             "常见失分点是看到熟悉词就急着下结论，没有把证据链写完整。",
         )
     if explanation_style == "adventure":
         return (
             f"这一节是一关学习任务：先解锁 '{primary}'，再用它通过计算、解释或判断挑战。",
             f"把“{unit}”看成原创闯关地图：术语是装备，例题是关卡，检查句是通关确认。",
-            f"例题先确认本关目标，再选择工具，最后用一条检查句确认答案没有跑偏。",
+            "例题先确认本关目标，再选择工具，最后用一条检查句确认答案没有跑偏。",
             "常见失分点是装备拿对了但用错地方，也就是知道词却没有按题目要求行动。",
         )
     return (
@@ -351,7 +362,7 @@ def styled_explanation_en(
         return (
             f"Turn '{primary}' into something visible in a real situation, then explain the situation using the syllabus idea.",
             f"Place '{topic.title}' in a real-life scene: observe what happens, then use the syllabus point to explain why.",
-            f"For examples, first find the data or event in the scene, then translate it into a formula, definition, graph, or cause-effect link.",
+            "For examples, first find the data or event in the scene, then translate it into a formula, definition, graph, or cause-effect link.",
             "A common mark loss is writing a memorised phrase without linking it to the context in the question.",
         )
     if explanation_style == "story":

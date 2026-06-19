@@ -30,8 +30,6 @@ control.
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation-en.html">HTML intro</a>
   ·
-  <a href="docs/HANDOFF.md">Agent handoff</a>
-  ·
   <a href="docs/PROJECT_DETAILS.md">Project details</a>
   ·
   <a href="docs/IMAGE_MODEL_GUIDE.md">Image guidance</a>
@@ -193,6 +191,9 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 - **v0.2.2:** tightened Skill gates after review: confirm subject/year/language
   and style before generation, return Edexcel/CAIE candidates instead of
   guessing, and avoid presenting scratch candidate checks as final handbooks.
+- **v0.2.7:** cleaned public docs so a GitHub clone has no private local paths,
+  removed a duplicate CLI resolver, and tightened validation for Chinese
+  placeholders plus duplicate practice questions.
 
 ## Developer Quick Start
 
@@ -232,7 +233,7 @@ src/intl_exam_guide/
   rendering/      HTML and PDF rendering
   validation/     completeness checks
 skill/            Agent-facing Skill instructions
-docs/             project details, handoff notes, policies, and preview pages
+docs/             project details, policies, examples, and preview pages
 tests/            tests and regression samples
 ```
 

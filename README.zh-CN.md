@@ -28,8 +28,6 @@
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">介绍动画</a>
   ·
-  <a href="docs/HANDOFF.md">接手说明</a>
-  ·
   <a href="docs/PROJECT_DETAILS.md">项目详情</a>
   ·
   <a href="docs/IMAGE_MODEL_GUIDE.md">生图建议</a>
@@ -170,6 +168,7 @@ README 只保留会影响 Skill 实际生成流程的变化；完整历史统一
 - **v0.2.0：** 从 AQA 单线升级为 AQA、Edexcel、CAIE 三大考试局框架；加入语言锁、先生成基础手册再处理复杂配图、SVG 兜底风险提示和跨学科回归样例。
 - **v0.2.1：** 修复 Accounting 和 Economics 实际生成时暴露的问题，包括中文术语、会计学科显示名、外部生成图片渲染、PDF 导出超时和验证覆盖。
 - **v0.2.2：** 评审后强化 Skill 流程门槛：先确认科目/年份/语言/讲解风格；Edexcel/CAIE 出现多个官方候选时返回给用户选择；候选检查生成的 scratch 手册不能当最终交付。
+- **v0.2.7：** 清理公开文档里的本地私有路径，删除重复 CLI provider resolver，并把中文占位符、重复例题纳入错误级验证。
 
 ## 开发者快速开始
 
@@ -209,7 +208,7 @@ src/intl_exam_guide/
   rendering/      HTML 与 PDF 渲染
   validation/     完整性检查
 skill/            Agent 使用的 Skill 说明
-docs/             项目详情、接手说明、准确性政策和展示页面
+docs/             项目详情、准确性政策、示例和展示页面
 tests/            测试与回归样例
 ```
 

@@ -759,7 +759,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.2.6</div>
+          <div class="kicker">三大考试局支持 · v0.2.7</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -1048,8 +1048,8 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>v0.2.6：修复介绍动画比例、时长和排版。</h2>
-          <p>主流程仍然围绕“如何生成复习手册”；版本变化单独记录这次把 README 动画预览改为标准 16:9、覆盖完整 32 秒，并修正标题、卡片和统计信息的重叠问题。</p>
+          <h2>v0.2.7：清理公开入口，收紧内容质量验证。</h2>
+          <p>主流程仍然围绕“如何生成复习手册”；本次功能修复重点是删除公开文档里的本地私有路径，并把中文占位符、重复例题等问题纳入错误级检查。</p>
         </div>
         <div class="flow">
           <article class="flow-item">
@@ -1089,13 +1089,12 @@
         <div>
           <div class="section-head" style="display:block;margin-bottom:18px;">
             <h2>开源仓库里有什么。</h2>
-            <p>普通用户看 README 和项目主页；其他 Agent 接手时先读接手说明和 Skill；开发者再看 Python 引擎、测试和验证脚本。</p>
+            <p>普通用户看 README 和项目主页；Agent 使用 Skill；开发者再看 Python 引擎、测试和验证脚本。</p>
           </div>
           <pre class="file-list"><code>igcse-a-level-revision-guide/
   README.md
   README.zh-CN.md
   docs/
-    HANDOFF.md
     PROJECT_DETAILS.md
     SKILL_EXPLAINED.md
     ACCURACY_POLICY.md
@@ -1112,10 +1111,7 @@
     validation/checks.py</code></pre>
         </div>
         <div class="doc-links">
-          <a class="doc-link" href="HANDOFF.md">
-            <span>接手说明<small>项目入口、当前状态、检查命令和后续任务。</small></span>
-            <span>MD</span>
-          </a>          <a class="doc-link" href="../README.md">
+          <a class="doc-link" href="../README.md">
             <span>英文 README<small>英文首页说明、安装方式与 Agent 使用示例。</small></span>
             <span>MD</span>
           </a>
