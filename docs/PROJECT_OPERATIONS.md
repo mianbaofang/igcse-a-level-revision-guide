@@ -75,7 +75,7 @@ Use GitHub Releases, not tags alone.
 Standard flow for a functional release:
 
 ```powershell
-python -m pytest -q
+python -m pytest --cov --cov-report=term-missing --cov-fail-under=60 -q
 python -m ruff check .
 python -m compileall -q src tests scripts
 python scripts/scan_for_raw_keys.py .
@@ -252,7 +252,8 @@ When moving the repository:
 1. confirm `git status --short` is clean or commit changes first;
 2. copy or move the entire repository directory;
 3. run `git status --short` in the new location;
-4. run a smoke test or at least `python -m pytest -q`;
+4. run a smoke test or at least
+   `python -m pytest --cov --cov-report=term-missing --cov-fail-under=60 -q`;
 5. synchronize the installed Skill copy if `skill/` changed;
 6. remove old duplicate clones and ignored outputs after confirming the new
    location works.

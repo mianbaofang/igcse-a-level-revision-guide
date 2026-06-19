@@ -201,6 +201,10 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   Chrome/Edge fallback, added CLI `discover`/`generate` coverage, and added
   validation gates for generic `Content unit` topics or missing assessment
   extraction.
+- **v0.2.9:** closes the remaining audit gaps: CI now runs an OS/Python matrix
+  with coverage, visual routing has cross-subject benchmarks, Physics force and
+  motion routes to infographic briefs, SVG substring collisions are fixed, and
+  the HTML renderer is split into structure, SVG templates, and CSS modules.
 
 ## Developer Quick Start
 
@@ -225,7 +229,7 @@ python -m intl_exam_guide generate --query chemistry --level igcse --language en
 Checks:
 
 ```bash
-python -m pytest
+python -m pytest --cov --cov-report=term-missing --cov-fail-under=60 -q
 python -m ruff check .
 python -m compileall -q src tests scripts
 python scripts/scan_for_raw_keys.py .

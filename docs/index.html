@@ -759,7 +759,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.2.8</div>
+          <div class="kicker">三大考试局支持 · v0.2.9</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -1048,36 +1048,36 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>v0.2.8：加固三大考试局生成主流程。</h2>
-          <p>主流程仍然围绕“如何生成复习手册”；本次功能修复重点是让 Edexcel 表格型大纲解析更稳，PDF 导出路径更一致，并把兜底主题、缺失考试结构和重复例题挡在最终交付前。</p>
+          <h2>v0.2.9：补齐审查闭环。</h2>
+          <p>主流程仍然围绕“如何生成复习手册”；本次补齐 CI 矩阵、覆盖率门槛、跨学科视觉路由基准，并把 SVG 错配和渲染模块过大问题收进测试约束。</p>
         </div>
         <div class="flow">
           <article class="flow-item">
             <div class="num">01 · 考试局</div>
             <div>
               <h3>三大考试局继续作为基准</h3>
-              <p>AQA、Edexcel、CAIE 都保留官方来源路线；Edexcel 表格型 syllabus 会拆成具体 topic，不再把前言误切成 Content unit。</p>
+              <p>AQA、Edexcel、CAIE 都保留官方来源路线；新增的视觉基准覆盖 Accounting、Economics、Chemistry、Mathematics 和 Physics。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">02 · 语言</div>
             <div>
               <h3>生成前必须确认四件事</h3>
-              <p>考试局和科目、必要考试年份、输出语言、讲解风格，缺一项就先停下补齐。</p>
+              <p>考试局和科目、必要考试年份、输出语言、讲解风格，仍然是生成前必须确认的四件事。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">03 · 图文</div>
             <div>
-              <h3>PDF 导出路径更稳</h3>
-              <p>先尝试 Playwright，再回退到本机 Chrome/Edge；如果两条路都不可用，会给出明确错误而不是静默失败。</p>
+              <h3>CI 和覆盖率更稳</h3>
+              <p>Ubuntu/Windows 与 Python 3.11/3.12 都会跑测试；覆盖率低于门槛时 CI 直接失败。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">04 · 质量</div>
             <div>
               <h3>质量不过不交付</h3>
-              <p>必须有详细知识点、例题、来源片段、考试结构、视觉 briefs、sections 和 images，验证报错时不当成最终手册。</p>
+              <p>复杂图进入信息图 brief，简单 SVG 必须匹配题型；主渲染器也有行数保护，避免重新膨胀。</p>
             </div>
           </article>
         </div>

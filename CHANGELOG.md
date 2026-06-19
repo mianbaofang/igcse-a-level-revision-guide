@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.9 - 2026-06-19
+
+### Fixed
+
+- Added CI matrix coverage for Ubuntu and Windows on Python 3.11 and 3.12.
+- Added a coverage gate with `pytest-cov` so CI now fails below the configured
+  coverage floor instead of only running plain tests.
+- Added visual routing benchmarks for Accounting, Economics, Chemistry,
+  Mathematics, and Physics so complex teaching visuals cannot silently fall
+  back to unrelated generic SVGs.
+- Added a Physics subject profile so force and motion topics route to
+  infographic briefs instead of plain text.
+- Fixed SVG routing collisions where substring matches such as `preparation`
+  containing `ratio`, or `graph` containing `ph`, could select the wrong
+  diagram.
+- Split the HTML renderer into page structure, SVG templates, and CSS modules,
+  then added an architecture guard to stop the main HTML renderer from growing
+  back into a monolith.
+
+### Verified
+
+- `python -m ruff check .`
+- `python -m pytest --cov --cov-report=term-missing --cov-fail-under=60 -q`
+  (`79 passed`, total coverage 65.60%)
+
 ## 0.2.8 - 2026-06-19
 
 ### Fixed

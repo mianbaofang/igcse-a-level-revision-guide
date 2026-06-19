@@ -7,7 +7,15 @@ from typing import Literal
 from intl_exam_guide.models import Topic
 
 
-ExampleDomain = Literal["mathematics", "biology", "chemistry", "economics", "accounting", "generic"]
+ExampleDomain = Literal[
+    "mathematics",
+    "biology",
+    "chemistry",
+    "physics",
+    "economics",
+    "accounting",
+    "generic",
+]
 
 AMBIGUOUS_SUBJECT_AREAS = {
     "combined science",
@@ -48,6 +56,12 @@ BIOLOGY = SubjectProfile(
     example_domain="biology",
     description="Biology-specific cells, molecules, enzymes, DNA, transport, ecology, and practical topics.",
 )
+PHYSICS = SubjectProfile(
+    name="physics",
+    family="science",
+    example_domain="physics",
+    description="Physics-specific forces, motion, energy, waves, electricity, and measurement topics.",
+)
 ECONOMICS = SubjectProfile(
     name="economics-business",
     family="social-science",
@@ -86,6 +100,8 @@ def resolve_subject_profile(
         return CHEMISTRY
     if has_terms(declared, ["biology"]):
         return BIOLOGY
+    if has_terms(declared, ["physics"]):
+        return PHYSICS
     if declared and declared not in AMBIGUOUS_SUBJECT_AREAS:
         return GENERIC
 
@@ -102,6 +118,8 @@ def resolve_subject_profile(
         return CHEMISTRY
     if looks_like_biology(text):
         return BIOLOGY
+    if looks_like_physics(text):
+        return PHYSICS
     return GENERIC
 
 
@@ -223,6 +241,36 @@ def looks_like_biology(text: str) -> bool:
             "starch",
             "transport",
             "triglyceride",
+        ],
+    )
+
+
+def looks_like_physics(text: str) -> bool:
+    return has_terms(
+        text,
+        [
+            "acceleration",
+            "circuit",
+            "current",
+            "distance-time",
+            "electricity",
+            "energy",
+            "force",
+            "forces",
+            "frequency",
+            "gravity",
+            "magnet",
+            "magnetic",
+            "motion",
+            "physics",
+            "power",
+            "pressure",
+            "speed",
+            "velocity",
+            "voltage",
+            "wave",
+            "waves",
+            "work done",
         ],
     )
 
