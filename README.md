@@ -179,60 +179,20 @@ The output language is chosen before generation:
 - The generator should not create bilingual `Chinese / English` labels.
 - Official English terms can stay in source files or a review appendix, but the student-facing handbook should remain in one language.
 
-## What Changed In v0.2.6
+## Core Changes Since v0.1.0
 
-v0.2.6 fixes the intro-animation export size and layout. The README GIF previews
-are now rendered from the full 1920x1080 animation stage, cover the full
-32-second timeline, and scale to a standard 16:9 preview instead of being
-cropped by a mismatched screenshot window.
+README only summarizes changes that affect the Skill's actual generation flow.
+See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 
-## What Changed In v0.2.5
-
-v0.2.5 separates the intro animation by README language. The English README now
-shows and links to an English-only animation and GIF preview, while the Chinese
-README keeps the Chinese animation and Chinese GIF preview.
-
-## What Changed In v0.2.4
-
-v0.2.4 updates the intro animation copy so it matches the current three-board
-support model: AQA catalogue discovery, Edexcel official candidate matching, and
-CAIE official subject-index matching with exam-year confirmation.
-
-## What Changed In v0.2.3
-
-v0.2.3 restores the intro-animation preview in the README:
-
-- Added a clickable GIF preview directly under the project-origin story.
-- Kept the full HTML animation available on the project site.
-
-## What Changed In v0.2.2
-
-v0.2.2 is a small Skill-quality release after Darwin review:
-
-- Added visible `STOP` / `CHECKPOINT` gates before download, route selection,
-  image generation, and final delivery.
-- Made Edexcel/CAIE ambiguity handling more explicit: show official candidates
-  and wait for the user instead of guessing.
-- Documented that AQA has catalogue discovery, while Edexcel and CAIE use
-  URL-first / subject-candidate checks rather than full crawlers.
-- Clarified that scratch candidate-check outputs are not final handbooks.
-
-## What Changed In v0.2.0
-
-v0.1.0 mainly focused on the AQA handbook-generation path. v0.2.0 turns the
-project into a three-exam-board open-source release:
-
-- Added Edexcel official candidate discovery plus official URL/PDF intake.
-- Added CAIE official subject-index discovery plus official URL/PDF intake and exam-year selection.
-- Strengthened the language lock to avoid half-Chinese, half-English guides.
-- Changed image routing: the base handbook is generated first, then complex
-  infographic needs are reported.
-- Added SVG fallback warnings so drafts are not presented as final complex
-  infographics.
-- Added cross-subject regression samples to avoid hard-coding one subject's
-  structure into all subjects.
-- Updated the GitHub README, project page, HTML intro, and sample screenshots
-  around the three-board story.
+- **v0.2.0:** expanded the project from an AQA-focused flow to a three-board
+  framework for AQA, Edexcel, and CAIE; added language lock, post-handbook image
+  routing, SVG fallback warnings, and cross-subject regression samples.
+- **v0.2.1:** fixed real handbook regressions found during Accounting and
+  Economics runs, including Chinese terminology, Accounting display names,
+  generated raster assets, PDF export timeout, and validation coverage.
+- **v0.2.2:** tightened Skill gates after review: confirm subject/year/language
+  and style before generation, return Edexcel/CAIE candidates instead of
+  guessing, and avoid presenting scratch candidate checks as final handbooks.
 
 ## Developer Quick Start
 
