@@ -49,6 +49,7 @@ ZH_FORBIDDEN_TEMPLATE_PHRASES = [
     "Why not SVG",
     "Prompt queue",
     "Output language: English",
+    "官方大纲要求",
 ]
 
 
@@ -145,6 +146,23 @@ def validate_plan(
             issues.append(ValidationIssue("warning", f"Worked example has fewer than 4 public steps: {guide.topic_title}"))
         if len(guide.checklist) < 3:
             issues.append(ValidationIssue("warning", f"Checklist is too short: {guide.topic_title}"))
+        if options.output_language == "zh-CN" and has_zh_placeholder_text(
+            [
+                guide.essence,
+                guide.analogy,
+                guide.mini_worked_example,
+                guide.pitfall,
+                guide.diagram_brief,
+                *guide.worked_solution_steps,
+                *guide.checklist,
+            ]
+        ):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Chinese topic guide contains generic syllabus placeholder text: {guide.topic_title}",
+                )
+            )
 
     for item in plan.practice_items:
         if not item.command_word.strip():
@@ -173,6 +191,22 @@ def validate_plan(
                     f"Practice item appears to borrow a different subject template: {item.topic_title}",
                 )
             )
+        if options.output_language == "zh-CN" and has_zh_placeholder_text(
+            [
+                item.question,
+                item.command_word,
+                item.focus_point,
+                *item.public_solution_steps,
+                *item.answer_checkpoints,
+                *item.source_points,
+            ]
+        ):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Chinese practice item contains generic syllabus placeholder text: {item.topic_title}",
+                )
+            )
 
     for brief in plan.visual_briefs:
         if not brief.focus_point.strip():
@@ -185,6 +219,15 @@ def validate_plan(
             issues.append(ValidationIssue("error", f"Visual brief is missing an image provider: {brief.topic_title}"))
         if not brief.prompt.strip():
             issues.append(ValidationIssue("error", f"Visual brief is missing an image prompt: {brief.topic_title}"))
+        if options.output_language == "zh-CN" and has_zh_placeholder_text(
+            [brief.focus_point, brief.visual_type, brief.trigger, brief.prompt]
+        ):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Chinese visual brief contains generic syllabus placeholder text: {brief.topic_title}",
+                )
+            )
 
     if qualification.qualification_type == "international_gcse":
         if qualification.source.listing_qualification_type and qualification.source.listing_qualification_type != "international_gcse":
@@ -373,6 +416,10 @@ def is_placeholder_practice_question(question: str) -> bool:
         or "answer an original short exam-style question" in text
         or "identify the relevant evidence, choose the correct method or definition" in text
     )
+
+
+def has_zh_placeholder_text(values: list[str]) -> bool:
+    return any("官方大纲要求" in value for value in values)
 
 
 def is_contents_or_index_snippet(snippet: object) -> bool:

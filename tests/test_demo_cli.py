@@ -7,11 +7,16 @@ from intl_exam_guide.planning.guide_plan import (
     choose_visual_type,
     concrete_example,
     concrete_example_zh,
+    zh_point_label,
+    zh_visual_type,
 )
 from intl_exam_guide.planning.subject_profiles import resolve_subject_profile
 from intl_exam_guide.rendering.handbook_package import write_handbook_package
-from intl_exam_guide.rendering.html import render_html
-from intl_exam_guide.rendering.visual_assets import scientific_vector_route
+from intl_exam_guide.rendering.html import render_html, subject_display_name
+from intl_exam_guide.rendering.visual_assets import (
+    has_renderable_infographic,
+    scientific_vector_route,
+)
 from intl_exam_guide.validation.checks import review_summary, validate_plan
 
 
@@ -244,6 +249,18 @@ def test_recommended_image_labels_are_not_treated_as_callable_providers():
             brief.image_provider in {"deterministic-svg", "external-generation-required"}
             for brief in plan.visual_briefs
         )
+
+
+def test_sensenova_generated_assets_are_renderable_infographics(tmp_path):
+    image_path = tmp_path / "visual_001_accounting.png"
+    image_path.write_bytes(b"fake-png")
+    entry = {
+        "file": image_path.name,
+        "asset_status": "sensenova-generated",
+        "complexity": "infographic",
+    }
+
+    assert has_renderable_infographic(entry, tmp_path)
 
 
 def test_svg_safe_charts_are_marked_as_scientific_vector_fallbacks():
@@ -531,6 +548,70 @@ def test_accounting_examples_do_not_borrow_mathematics_templates():
     assert "ledger" in combined
 
 
+def test_accounting_chinese_examples_translate_visible_terms():
+    question, _, steps, checkpoints = concrete_example_zh(
+        Topic(
+            title="3.1.2 - Sources and recording of data",
+            points=["Source documents are purchase invoices and sales invoices."],
+        ),
+        "Source documents are purchase invoices and sales invoices.",
+        0,
+        "Accounting",
+    )
+    combined = " ".join([question, *steps, *checkpoints])
+
+    assert "购货发票" in combined
+    assert "原始凭证" in combined
+    assert "分类账" in combined
+    assert "purchase invoice" not in combined
+    assert "purchases journal" not in combined
+    assert "ledger accounts" not in combined
+    assert "source document" not in combined
+    assert "book of prime entry" not in combined
+
+
+def test_chinese_point_labels_do_not_use_generic_syllabus_placeholder():
+    label = zh_point_label("Source documents are purchase invoices and sales invoices.", 0)
+
+    assert "官方大纲要求" not in label
+    assert "凭证" in label
+
+
+def test_validation_rejects_chinese_syllabus_placeholder_text():
+    plan = build_guide_plan(
+        sample_qualification(),
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="zh-CN",
+        requested_subject="chemistry",
+    )
+    plan.topic_guides[0].essence = "第 1 个官方大纲要求"
+
+    issues = validate_plan(plan)
+
+    assert any(
+        issue.severity == "error" and "generic syllabus placeholder" in issue.message
+        for issue in issues
+    )
+
+
+def test_accounting_subject_display_name_is_localized():
+    qualification = Qualification(
+        title="International GCSE Accounting (9215)",
+        code="9215",
+        qualification_type="international_gcse",
+        subject_area="Accounting",
+        page_url="https://example.test/accounting/",
+        summary=["International GCSE linear qualification for international students."],
+        topics=[],
+        assessments=[],
+        source=SourceRecord(provider="test", page_url="https://example.test/accounting/"),
+        audience_note="International GCSE linear qualification for international students outside the UK.",
+    )
+
+    assert subject_display_name(qualification) == "会计学"
+
+
 def test_unknown_subject_uses_generic_fallback_instead_of_cross_subject_templates():
     question, _, steps, _ = concrete_example(
         Topic(
@@ -729,6 +810,8 @@ def test_visual_type_classifier_uses_subject_specific_infographics():
     )
     assert gas_complexity == "infographic"
     assert "gas tests" in gas_visual
+    assert zh_visual_type(gas_visual) == "气体检验观察信息图"
+    assert zh_visual_type("accounting process infographic with records") == "图文结合学习图"
 
     economics_visual, economics_complexity, _ = choose_visual_type(
         Topic(

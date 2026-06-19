@@ -1231,6 +1231,7 @@ def subject_display_name(qualification: Qualification) -> str:
         ("maths", "数学"),
         ("chemistry", "化学"),
         ("economics", "经济学"),
+        ("accounting", "会计学"),
         ("business", "商务"),
         ("physics", "物理"),
         ("biology", "生物"),

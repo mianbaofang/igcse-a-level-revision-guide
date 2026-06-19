@@ -18,6 +18,23 @@
 
 ### Fixed
 
+- Fixed Chinese handbook content generated during real Accounting/Economics
+  runs so visible focus labels no longer fall back to generic text such as
+  `第 N 个官方大纲要求`.
+- Translated student-facing Chinese Accounting examples that previously leaked
+  raw English terms such as `purchase invoice`, `purchases journal`, and
+  `ledger accounts`.
+- Fixed the Chinese visual-type classifier so the word `infographic` no longer
+  accidentally triggers the pH/acid label merely because it contains `ph`.
+- Added Accounting as a Chinese subject display name (`会计学`) in rendered
+  handbook covers and overview blocks.
+- Treated `sensenova-generated` image assets as renderable generated raster
+  infographics, so externally generated SenseNova assets can be preserved and
+  rendered.
+- Increased browser PDF export timeout for image-heavy handbooks.
+- Added validation and regression tests for the Chinese placeholder, Accounting
+  Chinese terminology, SenseNova asset status, Accounting display name, and the
+  visual-type classifier.
 - Removed remaining user-facing wording that made the project look like an
   OxfordAQA-only Skill after the v0.2.0 three-board upgrade.
 - Tightened image-generation instructions so recommended models such as GPT

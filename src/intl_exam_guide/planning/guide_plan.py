@@ -39,6 +39,31 @@ RECOMMENDED_IMAGE_MODEL_LABELS = {
 
 LANGUAGE_CHOICES = {"en", "zh-CN"}
 
+ZH_POINT_KEYWORDS = [
+    (("source document", "purchase invoice", "sales invoice", "invoice"), "原始凭证与发票"),
+    (("prime entry", "purchases journal", "sales journal"), "初始记录账簿"),
+    (("ledger", "double entry"), "分类账与复式记账"),
+    (("trial balance",), "试算平衡"),
+    (("bank reconciliation", "unpresented cheque", "outstanding banking"), "银行对账"),
+    (("control account", "suspense account", "correction of errors"), "账户核对与错误更正"),
+    (("depreciation", "non-current asset"), "折旧与非流动资产"),
+    (("irrecoverable", "receivables", "payables"), "应收应付与坏账处理"),
+    (("accrual", "prudence", "going concern", "accounting concepts"), "会计概念应用"),
+    (("financial statements", "income statement", "statement of financial position"), "财务报表"),
+    (("profitability", "liquidity", "ratio"), "比率分析"),
+    (("demand", "supply", "market"), "市场需求与供给"),
+    (("production", "land", "labour", "capital", "enterprise"), "生产要素"),
+    (("opportunity cost", "choice", "scarcity"), "选择与机会成本"),
+    (("set", "venn"), "集合与韦恩图"),
+    (("triangle", "geometry", "bearing", "construction"), "几何图形与标注"),
+    (("statistics", "probability", "data"), "统计与概率"),
+    (("bond", "structure"), "结构与性质"),
+    (("chromatography",), "色谱与分离"),
+    (("gas test", "gas tests"), "气体检验"),
+    (("particle", "states of matter", "diffusion"), "粒子模型"),
+    (("acid", "alkali", "pH", "neutralisation"), "酸碱与 pH"),
+]
+
 
 def zh_topic_reference(topic: Topic) -> str:
     match = re.match(r"^\s*([A-Z]\d+[A-Z]?|\d+(?:\.\d+)+)\b", topic.title)
@@ -47,8 +72,15 @@ def zh_topic_reference(topic: Topic) -> str:
     return "本知识单元"
 
 
-def zh_point_label(_point: str, index: int = 0) -> str:
-    return f"第 {index + 1} 个官方大纲要求"
+def zh_point_label(point: str, index: int = 0) -> str:
+    text = re.sub(r"\s+", " ", point.strip())
+    lowered = text.lower()
+    for keywords, label in ZH_POINT_KEYWORDS:
+        if any(keyword.lower() in lowered for keyword in keywords):
+            return label
+    if re.search(r"[\u4e00-\u9fff]", text):
+        return text[:24]
+    return f"知识点 {index + 1}"
 
 
 def zh_point_labels(points: list[str]) -> list[str]:
@@ -810,29 +842,29 @@ def accounting_example_zh(
 ) -> tuple[str, list[str], list[str], list[str]]:
     if has_any_word_or_phrase(text, ["source document", "prime entry", "ledger", "double entry", "recording"]):
         return (
-            "一家企业赊购商品并收到 purchase invoice。说明这张凭证如何进入会计记录。",
+            "一家企业赊购商品并收到购货发票。说明这张原始凭证如何进入会计记录。",
             ["先指出原始凭证。", "再指出首次记录的账簿。", "最后说明如何进入分类账。"],
-            ["purchase invoice 是原始凭证。", "赊购交易先记录在 purchases journal。", "之后再过账到相关 ledger accounts。", "这样交易就能从凭证追踪到初始记录和分类账。"],
-            ["要有 source document。", "要区分 book of prime entry 和 ledger。", "不能把赊购当作现金交易。"],
+            ["购货发票是原始凭证。", "赊购交易先记录在购货日记账。", "之后再过账到相关分类账账户。", "这样交易就能从凭证追踪到初始记录和分类账。"],
+            ["要有原始凭证。", "要区分初始记录账簿和分类账。", "不能把赊购当作现金交易。"],
         )
     if has_any_word_or_phrase(text, ["trial balance", "bank reconciliation", "control account", "verification", "error"]):
         return (
             "现金簿余额和银行对账单余额不同。说明两个可能原因，并说出用于核对的报表。",
-            ["找出时间差或错误。", "说出 bank reconciliation statement。", "区分现金簿和银行对账单。"],
-            ["可能原因之一是 unpresented cheques。", "另一个可能原因是 outstanding bankings。", "企业会编制 bank reconciliation statement 来解释差异。", "这可以用外部银行资料核对现金簿。"],
-            ["原因要具体。", "要说出 reconciliation。", "不能默认某一方一定错。"],
+            ["找出时间差或错误。", "说出银行调节表。", "区分现金簿和银行对账单。"],
+            ["可能原因之一是未兑现支票。", "另一个可能原因是在途存款。", "企业会编制银行调节表来解释差异。", "这可以用外部银行资料核对现金簿。"],
+            ["原因要具体。", "要说出银行调节。", "不能默认某一方一定错。"],
         )
     if has_any_word_or_phrase(text, ["financial statements", "income statement", "profit", "ratio", "liquidity"]):
         return (
-            "某企业 sales 为 $18,000，cost of sales 为 $11,000，expenses 为 $3,200。计算 gross profit 和 profit for the year。",
-            ["先算 gross profit。", "再扣除 expenses。", "保留货币单位。"],
-            ["Gross profit = sales - cost of sales。", "$18,000 - $11,000 = $7,000。", "Profit for the year = $7,000 - $3,200 = $3,800。", "答案：gross profit 为 $7,000，profit for the year 为 $3,800。"],
-            ["不要先扣 expenses。", "货币单位要保留。", "gross profit 和 profit for the year 要区分。"],
+            "某企业销售收入为 $18,000，销售成本为 $11,000，费用为 $3,200。计算毛利和本年利润。",
+            ["先算毛利。", "再扣除费用。", "保留货币单位。"],
+            ["毛利 = 销售收入 - 销售成本。", "$18,000 - $11,000 = $7,000。", "本年利润 = $7,000 - $3,200 = $3,800。", "答案：毛利为 $7,000，本年利润为 $3,800。"],
+            ["不要先扣费用。", "货币单位要保留。", "毛利和本年利润要区分。"],
         )
     return (
         f"围绕“{visible_focus}”完成一道会计情境题：判断相关凭证、账户、报表或计算，并说明对会计记录的影响。",
         ["找出业务事件。", "匹配对应会计记录或规则。", "说明对账户或报表的影响。"],
-        [f"本题考查“{visible_focus}”。", "先把业务事件转成会计语言。", "再应用分类、计算或 double entry 逻辑。", "最后说明对利润、资产、负债、权益或记录核对的影响。"],
+        [f"本题考查“{visible_focus}”。", "先把业务事件转成会计语言。", "再应用分类、计算或复式记账逻辑。", "最后说明对利润、资产、负债、权益或记录核对的影响。"],
         ["使用会计记录或报表。", "说明影响，而不是只背词。", "没有借用其他科目的题型。"],
     )
 
@@ -1448,7 +1480,7 @@ def zh_visual_type(visual_type: str) -> str:
         return "粒子模型示意图"
     if "bond" in text or "structure" in text:
         return "结构与性质关系信息图"
-    if "ph" in text or "acid" in text:
+    if re.search(r"\bph\b", text) or "acid" in text or "alkali" in text or "neutralisation" in text:
         return "酸碱与流程示意图"
     if "demand" in text or "supply" in text or "market" in text:
         return "市场曲线与情境信息图"

@@ -24,7 +24,7 @@ def export_pdf(html_path: Path, pdf_path: Path) -> Path:
             f"--print-to-pdf={str(pdf_path.resolve())}",
             html_uri,
         ]
-        subprocess.run(command, check=True, capture_output=True, text=True, timeout=60)
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=300)
     return pdf_path
 
 
