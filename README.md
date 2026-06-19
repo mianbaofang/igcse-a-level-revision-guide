@@ -11,7 +11,7 @@ year after moving from a Chinese public-school path into an international
 curriculum. In less than a year, the classroom language shifted from Chinese to
 English, while the exam clock kept moving.
 
-I used Codex to build a study and revision Skill: take the course requirements,
+I used AI to build a study and revision Skill: take the course requirements,
 break knowledge into understandable structures, worked examples, diagrams, and
 checkpoints. The goal is not to let AI learn for a child. The goal is to lower
 the noise around learning so students can face schoolwork with more calm and
@@ -24,7 +24,7 @@ control.
 </p>
 
 <p align="center">
-  <a href="README.zh-CN.md">Chinese README</a>
+  <a href="README.zh-CN.md">中文 README</a>
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">Project site</a>
   ·
@@ -37,7 +37,7 @@ control.
   <a href="docs/IMAGE_MODEL_GUIDE.md">Image guidance</a>
 </p>
 
-An AI-agent Skill for generating image-rich, printable International GCSE and
+An AI Skill for generating image-rich, printable International GCSE and
 International AS-A-level revision handbooks from official exam-board sources.
 
 This version is built around the three exam boards most relevant to mainland
@@ -55,8 +55,8 @@ which points need visuals, and deliver HTML/PDF output.
 
 ## Quick Start
 
-Most users do not need to install Python or run commands. Send this Skill link
-to Codex or another Skill-compatible agent:
+Most users do not need to install Python or run commands. Give this Skill link
+to your OpenClaw, Hermes, or other Skill-compatible Agent:
 
 ```text
 https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
@@ -76,7 +76,7 @@ Generate a Chinese Cambridge IGCSE Economics guide for the 2027 exam year.
 Generate an AQA Mathematics 9260 revision handbook with visual worked examples and final review questions.
 ```
 
-Before generation starts, the agent should confirm:
+Before generation starts, the Agent should confirm:
 
 1. Exam board, qualification level, subject, code, and official URL when needed.
 2. Exam year when the official page lists multiple syllabus ranges.
@@ -86,7 +86,7 @@ Before generation starts, the agent should confirm:
    adventure-style.
 
 The user should not be forced to choose an image model at the beginning. The
-base handbook is generated first. After that, the agent reports how many complex
+base handbook is generated first. After that, the Agent reports how many complex
 infographics are needed. If the user has a callable image API, Skill, script, or
 asset directory, those images can be generated or imported later. Otherwise, the
 package uses SVG fallback drafts and clearly marks complex visuals for review.
@@ -179,6 +179,13 @@ The output language is chosen before generation:
 - The generator should not create bilingual `Chinese / English` labels.
 - Official English terms can stay in source files or a review appendix, but the student-facing handbook should remain in one language.
 
+## What Changed In v0.2.6
+
+v0.2.6 fixes the intro-animation export size and layout. The README GIF previews
+are now rendered from the full 1920x1080 animation stage, cover the full
+32-second timeline, and scale to a standard 16:9 preview instead of being
+cropped by a mismatched screenshot window.
+
 ## What Changed In v0.2.5
 
 v0.2.5 separates the intro animation by README language. The English README now
@@ -264,7 +271,7 @@ src/intl_exam_guide/
   planning/       topic, example, and visual-brief planning
   rendering/      HTML and PDF rendering
   validation/     completeness checks
-skill/            agent-facing Skill instructions
+skill/            Agent-facing Skill instructions
 docs/             project details, handoff notes, policies, and preview pages
 tests/            tests and regression samples
 ```

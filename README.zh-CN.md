@@ -11,7 +11,7 @@
 课堂语言几乎一下从全中文切换到全英文。知识点本身可以慢慢学，但新的语言、新的考试方式
 和临近大考的时间压力叠在一起，很容易让孩子觉得自己被推着走。
 
-我用 Codex 做了一个学习、复习用的 Skill：让它围绕对应课程要求，把知识点拆成能理解的结构、
+我用 AI 做了一个学习、复习用的 Skill：让它围绕对应课程要求，把知识点拆成能理解的结构、
 例题、图解和检查点。这个项目的初衷很简单：不是替孩子学习，而是把学习路上的噪音降下来，
 利用人工智能帮助孩子更轻松、更有掌控感地面对学业。
 
@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">英文 README</a>
+  <a href="README.md">English</a>
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">项目主页</a>
   ·
@@ -35,7 +35,7 @@
   <a href="docs/IMAGE_MODEL_GUIDE.md">生图建议</a>
 </p>
 
-一个给 AI agent 使用的复习手册 Skill：输入国内常用三大国际考试局的科目要求，
+一个给 AI Agent 使用的复习手册 Skill：输入国内常用三大国际考试局的科目要求，
 生成图文并茂、可打印的 International GCSE / International AS-A-level 学习复习手册。
 
 当前版本以三大考试局为基础设计：
@@ -52,8 +52,8 @@
 
 ## 快速使用
 
-普通用户不需要安装 Python，也不需要看懂代码。把下面这个 Skill 链接发给 Codex
-或其他支持 Skill 的 agent：
+普通用户不需要安装 Python，也不需要看懂代码。把下面这个 Skill 链接发给你的
+OpenClaw、Hermes 或其他支持 Skill 的 Agent：
 
 ```text
 https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
@@ -73,15 +73,15 @@ https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
 帮我生成 AQA Mathematics 9260 复习手册，需要图文例题和最终复习题。
 ```
 
-开始生成前，agent 应先确认四件事：
+开始生成前，Agent 应先确认四件事：
 
 1. 考试局、课程阶段、科目和代码，必要时确认官方链接。
 2. 考试年份，尤其是 Cambridge 页面同时列出多个年份范围时。
 3. 输出语言：中文或英文。手册正文、标签、例题和配图提示只使用一种语言。
 4. 讲解风格：严谨、轻松、生活化、故事性、侦探推理、闯关式等。
 
-注意：不需要在一开始选择生图模型。基础手册先生成，之后 agent 会告诉你有多少张复杂信息图需要外部生成。
-如果你有可调用的生图 API、Skill、脚本或已经生成好的图片目录，再让 agent 导入或生成；如果没有，就使用 SVG 草图兜底，并提示复杂图需要复核。
+注意：不需要在一开始选择生图模型。基础手册先生成，之后 Agent 会告诉你有多少张复杂信息图需要外部生成。
+如果你有可调用的生图 API、Skill、脚本或已经生成好的图片目录，再让 Agent 导入或生成；如果没有，就使用 SVG 草图兜底，并提示复杂图需要复核。
 
 ## 会生成什么
 
@@ -91,7 +91,7 @@ https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
 outputs/chemistry-9202/
   guide.html                 可预览、可打印的学习手册
   guide.pdf                  PDF 文件
-  sections/                  分章节手册内容，便于 agent 复查
+  sections/                  分章节手册内容，便于 Agent 复查
   images/                    SVG 草图、信息图资产和配图清单
   run-options.json           本次确认的科目、语言和讲解风格
   guide-plan.json            知识点、例题和复习任务规划
@@ -162,6 +162,11 @@ outputs/chemistry-9202/
 - 选择英文，学生看到的正文、标签、例题和配图提示都用英文。
 - 不做中英拼接标签。
 - 官方英文术语可以保留在来源文件或复核附录里，学生正文尽量保持单一语言。
+
+## v0.2.6 更新了什么
+
+v0.2.6 修正介绍动画导出尺寸和排版：README 里的 GIF 预览现在按完整的 1920x1080
+动画舞台截图，覆盖完整 32 秒时间线，再缩放成标准 16:9 预览，不再被错误的截图窗口裁切。
 
 ## v0.2.5 更新了什么
 

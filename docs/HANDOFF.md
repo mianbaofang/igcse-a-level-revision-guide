@@ -22,17 +22,17 @@ this repository.
 
 ## What This Project Is
 
-This is an open-source Codex Skill and Python pipeline for generating
+This is an open-source Skill and Python pipeline for generating
 student-friendly, image-rich revision handbooks from official International
 GCSE and International AS-A-level syllabus/specification sources.
 
 The user-facing promise is simple:
 
-1. give an agent the Skill link;
+1. give OpenClaw, Hermes, or another Skill-compatible Agent the Skill link;
 2. ask for a subject revision/study handbook;
 3. confirm subject/provider, any required exam year, output language, and
    explanation style;
-4. let the agent fetch the official syllabus/specification, plan the handbook,
+4. let the Agent fetch the official syllabus/specification, plan the handbook,
    generate examples and visual briefs, render HTML, export PDF, and validate
    the result.
 
@@ -57,7 +57,7 @@ crawling.
   `docs/project-intro-animation.html` with `docs/assets/intro-animation-preview.gif`
   for the Chinese README, and `docs/project-intro-animation-en.html` with
   `docs/assets/intro-animation-preview-en.gif` for the English README.
-- README and Chinese README now describe ordinary agent usage first, not CLI usage.
+- README and Chinese README now describe ordinary Agent usage first, not CLI usage.
 - The three public screenshots are examples of final handbook quality, not a
   subject support limit and not a user-facing release workflow.
 - SenseNova is named as **SenseNova U1 Fast** for user-facing model guidance;
@@ -170,7 +170,7 @@ python scripts/scan_for_raw_keys.py . ..\..\outputs
 
 ## 中文快速交接
 
-下一个 agent 优先看：
+下一个 Agent 优先看：
 
 1. `docs/HANDOFF.md`
 2. `README.zh-CN.md`
@@ -192,8 +192,8 @@ https://mianbaofang.github.io/igcse-a-level-revision-guide/
 用户侧理解方式：
 
 ```text
-把 Skill 链接给 agent -> 让 agent 安装 -> 用户说“帮我生成某科复习手册”
--> agent 先确认科目、语言、生图方式、讲解风格 -> 自动生成 HTML/PDF。
+把 Skill 链接给 OpenClaw、Hermes 或其他 Agent -> 让 Agent 安装 -> 用户说“帮我生成某科复习手册”
+-> Agent 先确认科目、语言、生图方式、讲解风格 -> 自动生成 HTML/PDF。
 ```
 
 核心逻辑不能变：先根据官方 syllabus/specification 生成知识点和例题，再二次判断哪些内容

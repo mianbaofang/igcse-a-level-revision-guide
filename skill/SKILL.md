@@ -94,7 +94,7 @@ style, output directory, and PDF setting after the official route is selected.
 ## User-Facing Use
 
 The end user should not need to run Python commands. They can install the skill
-by giving an agent this link:
+by giving this link to OpenClaw, Hermes, or another Skill-compatible Agent:
 
 ```text
 https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
@@ -186,7 +186,7 @@ Never ask the user to paste a raw API key into chat or commit one to the
 repository.
 
 Handle repository setup, CLI execution, validation checks, and PDF export as the
-agent. Do not ask the user to install dependencies unless the local environment
+Agent. Do not ask the user to install dependencies unless the local environment
 is genuinely missing the required runtime and cannot proceed.
 
 ## Core Contract
@@ -252,7 +252,7 @@ callable image route has produced reviewed image assets; SVG fallbacks are
 draft aids.
 
 When the full repository is available and the user has confirmed GPT Image 2
-Codex-only Router parameters, use
+Router parameters for the current Agent runtime, use
 `scripts/generate_pending_infographics_router.py` to generate pending complex
 visuals and update each `images/visual_manifest.json`. If images are generated
 outside the guide package with another provider, use
@@ -261,7 +261,7 @@ outside the guide package with another provider, use
 ## Repository Access
 
 This skill may be installed from the repository's `skill/` directory, which
-contains the agent instructions but not the Python engine. Before running the
+contains the Agent instructions but not the Python engine. Before running the
 generator, check whether the current workspace has `pyproject.toml` and
 `src/intl_exam_guide`.
 
@@ -319,7 +319,7 @@ python -m pip install -e .
 python -m intl_exam_guide generate --query chemistry --level igcse --language en --explanation-style friendly --out ./outputs/chemistry-9202
 ```
 
-If the package is not installed and the agent only needs a local run, set
+If the package is not installed and the Agent only needs a local run, set
 `PYTHONPATH` for the current shell:
 
 ```powershell

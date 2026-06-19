@@ -13,10 +13,10 @@ def main() -> int:
     parser.add_argument("--mp4", default="docs/project-intro-animation.mp4")
     parser.add_argument("--gif", default="docs/assets/intro-animation-preview.gif")
     parser.add_argument("--fps", type=int, default=8)
-    parser.add_argument("--duration", type=float, default=24.0)
+    parser.add_argument("--duration", type=float, default=32.0)
     parser.add_argument("--start-offset", type=float, default=0.6)
-    parser.add_argument("--width", type=int, default=1440)
-    parser.add_argument("--height", type=int, default=1000)
+    parser.add_argument("--width", type=int, default=1920)
+    parser.add_argument("--height", type=int, default=1080)
     args = parser.parse_args()
 
     html_path = Path(args.html).resolve()

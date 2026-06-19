@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -99,6 +99,19 @@
       font-size: 30px;
       line-height: 1.55;
       color: rgba(246, 248, 244, 0.78);
+    }
+
+    .provider-headline {
+      max-width: 1120px;
+      font-size: 66px;
+      line-height: 1.08;
+    }
+
+    .provider-lead {
+      margin-top: 22px;
+      max-width: 1080px;
+      font-size: 26px;
+      line-height: 1.45;
     }
 
     .hero-board-row {
@@ -272,17 +285,17 @@
       position: absolute;
       left: 110px;
       right: 110px;
-      top: 258px;
+      top: 470px;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 28px;
     }
 
     .provider-column {
-      min-height: 510px;
+      min-height: 430px;
       border: 1px solid rgba(255,255,255,0.14);
       background: rgba(255,255,255,0.075);
-      padding: 34px;
+      padding: 30px;
       position: relative;
       overflow: hidden;
     }
@@ -298,19 +311,19 @@
 
     .provider-column h3 {
       margin-top: 26px;
-      font-size: 40px;
+      font-size: 36px;
       color: white;
       line-height: 1.1;
     }
 
     .provider-column ul {
-      margin: 30px 0 0;
+      margin: 26px 0 0;
       padding: 0;
       list-style: none;
       display: grid;
       gap: 18px;
       color: rgba(255,255,255,0.78);
-      font-size: 24px;
+      font-size: 22px;
       line-height: 1.38;
     }
 
@@ -337,13 +350,25 @@
     }
 
     .sample-copy {
-      padding-top: 80px;
+      padding-top: 0;
+    }
+
+    .sample-headline {
+      max-width: 680px;
+      font-size: 66px;
+      line-height: 1.06;
+    }
+
+    .route-headline {
+      max-width: 1240px;
+      font-size: 64px;
+      line-height: 1.06;
     }
 
     .stat-list {
-      margin-top: 42px;
+      margin-top: 30px;
       display: grid;
-      gap: 18px;
+      gap: 12px;
       max-width: 620px;
     }
 
@@ -353,18 +378,18 @@
       align-items: baseline;
       gap: 18px;
       border-bottom: 1px solid rgba(255,255,255,0.13);
-      padding-bottom: 16px;
+      padding-bottom: 12px;
     }
 
     .stat b {
       color: #e4ba68;
-      font-size: 48px;
+      font-size: 42px;
       line-height: 1;
     }
 
     .stat span {
       color: rgba(255,255,255,0.74);
-      font-size: 23px;
+      font-size: 21px;
       line-height: 1.3;
     }
 
@@ -391,24 +416,24 @@
       position: absolute;
       left: 110px;
       right: 110px;
-      top: 250px;
+      top: 430px;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 28px;
     }
 
     .route-card {
-      min-height: 440px;
+      min-height: 390px;
       border: 1px solid rgba(255,255,255,0.15);
       background: rgba(255,255,255,0.078);
-      padding: 32px;
+      padding: 28px;
       display: grid;
       grid-template-rows: auto 1fr auto;
-      gap: 24px;
+      gap: 20px;
     }
 
     .route-card h3 {
-      font-size: 35px;
+      font-size: 31px;
       color: white;
     }
 
@@ -1435,7 +1460,7 @@ function IntroScene() {
   return (
     <SceneFrame start={0} end={6.2}>
       <div className="orbit" style={{ transform: `rotate(${orbit}deg) scale(${1 + Math.sin(time * 0.7) * 0.025})` }}></div>
-      <div className="kicker">v0.2.5 · Three-Board Support</div>
+      <div className="kicker">v0.2.6 · Three-Board Support</div>
       <h1 className="headline">Three common international exam boards now run in one workflow.</h1>
       <p className="lead">
         AQA, Edexcel, and CAIE share one handbook framework, while each provider reads the syllabus from its own official source.
@@ -1501,10 +1526,10 @@ function PreflightScene() {
 function ProviderScene() {
   const time = useTime();
   return (
-    <SceneFrame start={11.2} end={18.3}>
+    <SceneFrame start={12.1} end={17.1}>
       <div className="kicker">How The Three Boards Are Supported</div>
-      <h2 className="headline">Each board uses its own official source.</h2>
-      <p className="lead">AQA can discover courses from the official catalogue; Edexcel matches candidates from official pages; CAIE matches from the official subject index. If there is no unique match, the user chooses.</p>
+      <h2 className="headline provider-headline">Each board uses its own official source.</h2>
+      <p className="lead provider-lead">AQA can discover courses from the official catalogue; Edexcel matches candidates from official pages; CAIE matches from the official subject index. If there is no unique match, the user chooses.</p>
       <div className="provider-system">
         {providerData.map((provider, index) => {
           const p = clamp((time - 12.0 - index * 0.28) / 0.75, 0, 1);
@@ -1533,11 +1558,11 @@ function SamplesScene() {
     ["0", "complex infographics are no longer pretended as generated"],
   ];
   return (
-    <SceneFrame start={17.4} end={24.8}>
+    <SceneFrame start={17.4} end={24.1}>
       <div className="sample-scene">
         <div className="sample-copy">
           <div className="kicker">Real Handbook Samples</div>
-          <h2 className="headline">The samples are deliverable revision handbooks.</h2>
+          <h2 className="headline sample-headline">The samples are deliverable revision handbooks.</h2>
           <div className="stat-list">
             {stats.map((stat, index) => {
               const p = clamp((time - 18.1 - index * 0.18) / 0.55, 0, 1);
@@ -1586,9 +1611,9 @@ function VisualRouteScene() {
     },
   ];
   return (
-    <SceneFrame start={24.0} end={29.4}>
+    <SceneFrame start={24.4} end={29.3}>
       <div className="kicker">Visual Routing Must Be Honest</div>
-      <h2 className="headline">Generate the handbook first, then handle complex visuals.</h2>
+      <h2 className="headline route-headline">Generate the handbook first, then handle complex visuals.</h2>
       <div className="visual-routing">
         {cards.map((card, index) => {
           const p = clamp((time - 24.7 - index * 0.18) / 0.7, 0, 1);
@@ -1607,10 +1632,10 @@ function VisualRouteScene() {
 
 function ClosingScene() {
   const time = useTime();
-  const p = clamp((time - 28.5) / 1.0, 0, 1);
+  const p = clamp((time - 29.4) / 1.0, 0, 1);
   const boxes = ["Knowledge explanation", "Worked examples", "Visual needs", "Exam metadata"];
   return (
-    <SceneFrame start={28.7} end={32}>
+    <SceneFrame start={29.5} end={32}>
       <div className="final-lockup">
         <div>
           <div className="kicker">Handbook Generation Around Official Syllabuses</div>
@@ -1639,7 +1664,7 @@ function Footer() {
   const p = `${Math.min(100, (time / 32) * 100)}%`;
   return (
     <div className="footer-mark">
-      <span>IGCSE & A-Level AI Revision Handbook Skill · v0.2.5</span>
+      <span>IGCSE & A-Level AI Revision Handbook Skill · v0.2.6</span>
       <div className="progress-line" style={{ "--p": p }}><span></span></div>
       <span>{Math.floor(time).toString().padStart(2, "0")} / 32s</span>
     </div>

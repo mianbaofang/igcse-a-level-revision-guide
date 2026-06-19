@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.6 - 2026-06-19
+
+### Fixed
+
+- Fixed the intro-animation export viewport and duration. The animation stage is
+  1920x1080, so the render script now captures at 1920x1080 before scaling GIF
+  previews, preventing README animation previews from being cropped into a
+  960x667 frame. The export duration now covers the full 32-second animation.
+- Tightened the intro-animation layout for the provider, handbook-sample, and
+  visual-routing scenes so headings, cards, and statistics do not overlap.
+- Reworded public setup text so it refers to AI and to OpenClaw, Hermes, or
+  other Skill-compatible Agents instead of emphasizing a specific build tool.
+
 ## 0.2.5 - 2026-06-19
 
 ### Fixed

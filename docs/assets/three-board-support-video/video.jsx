@@ -1,4 +1,4 @@
-const { Stage, Sprite, useTime, Easing, interpolate, clamp } = window;
+﻿const { Stage, Sprite, useTime, Easing, interpolate, clamp } = window;
 
 const boardData = [
   {
@@ -96,7 +96,7 @@ function IntroScene() {
   return (
     <SceneFrame start={0} end={6.2}>
       <div className="orbit" style={{ transform: `rotate(${orbit}deg) scale(${1 + Math.sin(time * 0.7) * 0.025})` }}></div>
-      <div className="kicker">v0.2.5 · 三大考试局支持</div>
+      <div className="kicker">v0.2.6 · 三大考试局支持</div>
       <h1 className="headline">三大常用国际考试局，现在都能跑。</h1>
       <p className="lead">
         AQA、Edexcel、CAIE：同一套复习手册框架，但每个考试局都按自己的官方来源读取大纲。
@@ -162,10 +162,10 @@ function PreflightScene() {
 function ProviderScene() {
   const time = useTime();
   return (
-    <SceneFrame start={11.2} end={18.3}>
+    <SceneFrame start={12.1} end={17.1}>
       <div className="kicker">三大考试局怎么支持</div>
-      <h2 className="headline">各走官方来源，不混用大纲。</h2>
-      <p className="lead">AQA 可从官网目录发现课程；Edexcel 会按官方页面规则匹配候选；CAIE 会从官方科目索引匹配候选。无法唯一确认时，先让用户选。</p>
+      <h2 className="headline provider-headline">各走官方来源，不混用大纲。</h2>
+      <p className="lead provider-lead">AQA 可从官网目录发现课程；Edexcel 会按官方页面规则匹配候选；CAIE 会从官方科目索引匹配候选。无法唯一确认时，先让用户选。</p>
       <div className="provider-system">
         {providerData.map((provider, index) => {
           const p = clamp((time - 12.0 - index * 0.28) / 0.75, 0, 1);
@@ -194,11 +194,11 @@ function SamplesScene() {
     ["0", "复杂信息图不再假装已生成"],
   ];
   return (
-    <SceneFrame start={17.4} end={24.8}>
+    <SceneFrame start={17.4} end={24.1}>
       <div className="sample-scene">
         <div className="sample-copy">
           <div className="kicker">真实手册样例</div>
-          <h2 className="headline">展示的是能交付的复习手册。</h2>
+          <h2 className="headline sample-headline">展示的是能交付的复习手册。</h2>
           <div className="stat-list">
             {stats.map((stat, index) => {
               const p = clamp((time - 18.1 - index * 0.18) / 0.55, 0, 1);
@@ -247,9 +247,9 @@ function VisualRouteScene() {
     },
   ];
   return (
-    <SceneFrame start={24.0} end={29.4}>
+    <SceneFrame start={24.4} end={29.3}>
       <div className="kicker">图文路线要诚实</div>
-      <h2 className="headline">先生成手册，再处理复杂配图。</h2>
+      <h2 className="headline route-headline">先生成手册，再处理复杂配图。</h2>
       <div className="visual-routing">
         {cards.map((card, index) => {
           const p = clamp((time - 24.7 - index * 0.18) / 0.7, 0, 1);
@@ -268,10 +268,10 @@ function VisualRouteScene() {
 
 function ClosingScene() {
   const time = useTime();
-  const p = clamp((time - 28.5) / 1.0, 0, 1);
+  const p = clamp((time - 29.4) / 1.0, 0, 1);
   const boxes = ["知识点讲解", "例题卡片", "配图需求", "考试信息"];
   return (
-    <SceneFrame start={28.7} end={32}>
+    <SceneFrame start={29.5} end={32}>
       <div className="final-lockup">
         <div>
           <div className="kicker">围绕官方大纲生成手册</div>
@@ -300,7 +300,7 @@ function Footer() {
   const p = `${Math.min(100, (time / 32) * 100)}%`;
   return (
     <div className="footer-mark">
-      <span>IGCSE & A-Level AI 复习手册 Skill · v0.2.5</span>
+      <span>IGCSE & A-Level AI 复习手册 Skill · v0.2.6</span>
       <div className="progress-line" style={{ "--p": p }}><span></span></div>
       <span>{Math.floor(time).toString().padStart(2, "0")} / 32s</span>
     </div>

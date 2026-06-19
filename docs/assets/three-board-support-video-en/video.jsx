@@ -1,4 +1,4 @@
-const { Stage, Sprite, useTime, Easing, interpolate, clamp } = window;
+﻿const { Stage, Sprite, useTime, Easing, interpolate, clamp } = window;
 
 const boardData = [
   {
@@ -96,7 +96,7 @@ function IntroScene() {
   return (
     <SceneFrame start={0} end={6.2}>
       <div className="orbit" style={{ transform: `rotate(${orbit}deg) scale(${1 + Math.sin(time * 0.7) * 0.025})` }}></div>
-      <div className="kicker">v0.2.5 · Three-Board Support</div>
+      <div className="kicker">v0.2.6 · Three-Board Support</div>
       <h1 className="headline">Three common international exam boards now run in one workflow.</h1>
       <p className="lead">
         AQA, Edexcel, and CAIE share one handbook framework, while each provider reads the syllabus from its own official source.
@@ -162,10 +162,10 @@ function PreflightScene() {
 function ProviderScene() {
   const time = useTime();
   return (
-    <SceneFrame start={11.2} end={18.3}>
+    <SceneFrame start={12.1} end={17.1}>
       <div className="kicker">How The Three Boards Are Supported</div>
-      <h2 className="headline">Each board uses its own official source.</h2>
-      <p className="lead">AQA can discover courses from the official catalogue; Edexcel matches candidates from official pages; CAIE matches from the official subject index. If there is no unique match, the user chooses.</p>
+      <h2 className="headline provider-headline">Each board uses its own official source.</h2>
+      <p className="lead provider-lead">AQA can discover courses from the official catalogue; Edexcel matches candidates from official pages; CAIE matches from the official subject index. If there is no unique match, the user chooses.</p>
       <div className="provider-system">
         {providerData.map((provider, index) => {
           const p = clamp((time - 12.0 - index * 0.28) / 0.75, 0, 1);
@@ -194,11 +194,11 @@ function SamplesScene() {
     ["0", "complex infographics are no longer pretended as generated"],
   ];
   return (
-    <SceneFrame start={17.4} end={24.8}>
+    <SceneFrame start={17.4} end={24.1}>
       <div className="sample-scene">
         <div className="sample-copy">
           <div className="kicker">Real Handbook Samples</div>
-          <h2 className="headline">The samples are deliverable revision handbooks.</h2>
+          <h2 className="headline sample-headline">The samples are deliverable revision handbooks.</h2>
           <div className="stat-list">
             {stats.map((stat, index) => {
               const p = clamp((time - 18.1 - index * 0.18) / 0.55, 0, 1);
@@ -247,9 +247,9 @@ function VisualRouteScene() {
     },
   ];
   return (
-    <SceneFrame start={24.0} end={29.4}>
+    <SceneFrame start={24.4} end={29.3}>
       <div className="kicker">Visual Routing Must Be Honest</div>
-      <h2 className="headline">Generate the handbook first, then handle complex visuals.</h2>
+      <h2 className="headline route-headline">Generate the handbook first, then handle complex visuals.</h2>
       <div className="visual-routing">
         {cards.map((card, index) => {
           const p = clamp((time - 24.7 - index * 0.18) / 0.7, 0, 1);
@@ -268,10 +268,10 @@ function VisualRouteScene() {
 
 function ClosingScene() {
   const time = useTime();
-  const p = clamp((time - 28.5) / 1.0, 0, 1);
+  const p = clamp((time - 29.4) / 1.0, 0, 1);
   const boxes = ["Knowledge explanation", "Worked examples", "Visual needs", "Exam metadata"];
   return (
-    <SceneFrame start={28.7} end={32}>
+    <SceneFrame start={29.5} end={32}>
       <div className="final-lockup">
         <div>
           <div className="kicker">Handbook Generation Around Official Syllabuses</div>
@@ -300,7 +300,7 @@ function Footer() {
   const p = `${Math.min(100, (time / 32) * 100)}%`;
   return (
     <div className="footer-mark">
-      <span>IGCSE & A-Level AI Revision Handbook Skill · v0.2.5</span>
+      <span>IGCSE & A-Level AI Revision Handbook Skill · v0.2.6</span>
       <div className="progress-line" style={{ "--p": p }}><span></span></div>
       <span>{Math.floor(time).toString().padStart(2, "0")} / 32s</span>
     </div>
