@@ -118,6 +118,7 @@ python scripts/finalize_release_samples.py --outputs-root ./outputs
 python scripts/verify_release_samples.py --outputs-root ./outputs
 python scripts/capture_release_assets.py --outputs-root ./outputs --docs-assets docs/assets
 python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 docs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
 ```
 
 If your image provider writes files outside the guide package, import them first.

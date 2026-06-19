@@ -18,17 +18,17 @@ the noise around learning so students can face schoolwork with more calm and
 control.
 
 <p align="center">
-  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">
-    <img src="docs/assets/intro-animation-preview.gif" alt="Three-board revision handbook Skill HTML intro preview" width="100%">
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation-en.html">
+    <img src="docs/assets/intro-animation-preview-en.gif" alt="Three-board revision handbook Skill HTML intro preview" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <a href="README.zh-CN.md">中文 README</a>
+  <a href="README.zh-CN.md">Chinese README</a>
   ·
   <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/">Project site</a>
   ·
-  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation.html">HTML intro</a>
+  <a href="https://mianbaofang.github.io/igcse-a-level-revision-guide/project-intro-animation-en.html">HTML intro</a>
   ·
   <a href="docs/HANDOFF.md">Agent handoff</a>
   ·
@@ -178,6 +178,12 @@ The output language is chosen before generation:
 - Chinese mode keeps student-facing text, labels, examples, and visual prompts in Simplified Chinese.
 - The generator should not create bilingual `Chinese / English` labels.
 - Official English terms can stay in source files or a review appendix, but the student-facing handbook should remain in one language.
+
+## What Changed In v0.2.5
+
+v0.2.5 separates the intro animation by README language. The English README now
+shows and links to an English-only animation and GIF preview, while the Chinese
+README keeps the Chinese animation and Chinese GIF preview.
 
 ## What Changed In v0.2.4
 

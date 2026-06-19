@@ -53,8 +53,10 @@ crawling.
 - Repository name and links use `mianbaofang/igcse-a-level-revision-guide`.
 - GitHub Pages is configured from `main` / `docs`.
 - Public homepage: `docs/index.html`.
-- Public intro animation: `docs/project-intro-animation.html`,
-  `docs/project-intro-animation.mp4`, and `docs/assets/intro-animation-preview.gif`.
+- Public intro animations:
+  `docs/project-intro-animation.html` with `docs/assets/intro-animation-preview.gif`
+  for the Chinese README, and `docs/project-intro-animation-en.html` with
+  `docs/assets/intro-animation-preview-en.gif` for the English README.
 - README and Chinese README now describe ordinary agent usage first, not CLI usage.
 - The three public screenshots are examples of final handbook quality, not a
   subject support limit and not a user-facing release workflow.
@@ -92,6 +94,7 @@ artifacts. The most important samples are:
 - `outputs/chemistry-9202-sample/guide.pdf`
 - `outputs/repo-home-preview.html`
 - `outputs/project-intro-animation.html`
+- `outputs/project-intro-animation-en.html`
 - `outputs/igcse-a-level-revision-guide-source.zip`
 
 Generated guide folders are large and are not committed to Git. Treat them as

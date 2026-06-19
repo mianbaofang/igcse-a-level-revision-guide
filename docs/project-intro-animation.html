@@ -29,5 +29,11 @@
     src="assets/three-board-support-video/index.html"
     allow="autoplay; fullscreen"
   ></iframe>
+  <script>
+    const frame = document.querySelector("iframe");
+    if (window.location.search) {
+      frame.src = frame.getAttribute("src") + window.location.search;
+    }
+  </script>
 </body>
 </html>

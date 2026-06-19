@@ -114,6 +114,7 @@ python scripts/generate_pending_infographics_router.py ./outputs/mathematics-926
 
 ```bash
 python scripts/render_intro_animation.py --html docs/project-intro-animation.html --mp4 docs/project-intro-animation.mp4 --gif docs/assets/intro-animation-preview.gif
+python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 docs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
 ```
 
 - [ ] `validation.json` has no `error` issues for the offline demo.

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.5 - 2026-06-19
+
+### Fixed
+
+- Split the public intro animation into language-specific versions. The English
+  README now links to an English-only HTML animation and GIF preview, while the
+  Chinese README keeps the Chinese animation and Chinese GIF preview.
+- Forwarded animation preview query parameters through the intro wrapper pages
+  so rendered GIF previews can capture the intended timeline instead of a static
+  initial frame.
+
 ## 0.2.4 - 2026-06-19
 
 ### Fixed
