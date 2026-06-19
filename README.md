@@ -173,6 +173,18 @@ The output language is chosen before generation:
 - The generator should not create bilingual `Chinese / English` labels.
 - Official English terms can stay in source files or a review appendix, but the student-facing handbook should remain in one language.
 
+## What Changed In v0.2.2
+
+v0.2.2 is a small Skill-quality release after Darwin review:
+
+- Added visible `STOP` / `CHECKPOINT` gates before download, route selection,
+  image generation, and final delivery.
+- Made Edexcel/CAIE ambiguity handling more explicit: show official candidates
+  and wait for the user instead of guessing.
+- Documented that AQA has catalogue discovery, while Edexcel and CAIE use
+  URL-first / subject-candidate checks rather than full crawlers.
+- Clarified that scratch candidate-check outputs are not final handbooks.
+
 ## What Changed In v0.2.0
 
 v0.1.0 mainly focused on the AQA handbook-generation path. v0.2.0 turns the

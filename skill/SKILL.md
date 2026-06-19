@@ -1,6 +1,6 @@
 ---
 name: igcse-a-level-revision-guide
-description: Generate image-rich International GCSE and International AS-A-level revision handbooks from official syllabus/specification sources, with AQA, Edexcel, and CAIE support.
+description: Use when generating image-rich International GCSE or International AS-A-level revision handbooks from official syllabus/specification sources, with AQA, Edexcel, and CAIE support.
 ---
 
 # IGCSE & A-Level AI Revision Guide Skill
@@ -36,6 +36,60 @@ claim full subject-catalogue crawling for Edexcel. When Edexcel or CAIE cannot
 uniquely identify a subject from exam board, level, subject, and code, return the
 matching official candidates and ask the user to choose one. Do not silently pick
 a likely route.
+
+## Operational Gates
+
+- STOP: preflight incomplete. If subject/provider, required exam year, output
+  language, or explanation style is missing, ask only for the missing items and
+  do not download or write the handbook yet.
+- CHECKPOINT: official candidate selected. Continue only when discovery returns
+  one official subject route or the user has chosen from the candidate list.
+- STOP: no official candidate. Ask for an official subject-page URL, direct
+  specification/syllabus PDF URL, or subject code. Do not switch boards, use an
+  AQA syllabus, or guess a likely URL.
+- CHECKPOINT: base handbook generated. After `guide-plan.json` and
+  `validation.json` exist, report the complex infographic count before starting
+  any external image-generation or import workflow.
+- STOP: no callable image route. If the user names GPT Image, Qwen, SenseNova,
+  or another image model but there is no installed Skill, script, custom
+  provider configuration, or matching asset directory, keep `prompt-queue` and
+  SVG fallbacks with a review warning.
+- CHECKPOINT: quality passed. Present the guide as usable only after validation
+  has no `error` issues and the output includes detailed units, worked examples,
+  source snippets, visual briefs, `sections/`, and `images/`.
+
+When Edexcel or CAIE discovery returns more than one official match, show the
+choices in this shape and wait:
+
+```text
+Official candidates found:
+1. board:
+   level:
+   subject:
+   code:
+   official_url:
+   spec_pdf_url:
+   why_matched:
+
+Please choose a number, or provide the official subject page / syllabus PDF URL.
+```
+
+Provider resolution commands from a full repository checkout:
+
+```bash
+# AQA has catalogue discovery.
+python -m intl_exam_guide discover --provider oxfordaqa
+
+# Edexcel and CAIE are URL-first / subject-candidate routes, not full crawlers.
+# Use a scratch output directory to verify whether the provider resolves one
+# official route or returns an ambiguity/error message to show the user.
+python -m intl_exam_guide generate --provider pearson --query "Accounting" --level igcse --language en --explanation-style friendly --out ./outputs/_candidate-check-edexcel --skip-pdf
+python -m intl_exam_guide generate --provider cambridge --query "Accounting 0452" --level igcse --exam-year 2027 --language en --explanation-style friendly --out ./outputs/_candidate-check-caie --skip-pdf
+```
+
+If those checks create a scratch guide only for route confirmation, do not
+present it as the final handbook. Re-run with the user's confirmed language,
+style, output directory, and PDF setting after the official route is selected.
 
 ## User-Facing Use
 

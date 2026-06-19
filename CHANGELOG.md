@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.2 - 2026-06-19
+
+### Changed
+
+- Darwin-optimized `skill/SKILL.md` and raised the independent judge score from
+  about `81.1/100` to `91.1/100`.
+- Added explicit `STOP` / `CHECKPOINT` gates for missing preflight choices,
+  official candidate selection, missing official routes, base-handbook
+  completion, non-callable image models, and final quality validation.
+- Added a standard Edexcel/CAIE official-candidate response template so agents
+  return choices to the user instead of guessing a subject route.
+- Documented the real provider-resolution commands: AQA supports catalogue
+  discovery, while Edexcel and CAIE use URL-first / subject-candidate checks
+  rather than full-site crawling.
+- Clarified that scratch candidate-check outputs are not final handbooks; agents
+  must re-run with the user's confirmed language, style, output directory, and
+  PDF settings after the official route is selected.
+
 ## 0.2.1 - 2026-06-19
 
 ### Changed
