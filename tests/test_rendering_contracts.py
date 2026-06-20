@@ -34,6 +34,7 @@ from intl_exam_guide.rendering.html import (
     render_assessments,
     render_html,
     render_language_policy,
+    render_listing_note,
     render_practice,
     render_reference_appendix,
     render_revision_stages,
@@ -49,6 +50,7 @@ from intl_exam_guide.rendering.html import (
     render_topics,
     render_visual_example,
     style_display,
+    topic_anchor,
 )
 from intl_exam_guide.rendering.styles import stylesheet
 from intl_exam_guide.rendering.visual_assets import (
@@ -362,6 +364,12 @@ def test_html_helpers_keep_source_policy_and_setup_copy_readable():
     assert style_display("life", "en") == "Life Scene"
     assert image_provider_display(options, "en") == "custom illustration model: SenseNova U1 Fast"
     assert "warning" in link_or_missing(None, "en")
+    assert render_listing_note(qualification, "en") == (
+        '<p class="listing-note">Subject group: Business and Accounting · '
+        "Website group: blue International GCSE subject listing · "
+        "Detected class: btn btn--type-8</p>"
+    )
+    assert topic_anchor(12) == "topic-12"
 
 
 def test_topic_renderers_cover_guides_practice_story_and_visual_blocks():
@@ -492,11 +500,57 @@ def test_secondary_html_sections_and_chinese_rendering_paths():
     assert "topic-1" in chinese_nav
     assert "story-modes" in chinese_story
     assert "source-snippets" in chinese_source
-    assert localized_topic_title("probability and statistics", 1)
+    assert localized_topic_title("probability and statistics", 1) == "统计与概率"
     assert localized_topic_title(chinese_topic.title, 4) == chinese_topic.title[:32]
     assert chinese_title == chinese_topic.title[:32]
-    assert display_topic_title(Topic(title="A2 Topic title", points=[]), 2, "zh-CN")
-    assert format_source_reference(topic.source_snippets[0], "zh-CN")
+    assert display_topic_title(Topic(title="A2 Topic title", points=[]), 2, "zh-CN") == "第 A2 节"
+    assert format_source_reference(topic.source_snippets[0], "zh-CN") == (
+        "第 33 页（官方原文见结构化来源文件）"
+    )
+
+
+def test_chinese_html_rendering_paths_have_direct_contracts():
+    qualification = sample_rendering_qualification()
+    topic = qualification.topics[0]
+    guide = sample_topic_guide()
+    practice = sample_practice_item()
+    visual = sample_visual_brief(
+        topic_title=topic.title,
+        complexity="svg-basic",
+        image_provider="deterministic-svg",
+    )
+    options = GuideRunOptions(
+        requested_subject="Accounting",
+        image_provider="deterministic-svg",
+        explanation_style="friendly",
+        output_language="zh-CN",
+        exam_year="2028",
+    )
+
+    overview = render_student_overview(qualification, ["第一轮通读", "第二轮做题"], options)
+    summary = render_summary(qualification, "zh-CN")
+    assessments = render_assessments(qualification, "zh-CN")
+    topics = render_topics([topic], [guide], [practice], [visual], {}, "zh-CN")
+    topic_guide = render_topic_guide(guide, "zh-CN")
+    topic_diagram = render_topic_diagram(topic, guide, 1, "zh-CN")
+    visual_example = render_visual_example(topic, guide, visual, 1, {}, "zh-CN")
+    practice_html = render_practice(practice, "zh-CN", "会计记录")
+    appendix = render_reference_appendix(qualification, 1, "zh-CN")
+
+    assert "怎么用这本手册" in overview
+    assert "科目：会计学" in overview
+    assert "课程定位" in summary
+    assert "考试结构" in assessments
+    assert "T1." in topics
+    assert "本节要掌握" in topics
+    assert "做题逻辑" in topics
+    assert "一句话本质" in topic_guide
+    assert "图文解释" in topic_diagram
+    assert "本地矢量图草图" in visual_example
+    assert "图形例题" in visual_example
+    assert "会计记录 - 例题" in practice_html
+    assert "附录：来源与考试信息" in appendix
+    assert "生成例题数量" in appendix
 
 
 def test_source_snippets_and_topic_titles_have_direct_rendering_guards():

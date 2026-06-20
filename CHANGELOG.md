@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.2.23 - 2026-06-21
+
+### Tests
+
+- Closed the tenth-round P3 review items by replacing weak truthy assertions
+  with exact-value assertions for Chinese topic-title and source-reference
+  helpers.
+- Added direct `zh-CN` rendering-contract coverage for handbook overview,
+  summary, assessments, `render_topics()`, topic guide cards, concept diagrams,
+  visual examples, practice cards, and the source appendix.
+- Added dedicated tests for `rendering/svg_templates.py`, covering English and
+  Chinese SVG routing, direct SVG helpers, fallback visuals, escaping, and
+  deterministic word wrapping.
+- Added dedicated tests for `rendering/text.py`, covering supported subject
+  display names, generic fallback, and HTML escaping.
+- Added direct checks for the small `render_listing_note()` and `topic_anchor()`
+  helpers that were previously only indirectly covered.
+
+### Verified
+
+- Fresh offline demo evidence was regenerated from the current working copy:
+  `python -m intl_exam_guide demo --out ./outputs/_fresh-v023-demo --language en --image-provider deterministic-svg --explanation-style friendly --skip-pdf`.
+  The resulting validation output reported `issues: []`, 3 topics, 6 practice
+  cards, 3 topic guides, 3 visual briefs, 3 SVG-safe visuals, 3 topic diagrams
+  in HTML, 3 visual examples in HTML, 7 section files, 3 image files, and both
+  visual/package manifests. The ignored output folder was removed after
+  collecting release evidence and is not committed.
+- `python -m pytest tests/test_rendering_contracts.py tests/test_svg_templates.py tests/test_rendering_text.py -q`
+  (`23 passed`).
+- `python -m pytest tests/test_svg_templates.py --cov=intl_exam_guide.rendering.svg_templates --cov-report=term-missing -q`
+  (`4 passed`, `svg_templates.py` dedicated coverage `100%`).
+- `python -m pytest tests/test_rendering_text.py --cov=intl_exam_guide.rendering.text --cov-report=term-missing -q`
+  (`3 passed`, `text.py` dedicated coverage `100%`).
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q`
+  (`182 passed`, coverage `82.97%`; `rendering/html.py` coverage `97%`).
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py .` (`raw_key_matches: 0`)
+- `git diff --check`
+
 ## 0.2.22 - 2026-06-21
 
 ### Tests

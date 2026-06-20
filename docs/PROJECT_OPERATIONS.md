@@ -105,6 +105,14 @@ example routing, source appendix, assessment fallback, navigation, and topic
 title localization. Keep this module covered with direct unit tests whenever
 handbook structure changes.
 
+v0.2.23 closed the tenth-round P3 audit items: weak truthy assertions were
+converted to exact-value assertions, `zh-CN` rendering branches received direct
+contract coverage, `rendering/svg_templates.py` and `rendering/text.py` gained
+dedicated tests, and fresh offline demo evidence was restored in the release
+notes. Future test-only releases still need fresh demo evidence unless this
+operations document and `docs/RELEASE_CHECKLIST.md` explicitly define an
+exemption.
+
 ## 4. Version And Release Rules
 
 Use GitHub Releases, not tags alone.

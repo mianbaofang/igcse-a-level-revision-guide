@@ -272,6 +272,10 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   guide cards, concept diagrams, story-mode blocks, practice cards, visual
   example routing, source appendix, assessment fallback, navigation, and topic
   title localization.
+- **v0.2.23:** closes the tenth-round P3 audit items: weak truthy assertions are
+  now exact-value checks, `zh-CN` rendering paths have direct contracts, fresh
+  demo evidence is restored for the release, and `svg_templates.py` plus
+  `text.py` now have dedicated tests.
 
 ## Developer Quick Start
 
