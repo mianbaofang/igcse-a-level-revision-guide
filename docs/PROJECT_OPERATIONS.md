@@ -98,6 +98,13 @@ generated raster reuse, SVG fallback assets, modular handbook packaging, and the
 Playwright Chrome-to-Edge PDF fallback route. Future rendering changes should
 update these contract tests instead of relying only on end-to-end demo coverage.
 
+v0.2.22 closed the ninth-round rendering coverage gap by adding direct
+`rendering/html.py` contract tests for the full HTML entry point, topic-section
+renderer, guide cards, diagrams, story-mode blocks, practice cards, visual
+example routing, source appendix, assessment fallback, navigation, and topic
+title localization. Keep this module covered with direct unit tests whenever
+handbook structure changes.
+
 ## 4. Version And Release Rules
 
 Use GitHub Releases, not tags alone.

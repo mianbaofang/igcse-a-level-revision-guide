@@ -267,6 +267,11 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   contract tests now cover handbook cover identity, stylesheet/print layout,
   visual manifest handling, generated raster reuse, SVG fallback assets, modular
   package output, and the Playwright Chrome-to-Edge PDF fallback path.
+- **v0.2.22:** closes the ninth-round rendering coverage gap: `html.py`
+  now has direct contract tests for the full HTML entry point, `render_topics()`,
+  guide cards, concept diagrams, story-mode blocks, practice cards, visual
+  example routing, source appendix, assessment fallback, navigation, and topic
+  title localization.
 
 ## Developer Quick Start
 

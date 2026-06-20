@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.22 - 2026-06-21
+
+### Tests
+
+- Closed the ninth-round audit gap around `rendering/html.py` by adding direct
+  rendering contract tests for the full HTML entry point, topic sections,
+  guide cards, concept diagrams, story-mode blocks, practice cards, visual
+  example routing, source appendix, assessment fallback, navigation, and topic
+  title localization.
+- Added direct coverage for the `render_topics()` function group instead of
+  relying only on end-to-end guide generation to touch the topic renderer.
+
+### Verified
+
+- `python -m pytest tests/test_rendering_contracts.py --cov=intl_exam_guide.rendering.html --cov-report=term-missing -q`
+  (`15 passed`; `rendering/html.py` direct coverage increased to `89%`).
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q`
+  (`174 passed`, coverage `81.70%`; `rendering/html.py` total coverage `96%`).
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py .` (`raw_key_matches: 0`)
+- `git diff --check`
+
 ## 0.2.21 - 2026-06-21
 
 ### Tests

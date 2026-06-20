@@ -4,10 +4,12 @@ from intl_exam_guide.models import (
     AssessmentPaper,
     GuidePlan,
     GuideRunOptions,
+    PracticeItem,
     Qualification,
     SourceRecord,
     SourceSnippet,
     Topic,
+    TopicGuide,
     VisualBrief,
 )
 from intl_exam_guide.planning.guide_plan import build_guide_plan
@@ -25,12 +27,27 @@ from intl_exam_guide.rendering.handbook_package import (
 )
 from intl_exam_guide.rendering.html import (
     display_topic_title,
+    format_source_reference,
     image_provider_display,
     link_or_missing,
+    localized_topic_title,
+    render_assessments,
+    render_html,
     render_language_policy,
+    render_practice,
+    render_reference_appendix,
+    render_revision_stages,
     render_source_note,
     render_source_snippets,
+    render_story_modes,
     render_student_overview,
+    render_summary,
+    render_topic_diagram,
+    render_topic_guide,
+    render_topic_map,
+    render_topic_nav,
+    render_topics,
+    render_visual_example,
     style_display,
 )
 from intl_exam_guide.rendering.styles import stylesheet
@@ -88,6 +105,84 @@ def sample_rendering_qualification() -> Qualification:
         audience_note="International GCSE qualification for students outside the UK.",
         provider="OxfordAQA",
         qualification_family="International GCSE",
+    )
+
+
+def sample_topic_guide(topic_title: str = "3.1 - Source documents") -> TopicGuide:
+    return TopicGuide(
+        topic_title=topic_title,
+        essence="Business evidence must flow into the right book before it reaches the ledger.",
+        analogy="Treat each invoice like a boarding pass: it tells the transaction where to go.",
+        mini_worked_example="A sales invoice is first recorded in the sales day book.",
+        worked_solution_steps=[
+            "Identify the source document.",
+            "Choose the correct book of prime entry.",
+            "Post the total to the relevant ledger account.",
+        ],
+        pitfall="Do not post every invoice straight into the final accounts.",
+        checklist=[
+            "Match invoices, credit notes, and receipts to the right record.",
+            "Explain why books of prime entry reduce repeated ledger writing.",
+            "Use ledger totals when preparing statements.",
+        ],
+        diagram_brief="Show source documents feeding books of prime entry and then ledgers.",
+        source_snippets=[
+            SourceSnippet(
+                page=12,
+                text="Students should explain source documents and books of prime entry.",
+                matched_term="Source documents",
+            )
+        ],
+    )
+
+
+def sample_practice_item(topic_title: str = "3.1 - Source documents") -> PracticeItem:
+    return PracticeItem(
+        topic_title=topic_title,
+        command_word="Explain",
+        difficulty="medium",
+        focus_point="source document to book of prime entry",
+        question="Explain where a sales invoice should be recorded first.",
+        answer_frame=[
+            "Name the source document.",
+            "Name the first accounting book.",
+            "Explain why this keeps records organised.",
+        ],
+        public_solution_steps=[
+            "A sales invoice is evidence of a credit sale.",
+            "It is recorded in the sales day book first.",
+            "The total is later posted to the ledger.",
+        ],
+        answer_checkpoints=[
+            "Sales invoice identified.",
+            "Sales day book named.",
+            "Ledger posting explained.",
+        ],
+        source_points=["Explain source documents and books of prime entry."],
+        source_snippets=[
+            SourceSnippet(
+                page=12,
+                text="Students should explain source documents and books of prime entry.",
+                matched_term="Source documents",
+            )
+        ],
+    )
+
+
+def sample_visual_brief(
+    topic_title: str = "3.1 - Source documents",
+    complexity: str = "svg-basic",
+    image_provider: str = "deterministic-svg",
+) -> VisualBrief:
+    return VisualBrief(
+        topic_title=topic_title,
+        focus_point="source documents to ledger flow",
+        trigger="multi-step accounting process",
+        visual_type="ledger flow diagram",
+        complexity=complexity,
+        image_provider=image_provider,
+        prompt="Create a clear source-document to ledger flow visual.",
+        source_points=["Explain source documents and books of prime entry."],
     )
 
 
@@ -188,6 +283,56 @@ def test_render_cover_keeps_first_page_to_course_identity():
     assert "Assessment Structure" not in html
 
 
+def test_render_html_writes_full_handbook_from_manifest_assets(tmp_path):
+    qualification = sample_rendering_qualification()
+    guide = sample_topic_guide()
+    practice = sample_practice_item()
+    visual = sample_visual_brief()
+    plan = GuidePlan(
+        qualification=qualification,
+        run_options=GuideRunOptions(
+            requested_subject="Accounting",
+            image_provider="deterministic-svg",
+            explanation_style="friendly",
+            output_language="en",
+            exam_year="2028",
+        ),
+        topic_guides=[guide],
+        practice_items=[practice],
+        visual_briefs=[visual],
+        diagram_briefs=[],
+        revision_stages=["Read the source", "Work examples"],
+    )
+    manifest_path = tmp_path / "images" / "visual_manifest.json"
+    manifest_path.parent.mkdir()
+    manifest_path.write_text(
+        json.dumps(
+            [
+                {
+                    "key": visual_asset_key_from_brief(visual),
+                    "file": "source-flow.svg",
+                    "asset_status": "svg-draft",
+                    "image_provider": "deterministic-svg",
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    output_path = render_html(plan, tmp_path / "guide.html", manifest_path)
+    html = output_path.read_text(encoding="utf-8")
+
+    assert output_path.exists()
+    assert '<html lang="en">' in html
+    assert "International GCSE Accounting Example (9215) Revision Guide" in html
+    assert "How to Study" in html
+    assert "Study Roadmap" in html
+    assert "Quick Navigation" in html
+    assert "source documents to ledger flow" in html
+    assert "Source Appendix" in html
+
+
 def test_html_helpers_keep_source_policy_and_setup_copy_readable():
     qualification = sample_rendering_qualification()
     qualification.source.listing_subject = "Business and Accounting"
@@ -217,6 +362,141 @@ def test_html_helpers_keep_source_policy_and_setup_copy_readable():
     assert style_display("life", "en") == "Life Scene"
     assert image_provider_display(options, "en") == "custom illustration model: SenseNova U1 Fast"
     assert "warning" in link_or_missing(None, "en")
+
+
+def test_topic_renderers_cover_guides_practice_story_and_visual_blocks():
+    qualification = sample_rendering_qualification()
+    topic = qualification.topics[0]
+    guide = sample_topic_guide()
+    practice = sample_practice_item()
+    visual = sample_visual_brief()
+
+    rendered_topics = render_topics(
+        [topic],
+        [guide],
+        [practice],
+        [visual],
+        {},
+        "en",
+    )
+
+    assert 'id="topic-1"' in rendered_topics
+    assert "Key Ideas" in rendered_topics
+    assert "Exam Logic" in rendered_topics
+    assert "One-Sentence Essence" in rendered_topics
+    assert "Concept Map" in rendered_topics
+    assert "Visual Worked Example" in rendered_topics
+    assert "Life Scene" in rendered_topics
+    assert "Worked Example" in rendered_topics
+    assert "Explain where a sales invoice should be recorded first." in rendered_topics
+    assert rendered_topics.count("<article class=\"practice\">") == 1
+
+    assert "Everyday Analogy" in render_topic_guide(guide, "en")
+    assert "Concept map for 3.1 - Source documents" in render_topic_diagram(topic, guide, 1, "en")
+    assert "Local SVG draft" in render_visual_example(topic, guide, visual, 1, {}, "en")
+    assert "Image model slot: custom-provider" in render_visual_example(
+        topic,
+        guide,
+        sample_visual_brief(image_provider="custom-provider"),
+        1,
+        {},
+        "en",
+    )
+    assert "Narrative explanation styles" in render_story_modes(topic, guide, "en", 1)
+    assert "Source documents - Worked Example" in render_practice(practice, "en")
+
+
+def test_topic_renderers_cover_missing_guides_and_empty_topic_fallbacks():
+    empty_topic = Topic(title="Unmapped topic", points=[])
+
+    html = render_topics([empty_topic], [], [], [], None, "en")
+
+    assert "Use the official specification text to expand this topic" in html
+    assert "One-Sentence Essence" not in html
+    assert "Visual Worked Example" not in html
+    assert "No page-level source snippet was matched" in html
+    assert '<div class="practice-block"></div>' in html
+
+
+def test_infographic_visual_branch_uses_manifest_asset_when_available():
+    qualification = sample_rendering_qualification()
+    topic = qualification.topics[0]
+    guide = sample_topic_guide()
+    visual = sample_visual_brief(
+        complexity="infographic",
+        image_provider="external-generation-required",
+    )
+    asset = {
+        "file": "accounting-flow.png",
+        "asset_status": "reviewed-generated",
+        "image_provider": "external-reviewed-workflow",
+    }
+
+    html = render_visual_example(
+        topic,
+        guide,
+        visual,
+        1,
+        {visual_asset_key_from_brief(visual): asset},
+        "en",
+    )
+
+    assert "Generated Infographic" in html
+    assert "accounting-flow.png" in html
+    assert "external-reviewed-workflow - reviewed visual asset" in html
+
+
+def test_secondary_html_sections_and_chinese_rendering_paths():
+    qualification = sample_rendering_qualification()
+    qualification.assessments = []
+    qualification.source.specification_sha256 = None
+    guide = sample_topic_guide()
+    topic = Topic(
+        title="Demand and supply",
+        points=["Market demand shifts"],
+        source_snippets=[
+            SourceSnippet(
+                page=33,
+                text="Learners should understand changes in demand and supply.",
+                matched_term="Demand and supply",
+            )
+        ],
+    )
+    chinese_topic = Topic(title="中文主题名称很长但应该保持可读", points=[])
+
+    assert "Course Position" in render_summary(qualification, "en")
+    assert "warning" in render_assessments(qualification, "en")
+    assert "Study Roadmap" in render_topic_map([topic], "en", [guide])
+    assert "Use the specification text" in render_topic_map([Topic(title="No points", points=[])], "en")
+    assert "Quick Navigation" in render_topic_nav([topic], "en")
+    assert "Three-Stage Revision" in render_revision_stages(["Plan", "Practise"], "en")
+    assert "Generated practice examples" in render_reference_appendix(qualification, 3, "en")
+    assert "Source: review required" == format_source_reference(None, "en", include_prefix=True)
+    assert "Source: p.33 - Demand and supply" == format_source_reference(
+        topic.source_snippets[0],
+        "en",
+        include_prefix=True,
+    )
+    assert "href=\"https://example.test/spec.pdf\"" in link_or_missing(
+        "https://example.test/spec.pdf",
+        "en",
+    )
+
+    chinese_map = render_topic_map([topic], "zh-CN", [guide])
+    chinese_nav = render_topic_nav([topic], "zh-CN")
+    chinese_story = render_story_modes(topic, guide, "zh-CN", 1)
+    chinese_source = render_source_snippets(topic.source_snippets, language="zh-CN")
+    chinese_title = display_topic_title(chinese_topic, 4, "zh-CN")
+
+    assert "topic-1" in chinese_map
+    assert "topic-1" in chinese_nav
+    assert "story-modes" in chinese_story
+    assert "source-snippets" in chinese_source
+    assert localized_topic_title("probability and statistics", 1)
+    assert localized_topic_title(chinese_topic.title, 4) == chinese_topic.title[:32]
+    assert chinese_title == chinese_topic.title[:32]
+    assert display_topic_title(Topic(title="A2 Topic title", points=[]), 2, "zh-CN")
+    assert format_source_reference(topic.source_snippets[0], "zh-CN")
 
 
 def test_source_snippets_and_topic_titles_have_direct_rendering_guards():
