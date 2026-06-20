@@ -1542,10 +1542,10 @@ def build_revision_stages(qualification_type: str, output_language: str = "en") 
             return [
                 "第 1 阶段 - 单元地图：先分清 AS、A2 或模块单元，再做综合题。",
                 "第 2 阶段 - 建构：把每个单元点整理成短讲解、一道应用题和一个易错点。",
-                "第 3 阶段 - 测试：先按单元练，再在指令词和来源边界稳定后做综合练习。",
+                "第 3 阶段 - 测试：先按单元练，再把不同单元放在一起做综合练习。",
             ]
         return [
-            "第 1 阶段 - 线性地图：先掌握整门课的主题边界，再进入混合题。",
+            "第 1 阶段 - 线性地图：先看完整门课的主题结构，再进入混合题。",
             "第 2 阶段 - 建构：把每个大纲点整理成一页笔记、一道例题和一个易错点。",
             "第 3 阶段 - 测试：练习整卷混合题，复盘错题，并每周更新检查清单。",
         ]
@@ -1553,10 +1553,10 @@ def build_revision_stages(qualification_type: str, output_language: str = "en") 
         return [
             "Stage 1 - Unit map: separate AS and A2 or modular units before mixing questions.",
             "Stage 2 - Build: turn each unit point into a short explanation, one application prompt, and one pitfall.",
-            "Stage 3 - Test: practise by unit first, then combine units once command words and source boundaries are secure.",
+            "Stage 3 - Test: practise by unit first, then combine units in mixed questions.",
         ]
     return [
-        "Stage 1 - Linear map: learn the full-course topic boundaries before doing mixed papers.",
+        "Stage 1 - Linear map: learn the full-course topic structure before doing mixed papers.",
         "Stage 2 - Build: turn each syllabus point into a one-page note, one worked example, and one pitfall.",
         "Stage 3 - Test: practise mixed end-of-course questions, review errors, and update the checklist weekly.",
     ]

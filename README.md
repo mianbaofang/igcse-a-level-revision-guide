@@ -214,6 +214,13 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 - **v0.2.11:** clarifies validation output for visual assets: generated raster
   infographics, SVG fallback assets, and pending infographic briefs are now
   counted separately so prompt-queue runs are not mistaken for missing visuals.
+- **v0.2.12:** cleans up Skill/project wording so image generation is presented
+  as a post-handbook review step, not a required preflight model choice, and
+  keeps the explanation diagrams aligned with the AQA, Edexcel, and CAIE flow.
+- **v0.2.13:** redesigns the generated handbook's opening pages: the cover now
+  focuses on exam-board/course identity, the setup page avoids internal
+  engineering wording, and the roadmap table removes the extra study-route
+  column.
 
 ## Developer Quick Start
 

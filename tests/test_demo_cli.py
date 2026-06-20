@@ -13,7 +13,7 @@ from intl_exam_guide.planning.guide_plan import (
 )
 from intl_exam_guide.planning.subject_profiles import resolve_subject_profile
 from intl_exam_guide.rendering.handbook_package import write_handbook_package
-from intl_exam_guide.rendering.html import render_html, subject_display_name
+from intl_exam_guide.rendering.html import render_cover, render_html, subject_display_name
 from intl_exam_guide.rendering.visual_assets import (
     has_renderable_infographic,
     scientific_vector_route,
@@ -216,7 +216,9 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert "Concept Map" in html
     assert "Visual Worked Example" in html
     assert "How to Study" in html
-    assert "Preflight Choices" in html
+    assert "Guide Setup" in html
+    assert "Study route" not in html
+    assert "key idea -> worked example -> error review" not in html
     assert "图文解释" not in html
     assert "Worked Example" in html
     assert "Solution" in html
@@ -256,6 +258,8 @@ def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
     assert 'lang="zh-CN"' in html
     assert "怎么用这本手册" in html
     assert "复习路线" in html
+    assert "学习路径" not in html
+    assert "核心概念 -> 例题 -> 错题回看" not in html
     assert "快速目录" in html
     assert 'href="#topic-1"' in html
     assert 'id="topic-1"' in html
@@ -283,6 +287,43 @@ def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
     validation = json.loads((output_dir / "validation.json").read_text(encoding="utf-8"))
     assert validation["review_summary"]["output_language"] == "zh-CN"
     assert validation["issues"] == []
+
+
+def test_cover_is_course_identity_only():
+    qualification = sample_qualification()
+    html = render_cover(
+        qualification,
+        build_guide_plan(qualification, output_language="en", explanation_style="friendly").run_options,
+    )
+
+    assert "AQA" in html
+    assert "Oxford International AQA Examinations" in html
+    assert "Chemistry Example" in html
+    assert "9202" in html
+    assert "Specification / syllabus version" in html
+    assert "Knowledge units" not in html
+    assert "Assessment papers" not in html
+    assert "Style" not in html
+    assert "How to Study" not in html
+
+
+def test_cover_uses_provider_version_fields():
+    qualification = sample_qualification()
+    qualification.provider = "cambridge"
+    qualification.source.provider = "cambridge"
+    qualification.qualification_family = "Cambridge IGCSE"
+    qualification.source.issue_version = "2027-2029 syllabus"
+    qualification.source.selected_exam_year = "2027"
+    html = render_cover(
+        qualification,
+        build_guide_plan(qualification, output_language="en", explanation_style="friendly").run_options,
+    )
+
+    assert "CAIE" in html
+    assert "Cambridge International Education" in html
+    assert "Cambridge IGCSE" in html
+    assert "2027-2029 syllabus" in html
+    assert "2027" in html
 
 
 def test_generated_infographic_assets_are_preserved_and_rendered(tmp_path):

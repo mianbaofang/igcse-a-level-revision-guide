@@ -690,6 +690,7 @@ def localized_topic_marker(topic_title: str) -> str | None:
     keyword_titles = [
         (("measurement", "data", "graph"), "测量与数据"),
         (("force", "motion"), "力与运动"),
+        (("material", "change"), "材料与变化"),
         (("particle", "state", "solid", "liquid", "gas"), "粒子模型与物质状态"),
         (("bond", "structure"), "结构与性质"),
         (("acid", "alkali", "ph"), "酸碱与 pH"),

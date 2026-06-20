@@ -759,7 +759,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.2.11</div>
+          <div class="kicker">三大考试局支持 · v0.2.13</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -1048,36 +1048,36 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>v0.2.11：验证摘要说清楚图文状态。</h2>
-          <p>主流程仍然围绕“如何生成复习手册”；本次把外部模型生成的位图信息图、SVG 兜底图、仍待生成或审核的信息图 brief 分开统计，避免把 prompt-queue 样本误判成没有配图产物。</p>
+          <h2>v0.2.13：生成手册前三页更像正式交付物。</h2>
+          <p>主流程仍然围绕“如何生成复习手册”；本次优化手册封面、说明页和复习路线页，让学生打开后先看到考试局、课程、科目、课程代码、大纲版本和考试年份，再进入学习安排。</p>
         </div>
         <div class="flow">
           <article class="flow-item">
             <div class="num">01 · 考试局</div>
             <div>
-              <h3>三大考试局继续作为基准</h3>
-              <p>AQA、Edexcel、CAIE 都保留官方来源路线；Edexcel 会截断 Pearson 前言页，CAIE 会跳过 overview 和 AO 表。</p>
+              <h3>封面先讲清课程身份</h3>
+              <p>第一页只保留考试局、qualification、科目、课程代码、大纲版本和目标考试年份，不再塞入学习统计或生成设置。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">02 · 语言</div>
             <div>
-              <h3>生成前必须确认四件事</h3>
-              <p>考试局和科目、必要考试年份、输出语言、讲解风格仍然必须先确认；多个官方候选会返回给用户选择。</p>
+              <h3>说明页使用学生能看懂的话</h3>
+              <p>去掉“边界”“安全图形”“确定性矢量图”等内部工程词，改成手册设置、插图说明和讲解语气。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">03 · 图文</div>
             <div>
-              <h3>SVG 兜底更像学科图</h3>
-              <p>没有外部生图模型时，会计、经济、数学、物理、化学等主题会走对应的安全 SVG 模板，并明确提示需要复核。</p>
+              <h3>路线页更干净</h3>
+              <p>复习路线表格删除多余的学习路径列，只保留知识单元和要掌握什么。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">04 · 质量</div>
             <div>
-              <h3>质量不过不交付</h3>
-              <p>生成页增加快速目录、阅读宽度约束和更细的质量验证；topic、例题、图文块缺失时会在验证中暴露。</p>
+              <h3>仍保留质量验证</h3>
+              <p>测试会检查封面字段、单语言输出、路线页列数和常见中文标题 fallback，避免正式手册退回旧样式。</p>
             </div>
           </article>
         </div>

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.13 - 2026-06-20
+
+### Changed
+
+- Redesigned the generated handbook cover so the first page is a clean course
+  identity page: exam board, qualification, subject, course code, syllabus /
+  specification version, and target exam year.
+- Kept learning route and generation statistics off the cover and moved setup
+  context into the following pages.
+- Simplified the roadmap page by removing the extra study-route column and
+  keeping the table focused on knowledge units and what students need to
+  master.
+
+### Fixed
+
+- Removed student-facing internal wording such as source "boundaries",
+  preflight image routes, and deterministic/SVG safety language from the guide
+  setup copy.
+- Improved Chinese fallback topic titles for demo material/change content so
+  the guide does not fall back to generic labels like "第 3 节".
+
+### Verified
+
+- `python -m pytest tests/test_demo_cli.py -q` (`30 passed`)
+
 ## 0.2.12 - 2026-06-20
 
 ### Fixed

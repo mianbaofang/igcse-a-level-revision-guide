@@ -22,23 +22,113 @@ body {
 }
 a { color: var(--blue); }
 .cover {
-  min-height: 92vh;
-  padding: 54px 8vw;
-  color: white;
+  min-height: 100vh;
+  padding: 46px max(28px, 8vw);
+  color: var(--ink);
   background:
-    linear-gradient(90deg, #124f9b 0 72%, #b83246 72% 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border-bottom: 12px solid var(--gold);
+    linear-gradient(90deg, var(--blue) 0 22px, transparent 22px),
+    linear-gradient(180deg, #edf4ff 0 38%, transparent 38%),
+    var(--paper);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 30px;
+  border-bottom: 10px solid var(--gold);
 }
-.kicker { color: #ffe4a9; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.cover-mast {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  max-width: 980px;
+}
+.exam-board-badge {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--blue) 0 64%, var(--red) 64% 100%);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+.exam-board-badge.board-edexcel {
+  background: linear-gradient(135deg, #007b83 0 64%, #2d5aa7 64% 100%);
+}
+.exam-board-badge.board-caie {
+  background: linear-gradient(135deg, #b42c35 0 64%, #173154 64% 100%);
+}
+.exam-board-name {
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+.exam-board-name span,
+.cover-identity-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.exam-board-name strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+  line-height: 1.25;
+}
+.cover-title-lockup {
+  align-self: center;
+  display: grid;
+  gap: 16px;
+  max-width: 980px;
+}
+.qualification-pill {
+  width: max-content;
+  max-width: 100%;
+  padding: 7px 11px;
+  color: var(--blue);
+  background: #ffffff;
+  border: 1px solid #b8cce6;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
 h1 { max-width: 920px; font-size: 52px; line-height: 1.05; margin: 18px 0; letter-spacing: 0; }
-.subtitle { max-width: 760px; font-size: 19px; color: #f7f1e6; }
-.cover-grid { display: grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap: 12px; max-width: 920px; margin-top: 30px; }
-.cover-grid div { border: 1px solid rgba(255,255,255,.32); padding: 16px; background: rgba(255,255,255,.1); }
-.cover-grid span { display: block; color: #ffe4a9; font-size: 12px; text-transform: uppercase; }
-.cover-grid strong { display: block; font-size: 26px; margin-top: 4px; }
+.cover-title-lockup h1 {
+  margin: 0;
+  font-size: clamp(44px, 8vw, 82px);
+  line-height: .94;
+}
+.course-code {
+  width: max-content;
+  max-width: 100%;
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--red);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+.cover-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 980px;
+}
+.cover-identity-grid div {
+  min-height: 76px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+.cover-identity-grid strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+  line-height: 1.25;
+}
 .band, .topic {
   margin: 0 auto;
   padding: 34px max(24px, calc((100vw - 1120px) / 2));
@@ -328,7 +418,10 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
 .final { background: #f4fff9; }
 @media (max-width: 760px) {
   h1 { font-size: 38px; }
-  .cover-grid, .overview-grid, .assessment-grid, .topic-grid, .practice-block, .guide-grid, .visual-grid, .generated-infographic-grid, .story-modes, .concept-html-map, .concept-html-map ol { grid-template-columns: 1fr; }
+  .cover-mast, .cover-identity-grid, .overview-grid, .assessment-grid, .topic-grid, .practice-block, .guide-grid, .visual-grid, .generated-infographic-grid, .story-modes, .concept-html-map, .concept-html-map ol { grid-template-columns: 1fr; }
+  .cover { padding: 36px 24px; }
+  .cover-title-lockup h1 { font-size: 44px; }
+  .course-code { font-size: 19px; }
   .topic-nav { position: static; }
 }
 @media print {

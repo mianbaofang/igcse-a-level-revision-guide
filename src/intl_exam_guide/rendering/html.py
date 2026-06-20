@@ -1,6 +1,5 @@
 ﻿from __future__ import annotations
 
-import html
 from pathlib import Path
 import re
 from typing import Any
@@ -15,9 +14,11 @@ from intl_exam_guide.models import (
     TopicGuide,
     VisualBrief,
 )
+from intl_exam_guide.rendering.cover import render_cover
 from intl_exam_guide.rendering.styles import stylesheet
 from intl_exam_guide.rendering.story_modes import chinese_story_lines, english_story_lines
 from intl_exam_guide.rendering.svg_templates import render_topic_visual_svg
+from intl_exam_guide.rendering.text import html_escape, subject_display_name
 from intl_exam_guide.rendering.visual_assets import (
     build_visual_asset_lookup,
     has_renderable_infographic,
@@ -66,38 +67,6 @@ def render_html(
     return output_path
 
 
-def render_cover(qualification: Qualification, options: GuideRunOptions) -> str:
-    if options.output_language == "en":
-        qtype = "International GCSE" if qualification.qualification_type == "international_gcse" else "International AS-A-level"
-        return f"""
-<section class="cover">
-  <div class="kicker">{html_escape(qtype)} Study and Revision Guide</div>
-  <h1>{html_escape(qualification.title)}</h1>
-  <p class="subtitle">Built from the official specification into learnable, practicable, and checkable knowledge units. Understand first, inspect the visual, then answer the worked examples.</p>
-  <div class="cover-grid">
-    <div><span>Code</span><strong>{html_escape(qualification.code or "Unknown")}</strong></div>
-    <div><span>Knowledge units</span><strong>{len(qualification.topics)}</strong></div>
-    <div><span>Assessment papers</span><strong>{len(qualification.assessments)}</strong></div>
-    <div><span>Style</span><strong>{html_escape(style_display(options.explanation_style, options.output_language))}</strong></div>
-  </div>
-</section>
-"""
-    qtype = "国际 GCSE" if qualification.qualification_type == "international_gcse" else "国际 AS-A-level"
-    return f"""
-<section class="cover">
-  <div class="kicker">{html_escape(qtype)} 学习复习手册</div>
-  <h1>{html_escape(subject_display_name(qualification))}学习复习手册</h1>
-  <p class="subtitle">按官方大纲拆成可学习、可做题、可检查的知识单元。先理解，再看图，再做例题。</p>
-  <div class="cover-grid">
-    <div><span>课程编号</span><strong>{html_escape(qualification.code or "未知")}</strong></div>
-    <div><span>知识单元</span><strong>{len(qualification.topics)}</strong></div>
-    <div><span>考试试卷</span><strong>{len(qualification.assessments)}</strong></div>
-    <div><span>讲解风格</span><strong>{html_escape(style_display(options.explanation_style, options.output_language))}</strong></div>
-  </div>
-</section>
-"""
-
-
 def render_student_overview(
     qualification: Qualification,
     stages: list[str],
@@ -128,18 +97,24 @@ def render_student_overview(
       <ul>{summary}</ul>
     </article>
     <article>
-      <h3>Preflight Choices</h3>
+      <h3>Guide Setup</h3>
       <ul>
         <li>Subject request: {html_escape(options.requested_subject)}</li>
         <li>Output language: English</li>
-        <li>Image route: {html_escape(image_provider_display(options, options.output_language))}</li>
-        <li>Explanation style: {html_escape(style_display(options.explanation_style, options.output_language))}</li>
+        <li>Illustrations: {html_escape(image_provider_display(options, options.output_language))}</li>
+        <li>Writing style: {html_escape(style_display(options.explanation_style, options.output_language))}</li>
       </ul>
     </article>
   </div>
 </section>
 """
     subject_request = subject_display_name(qualification)
+    if subject_request == "本课程":
+        subject_request = re.sub(r"\s*\([^)]*\)\s*$", "", qualification.title).strip()
+        for prefix in ("International GCSE", "International AS-A-level"):
+            if subject_request.lower().startswith(prefix.lower()):
+                subject_request = subject_request[len(prefix) :].strip(" -–—:")
+                break
     return f"""
 <section class="band student-overview">
   <h2>怎么用这本手册</h2>
@@ -153,12 +128,12 @@ def render_student_overview(
       <ul>{summary}</ul>
     </article>
     <article>
-      <h3>生成前选择</h3>
+      <h3>手册设置</h3>
       <ul>
         <li>科目：{html_escape(subject_request)}</li>
         <li>输出语言：中文</li>
-        <li>生图方式：{html_escape(image_provider_display(options, options.output_language))}</li>
-        <li>讲解风格：{html_escape(style_display(options.explanation_style, options.output_language))}</li>
+        <li>插图说明：{html_escape(image_provider_display(options, options.output_language))}</li>
+        <li>讲解语气：{html_escape(style_display(options.explanation_style, options.output_language))}</li>
       </ul>
     </article>
   </div>
@@ -192,19 +167,18 @@ def style_display(style: str, language: str = "en") -> str:
 def image_provider_display(options: GuideRunOptions, language: str = "en") -> str:
     if options.image_provider == "custom":
         model = options.image_model or ("custom model" if language == "en" else "自定义模型")
-        endpoint = options.image_endpoint_url or ("endpoint not set" if language == "en" else "未填写接口地址")
-        return f"custom / {model} / {endpoint}" if language == "en" else f"自定义：{model}，{endpoint}"
+        return f"custom illustration model: {model}" if language == "en" else f"自定义插图模型：{model}"
     if options.image_provider == "prompt-queue":
         return (
-            "prompt queue only; complex infographics are not final yet"
+            "infographic prompts prepared; final illustrations still need review"
             if language == "en"
-            else "只生成提示词队列，复杂信息图尚未最终生成"
+            else "已整理复杂信息图提示词，插图需要生成或复核后使用"
         )
     if options.image_provider == "deterministic-svg":
         return (
-            "deterministic SVG for safe diagrams; complex infographics stay queued"
+            "simple diagrams are included; complex infographics need generation or review"
             if language == "en"
-            else "安全图形使用确定性矢量图，复杂信息图进入待生成队列"
+            else "简单示意图已随手册生成，复杂信息图需要生成或复核后使用"
         )
     return options.image_provider
 
@@ -331,20 +305,18 @@ def render_topic_map(
                 points = "；".join(guide.checklist[:3])
             else:
                 points = "使用考试大纲抽取结果补全本节细分要求。"
-        route = "concept boundary -> worked example -> error review" if language == "en" else "概念边界 -> 例题 -> 错题回看"
         title_link = f'<a href="#{topic_anchor(index)}">{html_escape(title)}</a>'
         rows.append(
             "<tr>"
             f"<td>{index}</td><td>{title_link}</td><td>{html_escape(points)}</td>"
-            f"<td>{html_escape(route)}</td>"
             "</tr>"
         )
     if language == "en":
         heading = "Study Roadmap"
-        columns = "<tr><th>#</th><th>Knowledge unit</th><th>What to master</th><th>Study route</th></tr>"
+        columns = "<tr><th>#</th><th>Knowledge unit</th><th>What to master</th></tr>"
     else:
         heading = "复习路线"
-        columns = "<tr><th>#</th><th>知识单元</th><th>要掌握什么</th><th>学习路径</th></tr>"
+        columns = "<tr><th>#</th><th>知识单元</th><th>要掌握什么</th></tr>"
     return f"""
 <section class="band">
   <h2>{heading}</h2>
@@ -918,26 +890,6 @@ def link_or_missing(value: str | None, language: str = "en") -> str:
     return f"<a href=\"{html_escape(value)}\">{html_escape(value)}</a>"
 
 
-def subject_display_name(qualification: Qualification) -> str:
-    source = f"{qualification.subject_area or ''} {qualification.title}".lower()
-    subject_map = [
-        ("mathematics", "数学"),
-        ("maths", "数学"),
-        ("chemistry", "化学"),
-        ("economics", "经济学"),
-        ("accounting", "会计学"),
-        ("business", "商务"),
-        ("physics", "物理"),
-        ("biology", "生物"),
-        ("computer science", "计算机科学"),
-        ("english", "英语"),
-    ]
-    for key, label in subject_map:
-        if key in source:
-            return label
-    return "本课程"
-
-
 def display_topic_title(topic: Topic, index: int, language: str) -> str:
     if language == "en":
         return topic.title
@@ -955,6 +907,7 @@ def localized_topic_title(title: str, index: int) -> str | None:
     keyword_titles = [
         (("measurement", "data", "graph"), "测量与数据"),
         (("force", "motion"), "力与运动"),
+        (("material", "change"), "材料与变化"),
         (("particle", "state", "solid", "liquid", "gas"), "粒子模型与物质状态"),
         (("bond", "structure"), "结构与性质"),
         (("acid", "alkali", "ph"), "酸碱与 pH"),
@@ -973,7 +926,3 @@ def localized_topic_title(title: str, index: int) -> str | None:
     if re.search(r"[\u4e00-\u9fff]", title):
         return title[:32]
     return None
-
-
-def html_escape(value: str) -> str:
-    return html.escape(value, quote=True)
