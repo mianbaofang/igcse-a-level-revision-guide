@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.2.19 - 2026-06-20
+
+### Fixed
+
+- Fixed generated handbook covers so unknown, synthetic, or demo sources no
+  longer fall back to AQA/OxfordAQA branding. AQA is now shown only when the
+  source metadata or URL explicitly identifies AQA/OxfordAQA.
+- Added neutral cover styling for unspecified exam-board sources.
+- Expanded the anti-template wording gate to catch and safely remove more
+  formulaic English and Chinese AI-style transitions, including "It's important
+  to note", "Let's dive into", "在当今社会", "让我们一起", and "深入探讨".
+
+### Tests
+
+- Added cover regression coverage for unknown-provider sources.
+- Added direct unit tests for generated infographic, SVG fallback, and pending
+  infographic rendering branches.
+- Added Mathematics, Biology, Economics, and generic fallback practice-example
+  regression tests.
+- Added a small `python -m intl_exam_guide` entry-point smoke test.
+
+### Verified
+
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q`
+  (`135 passed`, coverage `73.94%`)
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py .` (`raw_key_matches: 0`)
+
 ## 0.2.18 - 2026-06-20
 
 ### Changed

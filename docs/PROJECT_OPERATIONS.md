@@ -76,6 +76,10 @@ v0.2.18 raised the CI coverage gate to 70% and split infographic rendering out
 of `rendering/html.py`. Keep parser, renderer, and practice-generator guard
 tests updated whenever those areas change.
 
+v0.2.19 fixed a real product-labeling regression: unknown, synthetic, or demo
+sources must not fall back to AQA branding. Future provider-label changes need
+tests for both explicit AQA detection and neutral unknown-provider output.
+
 ## 4. Version And Release Rules
 
 Use GitHub Releases, not tags alone.

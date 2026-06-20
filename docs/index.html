@@ -767,7 +767,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.2.18</div>
+          <div class="kicker">三大考试局支持 · v0.2.19</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -1057,36 +1057,36 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>v0.2.18：第四轮审计后的结构与测试加固。</h2>
-          <p>主流程仍然围绕“如何生成复习手册”；本次更新拆出信息图渲染模块，修复考试时长和权重解析，补充例题与公共解析器单元测试，并把 CI 覆盖率门槛提升到 70%。</p>
+          <h2>v0.2.19：第五轮审计后的产物标识与回归测试修复。</h2>
+          <p>主流程仍然围绕“如何生成复习手册”；本次更新修复未知或 demo 来源误显示为 AQA 的问题，扩展中英文反模板腔检测，并补上信息图渲染、数学、生物、经济和通用例题路径的直接回归测试。</p>
         </div>
         <div class="flow">
           <article class="flow-item">
             <div class="num">01 · 考试局</div>
             <div>
-              <h3>结构拆分</h3>
-              <p>复杂信息图渲染从主 HTML 渲染器拆出，后续调整配图展示时更清晰。</p>
+              <h3>考试局标识</h3>
+              <p>只有明确识别到 AQA、Edexcel 或 CAIE 时才显示对应考试局；未知来源保持中性标识。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">02 · 语言</div>
             <div>
-              <h3>解析修复</h3>
-              <p>公共 PDF 解析器能正确读取 1 hour 30 minutes 和 50% 这类考试信息。</p>
+              <h3>语言修复</h3>
+              <p>反模板腔检测覆盖更多中英文 AI 套话，减少手册正文里机械化的过渡句。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">03 · 图文</div>
             <div>
-              <h3>例题测试</h3>
-              <p>新增直接单元测试，覆盖会计、化学和中文学生版例题生成路径。</p>
+              <h3>图文测试</h3>
+              <p>信息图的已生成、SVG 兜底和待外部生成三种展示分支都有直接测试。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">04 · 质量</div>
             <div>
-              <h3>质量门槛</h3>
-              <p>新增架构守卫和 70% 覆盖率门槛，防止渲染器和例题生成器继续膨胀。</p>
+              <h3>例题回归</h3>
+              <p>数学、生物、经济和通用兜底例题路径被锁进测试，避免手册退化成只有大纲。</p>
             </div>
           </article>
         </div>

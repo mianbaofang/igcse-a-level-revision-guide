@@ -291,6 +291,8 @@ def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
 
 def test_cover_is_course_identity_only():
     qualification = sample_qualification()
+    qualification.provider = "OxfordAQA"
+    qualification.source.provider = "OxfordAQA"
     html = render_cover(
         qualification,
         build_guide_plan(qualification, output_language="en", explanation_style="friendly").run_options,
@@ -305,6 +307,22 @@ def test_cover_is_course_identity_only():
     assert "Assessment papers" not in html
     assert "Style" not in html
     assert "How to Study" not in html
+
+
+def test_cover_keeps_unknown_provider_neutral():
+    qualification = sample_qualification()
+    qualification.provider = None
+    qualification.source.provider = "synthetic-demo"
+    qualification.source.specification_url = "https://example.test/synthetic-spec.pdf"
+    html = render_cover(
+        qualification,
+        build_guide_plan(qualification, output_language="en", explanation_style="friendly").run_options,
+    )
+
+    assert "Unspecified exam board" in html
+    assert "board-neutral" in html
+    assert "Oxford International AQA Examinations" not in html
+    assert "board-aqa" not in html
 
 
 def test_cover_uses_provider_version_fields():

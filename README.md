@@ -255,6 +255,10 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   is split out of the main HTML renderer, practice generation reuses the shared
   subject matcher, assessment duration/weighting parsing is fixed, direct
   practice/parser tests are added, and CI now enforces 70% coverage.
+- **v0.2.19:** fixes fifth-round audit regressions: unknown/demo sources no
+  longer display AQA branding, anti-template wording detection covers more
+  English and Chinese AI-style phrases, and direct tests now cover infographic
+  rendering branches plus Mathematics/Biology/Economics practice examples.
 
 ## Developer Quick Start
 

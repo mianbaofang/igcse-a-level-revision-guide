@@ -82,10 +82,16 @@ def exam_board_identity(qualification: Qualification) -> dict[str, str]:
             "full": "Cambridge International Education",
             "class_name": "board-caie",
         }
+    if "oxfordaqa" in source or "oxford international aqa" in source or "aqa" in source:
+        return {
+            "short": "AQA",
+            "full": "Oxford International AQA Examinations",
+            "class_name": "board-aqa",
+        }
     return {
-        "short": "AQA",
-        "full": "Oxford International AQA Examinations",
-        "class_name": "board-aqa",
+        "short": "Board",
+        "full": "Unspecified exam board",
+        "class_name": "board-neutral",
     }
 
 

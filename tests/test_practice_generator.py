@@ -67,6 +67,62 @@ def test_accounting_and_chemistry_examples_route_to_subject_specific_branches():
     assert "ledger" not in chemistry_text
 
 
+def test_mathematics_algebra_example_is_not_generic():
+    question, frame, steps, checkpoints = concrete_example(
+        Topic(title="A2 - Algebra and equations", points=["Solve linear equations."]),
+        "Solve linear equations.",
+        0,
+        "Mathematics",
+    )
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "solve 3(x - 2) + 5 = 20" in combined
+    assert "x = 7" in combined
+    assert "memorised phrase" not in combined
+
+
+def test_biology_example_is_subject_specific():
+    question, frame, steps, checkpoints = concrete_example(
+        Topic(title="Cell membranes", points=["Osmosis across cell membranes."]),
+        "Osmosis across cell membranes.",
+        0,
+        "Biology",
+    )
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "water moves out" in combined
+    assert "osmosis" in combined
+    assert "ledger" not in combined
+
+
+def test_economics_example_is_subject_specific():
+    question, frame, steps, checkpoints = concrete_example(
+        Topic(title="Basic economic problem", points=["Scarcity creates economic choices."]),
+        "Scarcity creates economic choices.",
+        0,
+        "Economics",
+    )
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "scarce" in combined
+    assert "choose" in combined or "choice" in combined
+    assert "ledger" not in combined
+
+
+def test_generic_example_fallback_remains_exam_focused():
+    question, frame, steps, checkpoints = concrete_example(
+        Topic(title="Unmapped topic", points=["Use the named concept accurately."]),
+        "Use the named concept accurately.",
+        0,
+        "Unmapped Subject",
+    )
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "memorised phrase" in combined
+    assert "command word" in combined
+    assert "evidence from the question" in combined
+
+
 def test_chinese_practice_example_keeps_student_facing_text_chinese():
     question, frame, steps, checkpoints = concrete_example_zh(
         Topic(

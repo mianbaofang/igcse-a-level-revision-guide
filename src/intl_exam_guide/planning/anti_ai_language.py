@@ -8,6 +8,8 @@ EN_REMOVALS = [
     r"\bOverall,\s*",
     r"\bTo summarize,\s*",
     r"\bIt is worth noting that\s*",
+    r"\bIt'?s important to note that\s*",
+    r"\bLet's dive into\s*",
     r"\bThe key point is that\s*",
     r"\bThe key is that\s*",
 ]
@@ -17,6 +19,8 @@ EN_SMELL_PATTERNS = [
     r"\bOverall\b",
     r"\bTo summarize\b",
     r"\bIt is worth noting that\b",
+    r"\bIt'?s important to note\b",
+    r"\bLet's dive into\b",
     r"\bImagine a world where\b",
     r"\bnot just\b.*\bbut\b",
     r"\bnot only\b.*\bbut\b",
@@ -27,6 +31,9 @@ ZH_REMOVALS = [
     r"总之[，,、\s]*",
     r"综上所述[，,、\s]*",
     r"值得注意的是[，,、\s]*",
+    r"在当今社会[，,、\s]*",
+    r"让我们一起[，,、\s]*",
+    r"深入探讨[，,、\s]*",
     r"关键在于[，,、\s]*",
 ]
 
@@ -34,7 +41,9 @@ ZH_SMELL_PATTERNS = [
     r"总之",
     r"综上所述",
     r"值得注意的是",
+    r"在当今社会",
     r"让我们",
+    r"深入探讨",
     r"想象一个",
     r"不是.{0,40}而是",
     r"不只是.{0,40}更是",

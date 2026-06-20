@@ -57,6 +57,9 @@ a { color: var(--blue); }
 .exam-board-badge.board-caie {
   background: linear-gradient(135deg, #b42c35 0 64%, #173154 64% 100%);
 }
+.exam-board-badge.board-neutral {
+  background: linear-gradient(135deg, #5b677a 0 64%, #172033 64% 100%);
+}
 .exam-board-name {
   padding: 16px 18px;
   background: #ffffff;
