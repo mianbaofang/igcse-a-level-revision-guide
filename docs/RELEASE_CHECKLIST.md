@@ -97,11 +97,13 @@ python scripts/scan_for_raw_keys.py . ./outputs
 
 - [ ] Pending complex infographics are marked as prompt-queue/external
   generation work, not as generated assets.
-- [ ] Only after the user confirms a callable image route and parameters,
-  generated infographic assets exist for all pending showcase visual briefs:
+- [ ] After an external image workflow or designer review has produced the
+  pending showcase images, import those reviewed assets into the sample guides:
 
 ```bash
-python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
+python scripts/import_infographic_assets.py ./outputs/mathematics-9260-sample --asset-dir ./generated-infographics/mathematics-9260-sample --provider "external-reviewed-workflow"
+python scripts/import_infographic_assets.py ./outputs/economics-9214-sample --asset-dir ./generated-infographics/economics-9214-sample --provider "external-reviewed-workflow"
+python scripts/import_infographic_assets.py ./outputs/chemistry-9202-sample --asset-dir ./generated-infographics/chemistry-9202-sample --provider "external-reviewed-workflow"
 ```
 
 - [ ] After infographic assets are generated, `python scripts/finalize_release_samples.py --outputs-root <outputs-dir>` regenerates the final Mathematics, Economics, and Chemistry HTML/PDF samples.

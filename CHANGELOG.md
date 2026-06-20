@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.2.15 - 2026-06-20
+
+### Changed
+
+- Removed the local image-generation router script from the public repository so
+  GPT Image, Qwen, and SenseNova remain documented as external options instead
+  of implied built-in providers.
+- Updated image-model, example, release-checklist, and Skill documentation to
+  use external reviewed asset import as the public release workflow.
+
+### Fixed
+
+- Added direct guide-plan tests for image-provider normalization, custom
+  provider gating, readable Chinese revision stages, practice generation, and
+  visual-brief routing.
+- Added provider tests for Pearson specification PDF selection, Pearson helper
+  boundaries, Cambridge direct-PDF exam-year validation, and generic PDF link
+  selection.
+- Added PDF export error-path tests for missing browser and failed browser CLI
+  runs.
+- Added topic-aware story-mode tests so narrative cards stay tied to the
+  subject instead of only rotating generic copy.
+
+### Verified
+
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m pytest tests/test_guide_plan_units.py tests/test_url_first_providers.py tests/test_pdf_export.py tests/test_story_modes.py tests/test_release_scripts.py -q`
+  (`49 passed`)
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=60 -q`
+  (`115 passed`, coverage `71.23%`)
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py .` (`raw_key_matches: 0`)
+- `git diff --check`
+
 ## 0.2.14 - 2026-06-20
 
 ### Changed

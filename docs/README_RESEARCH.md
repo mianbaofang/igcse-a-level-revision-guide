@@ -37,6 +37,6 @@ validation gates, and generated guide structure are project-specific.
 
 The repository currently uses SVG diagrams rather than AI-generated raster
 artwork. This keeps the visuals editable, lightweight, and copyright-clean. If a
-future branded illustration is needed, route image generation through the
-project owner's required `image-gen-flow` skill and keep the generated prompt
-metadata with the asset.
+future branded illustration is needed, route image generation through an
+external workflow that the maintainer can actually call, then keep the generated
+prompt metadata with the asset.

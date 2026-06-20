@@ -113,7 +113,9 @@ python scripts/verify_release_samples.py --outputs-root ./outputs --allow-pendin
 without that flag:
 
 ```bash
-python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
+python scripts/import_infographic_assets.py ./outputs/mathematics-9260-sample --asset-dir ./generated-infographics/mathematics-9260-sample --provider "external-reviewed-workflow"
+python scripts/import_infographic_assets.py ./outputs/economics-9214-sample --asset-dir ./generated-infographics/economics-9214-sample --provider "external-reviewed-workflow"
+python scripts/import_infographic_assets.py ./outputs/chemistry-9202-sample --asset-dir ./generated-infographics/chemistry-9202-sample --provider "external-reviewed-workflow"
 python scripts/finalize_release_samples.py --outputs-root ./outputs
 python scripts/verify_release_samples.py --outputs-root ./outputs
 python scripts/capture_release_assets.py --outputs-root ./outputs --docs-assets docs/assets
@@ -162,7 +164,7 @@ Business 9725 示例用于覆盖修订版 A-level 页面结构：subject listing
 
 发布前应使用 release verifier 检查 Mathematics 9260、Economics 9214、Chemistry
 9202 三份样板。`--allow-pending` 只适合信息图还没生成时做预检查；最终发布前必须
-去掉这个参数，并确认三份手册都已经导出 PDF、合并信息图、截图更新到 `docs/assets/`。
+去掉这个参数，并确认三份手册都已经导出 PDF、导入外部生成且已复核的信息图、截图更新到 `docs/assets/`。
 这三份只是公开展示和回归验证样例，不是 OxfordAQA 科目支持上限。
 截图更新后，再用 `scripts/render_intro_animation.py` 重新导出介绍动画 GIF；MP4 仅在需要视频文件时导出到 `outputs/`。
 

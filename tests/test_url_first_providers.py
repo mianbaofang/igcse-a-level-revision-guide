@@ -5,14 +5,22 @@ from intl_exam_guide.providers.base import Link
 from intl_exam_guide.providers import cambridge as cambridge_module
 from intl_exam_guide.providers import pearson as pearson_module
 from intl_exam_guide.providers.cambridge import CambridgeInternationalProvider
+from intl_exam_guide.providers.cambridge import parse_exam_year
 from intl_exam_guide.providers.cambridge import select_syllabus_link
 from intl_exam_guide.providers.common import (
     TextNode,
+    find_pdf_link,
     parse_generic_topics_from_pdf,
     parse_pearson_subsection_line,
     parse_pearson_topic_tables,
 )
-from intl_exam_guide.providers.pearson import PearsonEdexcelProvider, pearson_candidate_urls
+from intl_exam_guide.providers.pearson import (
+    PearsonEdexcelProvider,
+    pearson_candidate_urls,
+    pearson_is_specification_pdf,
+    pearson_route_tags,
+    pearson_subject_area,
+)
 
 
 class FakeParser:
@@ -450,6 +458,59 @@ def test_pearson_parse_qualification_rejects_page_without_spec_pdf(monkeypatch):
         PearsonEdexcelProvider().parse_qualification("https://example.test/accounting.html", "igcse")
 
 
+def test_pearson_rejects_non_specification_pdf_links_even_if_downloadable(monkeypatch):
+    parser = FakeParser(
+        title="Pearson Edexcel International GCSE Accounting (2017)",
+        links=[
+            Link(
+                text="Download welcome guide",
+                href="https://qualifications.pearson.com/content/dam/pdf/accounting-welcome-guide.pdf",
+            ),
+            Link(
+                text="Download mark scheme",
+                href="https://qualifications.pearson.com/content/dam/pdf/accounting-mark-scheme.pdf",
+            ),
+        ],
+    )
+    monkeypatch.setattr(pearson_module, "parse_page", lambda _url: parser)
+
+    with pytest.raises(ValueError, match="No Pearson specification PDF link"):
+        PearsonEdexcelProvider().parse_qualification("https://example.test/accounting.html", "igcse")
+
+
+def test_pearson_helper_functions_cover_subject_area_and_route_tags():
+    assert pearson_subject_area(
+        "Pearson Edexcel International GCSE Accounting (2017)",
+        "https://example.test/international-gcse-accounting-2017.html",
+    ) == "Accounting"
+    assert pearson_route_tags(
+        "international_as_a_level",
+        "https://example.test/biology-2018.html",
+    ) == ["Pearson Edexcel", "modular"]
+    assert pearson_route_tags(
+        "international_gcse",
+        "https://example.test/mathematics-2024-modular.html",
+    ) == ["Pearson Edexcel", "modular"]
+    assert pearson_is_specification_pdf("https://example.test/accounting-specification.pdf")
+    assert not pearson_is_specification_pdf("https://example.test/accounting-past-paper.pdf")
+
+
+def test_find_pdf_link_scores_include_terms_and_excludes_noise():
+    parser = FakeParser(
+        links=[
+            Link(text="Past paper PDF", href="https://example.test/past-paper.pdf"),
+            Link(text="Download specification", href="https://example.test/specification.pdf"),
+            Link(text="Welcome guide", href="https://example.test/welcome-guide.pdf"),
+        ]
+    )
+
+    assert find_pdf_link(
+        parser,
+        include_terms=("specification", "download"),
+        exclude_terms=("past paper", "past-paper", "welcome"),
+    ) == "https://example.test/specification.pdf"
+
+
 def test_cambridge_parse_qualification_uses_exam_year_to_choose_syllabus(monkeypatch):
     parser = FakeParser(
         title="Cambridge IGCSE Accounting (0452)",
@@ -494,6 +555,20 @@ def test_cambridge_parse_direct_pdf_validates_exam_year():
     assert qualification.source.syllabus_year_range == "2026-2028"
     assert qualification.source.selected_exam_year == "2027"
     assert qualification.source.specification_url.endswith("123-2026-2028-syllabus.pdf")
+
+
+def test_cambridge_parse_direct_pdf_rejects_exam_year_outside_range():
+    with pytest.raises(ValueError, match="does not match syllabus PDF range"):
+        CambridgeInternationalProvider().parse_qualification(
+            "https://www.cambridgeinternational.org/Images/123-2026-2028-syllabus.pdf",
+            "igcse",
+            exam_year="2029",
+        )
+
+
+def test_cambridge_parse_exam_year_requires_four_digit_year():
+    with pytest.raises(ValueError, match="Invalid Cambridge exam year"):
+        parse_exam_year("27")
 
 
 def test_pearson_igcse_subject_slug_preserves_mathematics_a_suffix():

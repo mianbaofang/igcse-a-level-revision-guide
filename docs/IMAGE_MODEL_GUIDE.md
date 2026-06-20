@@ -130,19 +130,9 @@ visual_002_market-equilibrium.png
 visual_003.webp
 ```
 
-For local environments that have a compatible `image-gen-flow` GPT Image 2
-local Router installed, pending showcase images can be generated directly
-after Ethan confirms the route and parameters:
-
-```bash
-python scripts/generate_pending_infographics_router.py ./outputs/mathematics-9260-sample ./outputs/economics-9214-sample ./outputs/chemistry-9202-sample --size 1536x1024 --quality high --output-format png
-```
-
-This helper reads the API key from `YAIROUTER_API_KEY`, writes prompts and
-responses under each guide's `images/` directory, and updates
-`visual_manifest.json`. Do not commit the key or paste it into prompts.
-
-Then import them into the guide package:
+Generate complex images with whatever external workflow the user actually has:
+an image Skill, API, design tool, or manual designer review. Then import the
+reviewed files into the guide package:
 
 ```bash
 python scripts/import_infographic_assets.py ./outputs/chemistry-9202 \

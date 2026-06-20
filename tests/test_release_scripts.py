@@ -113,44 +113,6 @@ def test_import_infographic_assets_fails_when_required_asset_missing(tmp_path):
     assert "visual_002" in result.stderr
 
 
-def test_generate_pending_infographics_router_dry_run_plans_pending_assets(tmp_path):
-    output_dir = tmp_path / "guide"
-    images_dir = output_dir / "images"
-    images_dir.mkdir(parents=True)
-    (images_dir / "visual_manifest.json").write_text(
-        json.dumps(
-            [
-                {
-                    "id": "visual_001",
-                    "topic_title": "Example infographic",
-                    "complexity": "infographic",
-                    "asset_status": "external-generation-required",
-                    "file": None,
-                    "prompt": "Create a clean learning infographic.",
-                },
-                {
-                    "id": "visual_002",
-                    "topic_title": "SVG example",
-                    "complexity": "svg-basic",
-                    "asset_status": "generated",
-                    "file": "visual_002.svg",
-                },
-            ],
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-
-    result = run_router_dry_run(output_dir)
-
-    assert result.returncode == 0
-    payload = json.loads(result.stdout.strip().splitlines()[-1])
-    assert payload["requested"] == 1
-    assert payload["planned"] == 1
-    assert payload["size"] == "1536x1024"
-    assert payload["quality"] == "high"
-
-
 def test_scan_for_raw_keys_does_not_print_secret_value(tmp_path):
     secret = "sk-" + "A" * 30
     (tmp_path / "leaky.txt").write_text(f"token={secret}\n", encoding="utf-8")
@@ -181,6 +143,20 @@ def test_render_intro_animation_exposes_cli_help():
     assert "--html" in result.stdout
     assert "--mp4" in result.stdout
     assert "--gif" in result.stdout
+
+
+def test_public_repo_does_not_ship_built_in_image_router():
+    repo_root = Path(__file__).resolve().parents[1]
+    router_scripts = [
+        path.name
+        for path in (repo_root / "scripts").glob("*.py")
+        if "router" in path.name and "image" in path.name
+    ]
+    assert router_scripts == []
+
+    skill_text = (repo_root / "skill" / "SKILL.md").read_text(encoding="utf-8")
+    assert "does not include a built-in image-generation router" in skill_text
+    assert "scripts/import_infographic_assets.py" in skill_text
 
 
 def test_skill_instructions_include_required_preflight_choices():
@@ -242,31 +218,6 @@ def run_import(output_dir: Path, asset_dir: Path, *args: str) -> subprocess.Comp
             "--asset-dir",
             str(asset_dir),
             *args,
-        ],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-
-
-def run_router_dry_run(output_dir: Path) -> subprocess.CompletedProcess[str]:
-    script = (
-        Path(__file__).resolve().parents[1]
-        / "scripts"
-        / "generate_pending_infographics_router.py"
-    )
-    return subprocess.run(
-        [
-            sys.executable,
-            str(script),
-            str(output_dir),
-            "--size",
-            "1536x1024",
-            "--quality",
-            "high",
-            "--output-format",
-            "png",
-            "--dry-run",
         ],
         text=True,
         capture_output=True,

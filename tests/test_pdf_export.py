@@ -62,3 +62,38 @@ def test_find_browser_uses_cross_platform_path_names(monkeypatch):
     assert pdf.find_browser() == sys.executable
     assert "google-chrome" in seen
     assert "chromium" in seen
+
+
+def test_export_pdf_with_browser_cli_reports_missing_browser(monkeypatch, tmp_path):
+    html_path = tmp_path / "guide.html"
+    pdf_path = tmp_path / "guide.pdf"
+    html_path.write_text("<html><body>guide</body></html>", encoding="utf-8")
+    monkeypatch.setattr(pdf, "find_browser", lambda: None)
+
+    try:
+        pdf.export_pdf_with_browser_cli(html_path, pdf_path)
+    except pdf.PdfExportError as exc:
+        assert "No Chrome or Edge executable" in str(exc)
+    else:
+        raise AssertionError("Expected PdfExportError")
+
+
+def test_export_pdf_with_browser_cli_reports_process_failure(monkeypatch, tmp_path):
+    html_path = tmp_path / "guide.html"
+    pdf_path = tmp_path / "guide.pdf"
+    browser_path = tmp_path / "chrome.exe"
+    browser_path.write_text("fake", encoding="utf-8")
+    html_path.write_text("<html><body>guide</body></html>", encoding="utf-8")
+    monkeypatch.setattr(pdf, "find_browser", lambda: str(browser_path))
+
+    def fail_run(*_args, **_kwargs):
+        raise pdf.subprocess.CalledProcessError(2, ["chrome"], stderr="render failed\nmore")
+
+    monkeypatch.setattr(pdf.subprocess, "run", fail_run)
+
+    try:
+        pdf.export_pdf_with_browser_cli(html_path, pdf_path)
+    except pdf.PdfExportError as exc:
+        assert "Browser PDF export failed. render failed" in str(exc)
+    else:
+        raise AssertionError("Expected PdfExportError")

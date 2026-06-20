@@ -226,6 +226,11 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   Pearson/Cambridge parser tests, covers encrypted PDF handling, and makes
   narrative explanation cards topic-aware. Built-in image models remain out of
   scope by design.
+- **v0.2.15:** finishes the third-round audit cleanup by removing the local
+  image-router script from the public repo, documenting external reviewed asset
+  import as the release path, and adding direct regression tests for guide-plan
+  behavior, provider PDF selection, PDF export errors, and topic-aware story
+  cards.
 
 ## Developer Quick Start
 

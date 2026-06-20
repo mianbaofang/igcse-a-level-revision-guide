@@ -251,12 +251,10 @@ choice. Do not claim that complex infographics have been finalized until a
 callable image route has produced reviewed image assets; SVG fallbacks are
 draft aids.
 
-When the full repository is available and the user has confirmed GPT Image 2
-Router parameters for the current Agent runtime, use
-`scripts/generate_pending_infographics_router.py` to generate pending complex
-visuals and update each `images/visual_manifest.json`. If images are generated
-outside the guide package with another provider, use
-`scripts/import_infographic_assets.py` to import them before finalizing HTML/PDF.
+The public repository does not include a built-in image-generation router. If
+the user generates images through their own model, API, Skill, or designer
+workflow, use `scripts/import_infographic_assets.py` to import the reviewed
+files before finalizing HTML/PDF.
 
 ## Repository Access
 

@@ -10,10 +10,10 @@ assignees: ""
 
 Name the provider and link the public qualification index.
 
-Roadmap priority is intentionally limited to the China-market provider set:
-OxfordAQA is implemented first; Pearson Edexcel and Cambridge International /
-CAIE are the planned next providers. Requests for OCR, WJEC/Eduqas, CCEA, or
-other UK boards should explain why they are needed for the China-focused scope.
+The roadmap scope is intentionally limited to the China-market provider set:
+AQA, Pearson Edexcel, and Cambridge International / CAIE. Requests for OCR,
+WJEC/Eduqas, CCEA, or other UK boards should explain why they are needed for
+the China-focused scope.
 
 ## Qualification structure
 
