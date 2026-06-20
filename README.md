@@ -87,9 +87,10 @@ Before generation starts, the Agent should confirm:
 
 The user should not be forced to choose an image model at the beginning. The
 base handbook is generated first. After that, the Agent reports how many complex
-infographics are needed. If the user has a callable image API, Skill, script, or
-asset directory, those images can be generated or imported later. Otherwise, the
-package uses SVG fallback drafts and clearly marks complex visuals for review.
+infographics are needed. If the user has a callable image API, image-generation
+Skill, script, or generated asset directory, the Agent should run that route and
+then import or attach the reviewed images automatically. Otherwise, the package
+uses SVG fallback drafts and clearly marks complex visuals for review.
 
 ## What It Produces
 
@@ -231,6 +232,10 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   import as the release path, and adding direct regression tests for guide-plan
   behavior, provider PDF selection, PDF export errors, and topic-aware story
   cards.
+- **v0.2.16:** clarifies the image workflow after user testing: external image
+  generation is not a manual file-moving step. If the user has a callable image
+  Skill, API, script, or generated asset directory, the Agent should run or
+  import that route automatically after the base handbook is generated.
 
 ## Developer Quick Start
 

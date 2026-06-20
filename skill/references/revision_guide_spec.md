@@ -38,8 +38,11 @@ Do not ask for an image model during preflight. The base handbook should run
 first, then the visual pass should count how many complex infographic briefs are
 needed. Tell the user that count after generation. The user may then provide an
 image model, API, Skill, script, designer workflow, or generated asset directory.
-If they provide none, deliver SVG fallback images and clearly warn that complex
-information SVG fallbacks can be less accurate and need review.
+If a callable route exists, run it after the base handbook is generated and
+import or attach the reviewed outputs automatically. Do not make the user move
+files by hand. If they provide none, deliver SVG fallback images and clearly
+warn that complex information SVG fallbacks can be less accurate and need
+review.
 
 Recommended external models for complex text+diagram infographics include GPT
 Image 2.0, Qwen Image 2.0 Pro, and SenseNova U1 Fast. They are recommendations,

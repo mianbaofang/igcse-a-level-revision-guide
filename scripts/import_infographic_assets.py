@@ -21,7 +21,7 @@ def main() -> int:
         help="Directory containing generated raster images named with manifest IDs, e.g. visual_001.png.",
     )
     parser.add_argument("--provider", default="external-provider")
-    parser.add_argument("--status", default="manual-generated")
+    parser.add_argument("--status", default="reviewed-generated")
     parser.add_argument("--force", action="store_true", help="Replace existing generated files.")
     parser.add_argument(
         "--allow-partial",

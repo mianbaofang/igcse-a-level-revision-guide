@@ -123,7 +123,8 @@ python scripts/render_intro_animation.py --html docs/project-intro-animation.htm
 python scripts/render_intro_animation.py --html docs/project-intro-animation-en.html --mp4 outputs/project-intro-animation-en.mp4 --gif docs/assets/intro-animation-preview-en.gif
 ```
 
-If your image provider writes files outside the guide package, import them first.
+If your image provider or image-generation Skill writes files outside the guide
+package, the Agent should import them before finalizing the HTML/PDF.
 Generated filenames should start with the manifest ID, such as
 `visual_001.png` or `visual_001_lab-apparatus.png`:
 
@@ -168,6 +169,6 @@ Business 9725 示例用于覆盖修订版 A-level 页面结构：subject listing
 这三份只是公开展示和回归验证样例，不是 OxfordAQA 科目支持上限。
 截图更新后，再用 `scripts/render_intro_animation.py` 重新导出介绍动画 GIF；MP4 仅在需要视频文件时导出到 `outputs/`。
 
-如果你的生图服务把图片输出到手册目录外，可以先用
-`scripts/import_infographic_assets.py` 导入。文件名需要以 manifest ID 开头，
+如果你的生图 Skill、API 或脚本把图片输出到手册目录外，Agent 应该用
+`scripts/import_infographic_assets.py` 自动导入。文件名需要以 manifest ID 开头，
 例如 `visual_001.png` 或 `visual_001_lab-apparatus.png`。

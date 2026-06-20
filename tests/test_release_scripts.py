@@ -83,7 +83,7 @@ def test_import_infographic_assets_updates_manifest(tmp_path):
 
     assert result.returncode == 0
     manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
-    assert [entry["asset_status"] for entry in manifest] == ["manual-generated", "manual-generated"]
+    assert [entry["asset_status"] for entry in manifest] == ["reviewed-generated", "reviewed-generated"]
     assert [entry["generated_by"] for entry in manifest] == ["test-provider", "test-provider"]
     assert (images_dir / "visual_001_custom.png").exists()
     assert (images_dir / "visual_002.png").exists()
@@ -155,7 +155,8 @@ def test_public_repo_does_not_ship_built_in_image_router():
     assert router_scripts == []
 
     skill_text = (repo_root / "skill" / "SKILL.md").read_text(encoding="utf-8")
-    assert "does not include a built-in image-generation router" in skill_text
+    assert "does not include a fixed built-in image-generation router" in skill_text
+    assert "That does not mean image work must be manual" in skill_text
     assert "scripts/import_infographic_assets.py" in skill_text
 
 
@@ -268,7 +269,7 @@ def write_sample_outputs(outputs: Path, completed: bool) -> None:
             if completed:
                 filename = f"visual_{index:03d}.png"
                 (images_dir / filename).write_bytes(b"fake-png")
-                status = "codex-router-generated"
+                status = "reviewed-generated"
                 html_images.append(f'<img src="images/{filename}" alt="visual {index}">')
             else:
                 filename = None

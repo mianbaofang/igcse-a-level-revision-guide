@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.16 - 2026-06-20
+
+### Changed
+
+- Clarified the callable image workflow: "external" image generation does not
+  mean the user must move files by hand. If a user has a callable image Skill,
+  API, script, designer workflow, or matching generated asset directory, the
+  Agent should run or import that route after the base handbook is generated
+  and attach the reviewed assets automatically.
+- Changed imported infographic assets to use the neutral
+  `reviewed-generated` status by default, avoiding misleading manual-import
+  wording in new manifests.
+- Updated README, Skill, image-model guide, release checklist, homepage, and
+  animation version labels to reflect the v0.2.16 behavior.
+
+### Fixed
+
+- Removed stale public validation/sample statuses that referenced a private
+  local image router or implied manual file-moving as the normal image path.
+- Added regression assertions that the public Skill explicitly says callable
+  image routes can be run automatically and are not built-in providers.
+
+### Verified
+
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=60 -q`
+  (`115 passed`, coverage `71.23%`)
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py .` (`raw_key_matches: 0`)
+- `git diff --check`
+
 ## 0.2.15 - 2026-06-20
 
 ### Changed

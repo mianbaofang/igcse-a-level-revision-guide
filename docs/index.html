@@ -759,7 +759,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.2.15</div>
+          <div class="kicker">三大考试局支持 · v0.2.16</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -894,7 +894,7 @@
             <div class="num">03 · 图文</div>
             <div>
               <h3>规划图文路线</h3>
-              <p>简单结构图用 SVG；复杂知识点和例题需要信息图时，先生成配图需求清单，有可调用生图能力时再生成或导入。</p>
+              <p>简单结构图用 SVG；复杂知识点和例题需要信息图时，先生成配图需求清单；有可调用生图 Skill/API/脚本时，Agent 自动生成并导入。</p>
             </div>
           </article>
           <article class="flow-item">
@@ -997,7 +997,7 @@
       <div class="shell">
         <div class="section-head">
           <h2>孩子愿意看的手册，不能只有文字。</h2>
-          <p>流程是：先根据大纲生成基础知识点和例题；再由 AI 判断哪些知识点或例题需要图文结合；简单图走 SVG，复杂信息图默认进入待外部生成队列。</p>
+          <p>流程是：先根据大纲生成基础知识点和例题；再由 AI 判断哪些知识点或例题需要图文结合；简单图走 SVG，复杂信息图先进入待生成队列，有可调用生图能力时由 Agent 自动生成和导入。</p>
         </div>
         <div class="language">
           <article>
@@ -1007,7 +1007,7 @@
           </article>
           <article>
             <h3>模型只是建议</h3>
-            <p>GPT Image 2.0、Qwen Image 2.0 Pro、SenseNova U1 Fast 是推荐外部选项；没有可调用能力时只交付配图需求清单和 SVG 草图。</p>
+            <p>GPT Image 2.0、Qwen Image 2.0 Pro、SenseNova U1 Fast 是推荐外部选项；如果用户有对应 Skill/API，Agent 可以自动调用。没有可调用能力时，只交付配图需求清单和 SVG 草图。</p>
             <div class="sample">配图需求清单 + SVG 草图</div>
           </article>
           <article>
@@ -1048,8 +1048,8 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>v0.2.15：第三轮审计收尾清理完成。</h2>
-          <p>主流程仍然围绕“如何生成复习手册”；本次移除了公开仓库里容易误导 Agent 的本地生图 router，并补齐 guide-plan、provider、PDF 导出和故事化讲解的直接回归测试。内置生图模型继续不做，复杂图通过外部模型、导入资产或队列机制处理。</p>
+          <h2>v0.2.16：生图流程说明进一步收紧。</h2>
+          <p>主流程仍然围绕“如何生成复习手册”；项目不内置固定生图模型，但“外部生图”不是让用户手动搬文件。用户已有可调用 Skill/API/脚本或生成图片目录时，Agent 应在基础手册完成后自动调用或导入，并把复核后的复杂图挂接进手册。</p>
         </div>
         <div class="flow">
           <article class="flow-item">

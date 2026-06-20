@@ -1,6 +1,6 @@
 ﻿# Project Operations Guide / 项目维护说明
 
-Last updated: 2026-06-19
+Last updated: 2026-06-20
 
 This file is the operational memory for future sessions and agents. Update it
 whenever release flow, validation rules, animation assets, repository hygiene, or
@@ -176,8 +176,12 @@ Current public logic:
 - recommended external models: GPT Image 2.0, Qwen Image 2.0 Pro, SenseNova U1
   Fast;
 - base generator writes visual briefs and prompt queues;
-- real image generation only happens if the user provides a callable external
-  route, API/script, or imported assets;
+- real image generation only happens if the user provides a callable route,
+  API/script, image-generation Skill, designer workflow, or generated asset
+  directory;
+- "external" does not mean manual user file-moving. If the route is callable,
+  the Agent should run it after the base handbook exists and import or attach
+  the reviewed assets automatically;
 - SVG is only a fallback for simple diagrams and must carry review warnings when
   used for complex visuals.
 

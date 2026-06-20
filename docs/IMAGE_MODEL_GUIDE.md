@@ -130,9 +130,11 @@ visual_002_market-equilibrium.png
 visual_003.webp
 ```
 
-Generate complex images with whatever external workflow the user actually has:
-an image Skill, API, design tool, or manual designer review. Then import the
-reviewed files into the guide package:
+Generate complex images with whatever callable workflow the user actually has:
+an image Skill, API, script, design tool, or designer review process. If the
+workflow is callable, the Agent can run it automatically after the base guide is
+generated. Then import the reviewed files into the guide package when they are
+written outside `images/`:
 
 ```bash
 python scripts/import_infographic_assets.py ./outputs/chemistry-9202 \
@@ -213,7 +215,8 @@ the source point.
 - `prompt-queue`：默认路线，生成提示词队列，不代表复杂信息图已经完成
 
 只有用户提供可调用的生图 Skill、API、脚本、生成后的图片目录或 custom provider
-配置时，才进行真实图片生成或导入。
+配置时，才进行真实图片生成或导入。这里的“外部”不是要求用户手动搬文件；如果路线可调用，
+Agent 应该自动调用生成，并在需要时自动导入到手册目录。
 
 如果选择 `custom`，只记录模型名、接口 URL、API key 所在的环境变量名。不要让用户
 在聊天、文档、截图或仓库里暴露真实 key。

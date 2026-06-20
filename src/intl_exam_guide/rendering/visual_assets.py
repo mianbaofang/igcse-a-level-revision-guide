@@ -11,8 +11,6 @@ GENERATED_ASSET_STATUSES = {
     "reviewed",
     "reviewed-generated",
     "provider-selected-generated",
-    "manual-generated",
-    "codex-router-generated",
     "sensenova-generated",
 }
 PENDING_ASSET_STATUSES = {

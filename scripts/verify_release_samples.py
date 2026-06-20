@@ -33,8 +33,6 @@ GENERATED_STATUSES = {
     "reviewed",
     "reviewed-generated",
     "provider-selected-generated",
-    "manual-generated",
-    "codex-router-generated",
 }
 PENDING_STATUSES = {
     "external-generation-required",

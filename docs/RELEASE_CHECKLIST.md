@@ -97,8 +97,10 @@ python scripts/scan_for_raw_keys.py . ./outputs
 
 - [ ] Pending complex infographics are marked as prompt-queue/external
   generation work, not as generated assets.
-- [ ] After an external image workflow or designer review has produced the
-  pending showcase images, import those reviewed assets into the sample guides:
+- [ ] After a callable image Skill/API/script or designer review workflow has
+  produced the pending showcase images, import those reviewed assets into the
+  sample guides. If the workflow is callable, the Agent should run it and import
+  the results; this is not intended as a manual user file-moving step:
 
 ```bash
 python scripts/import_infographic_assets.py ./outputs/mathematics-9260-sample --asset-dir ./generated-infographics/mathematics-9260-sample --provider "external-reviewed-workflow"
