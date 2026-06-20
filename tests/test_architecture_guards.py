@@ -17,3 +17,16 @@ def test_svg_and_styles_are_split_out_of_html_renderer():
 
     assert (rendering_dir / "svg_templates.py").exists()
     assert (rendering_dir / "styles.py").exists()
+
+
+def test_guide_plan_responsibilities_stay_split_out():
+    planning_dir = REPO_ROOT / "src" / "intl_exam_guide" / "planning"
+    guide_plan = planning_dir / "guide_plan.py"
+
+    line_count = len(guide_plan.read_text(encoding="utf-8").splitlines())
+
+    assert line_count <= 450
+    assert (planning_dir / "visual_routing.py").exists()
+    assert (planning_dir / "practice_generator.py").exists()
+    assert (planning_dir / "explanation_styles.py").exists()
+    assert (planning_dir / "localization.py").exists()

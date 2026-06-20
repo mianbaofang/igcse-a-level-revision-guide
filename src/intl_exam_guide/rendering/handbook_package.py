@@ -36,7 +36,7 @@ def write_handbook_package(plan: GuidePlan, output_dir: Path) -> dict[str, objec
     visual_assets = build_visual_asset_lookup(load_visual_manifest(images_dir))
     section_files = write_sections(plan, sections_dir, visual_assets)
 
-    manifest = {
+    manifest: dict[str, object] = {
         "sections_dir": str(sections_dir),
         "images_dir": str(images_dir),
         "run_options": plan.run_options.__dict__,

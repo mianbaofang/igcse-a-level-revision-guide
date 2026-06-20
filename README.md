@@ -221,6 +221,11 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   focuses on exam-board/course identity, the setup page avoids internal
   engineering wording, and the roadmap table removes the extra study-route
   column.
+- **v0.2.14:** completes the actionable third-round audit follow-up: splits the
+  planning monolith, adds mypy and Codecov coverage upload to CI, strengthens
+  Pearson/Cambridge parser tests, covers encrypted PDF handling, and makes
+  narrative explanation cards topic-aware. Built-in image models remain out of
+  scope by design.
 
 ## Developer Quick Start
 

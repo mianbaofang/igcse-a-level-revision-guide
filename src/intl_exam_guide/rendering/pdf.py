@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import Any
 
 
 class PdfExportError(RuntimeError):
@@ -40,7 +41,7 @@ def export_pdf_with_playwright(html_path: Path, pdf_path: Path) -> Path:
         for channel in ("chrome", "msedge", None):
             browser = None
             try:
-                launch_kwargs = {"headless": True}
+                launch_kwargs: dict[str, Any] = {"headless": True}
                 if channel:
                     launch_kwargs["channel"] = channel
                 browser = playwright.chromium.launch(**launch_kwargs)

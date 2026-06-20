@@ -6,7 +6,12 @@ from intl_exam_guide.providers import cambridge as cambridge_module
 from intl_exam_guide.providers import pearson as pearson_module
 from intl_exam_guide.providers.cambridge import CambridgeInternationalProvider
 from intl_exam_guide.providers.cambridge import select_syllabus_link
-from intl_exam_guide.providers.common import parse_generic_topics_from_pdf
+from intl_exam_guide.providers.common import (
+    TextNode,
+    parse_generic_topics_from_pdf,
+    parse_pearson_subsection_line,
+    parse_pearson_topic_tables,
+)
 from intl_exam_guide.providers.pearson import PearsonEdexcelProvider, pearson_candidate_urls
 
 
@@ -181,6 +186,57 @@ def test_pearson_learning_tables_ignore_trailing_front_matter():
     assert "Pearson Education Limited" not in joined
 
 
+def test_pearson_subsection_parser_rejects_noise_and_long_lines():
+    assert parse_pearson_subsection_line("a) Explain the purpose of accounting.") is None
+    assert parse_pearson_subsection_line("12") is None
+    assert parse_pearson_subsection_line("1 " + "very long " * 20) is None
+
+    assert parse_pearson_subsection_line(
+        "2 Books of original entry a) Explain the purpose of books of original entry."
+    ) == (
+        "2",
+        "Books of original entry",
+        "a) Explain the purpose of books of original entry.",
+    )
+
+
+def test_pearson_topic_tables_stop_at_appendix_and_administration():
+    pages = [
+        (
+            20,
+            """
+            Topic 1: The accounting environment
+            What students need to learn:
+            1 Types of business organisation a) Explain public sector organisations.
+            b) Explain stakeholder connections.
+            2 Accounting concepts a) Understand prudence.
+            b) Apply consistency.
+            Topic 2: Bookkeeping
+            What students need to learn:
+            1 Business documentation a) Explain invoices.
+            b) Prepare credit notes.
+            2 Ledger accounting a) Record transactions.
+            b) Balance ledger accounts.
+            Appendix 1 Formulae
+            1 Assessment objectives a) This is not subject content.
+            Administration arrangements
+            Topic 9: Noise
+            What students need to learn:
+            1 Do not parse this a) It belongs to admin pages.
+            """,
+        )
+    ]
+
+    topics = parse_pearson_topic_tables(pages)
+    titles = [topic.title for topic in topics]
+    joined = " ".join(titles + [point for topic in topics for point in topic.points])
+
+    assert "1.1 - Types of business organisation" in titles
+    assert "2.2 - Ledger accounting" in titles
+    assert "9.1 - Do not parse this" not in titles
+    assert "Administration arrangements" not in joined
+
+
 def test_generic_pdf_parser_does_not_treat_assessment_objectives_as_topics():
     pages = [
         (
@@ -348,6 +404,96 @@ def test_pearson_subject_query_does_not_swallow_code_errors(monkeypatch):
 
     with pytest.raises(RuntimeError, match="parser bug"):
         PearsonEdexcelProvider().find_qualification("Edexcel Accounting", "igcse")
+
+
+def test_pearson_parse_qualification_extracts_spec_pdf_and_metadata(monkeypatch):
+    parser = FakeParser(
+        title="Pearson Edexcel International GCSE Accounting (2017)",
+        links=[
+            Link(
+                text="Download specification",
+                href="https://qualifications.pearson.com/content/dam/pdf/accounting-specification.pdf",
+            ),
+            Link(text="Past paper", href="https://example.test/past-paper.pdf"),
+        ],
+        nodes=[
+            TextNode(tag="h1", text="Pearson Edexcel International GCSE Accounting (2017)"),
+            TextNode(tag="p", text="First teaching: September 2017"),
+            TextNode(tag="p", text="First external assessment: June 2019"),
+        ],
+    )
+
+    monkeypatch.setattr(pearson_module, "parse_page", lambda _url: parser)
+
+    qualification = PearsonEdexcelProvider().parse_qualification(
+        "https://qualifications.pearson.com/en/qualifications/edexcel-international-gcses/international-gcse-accounting-2017.html",
+        "igcse",
+    )
+
+    assert qualification.provider == "pearson"
+    assert qualification.qualification_type == "international_gcse"
+    assert qualification.subject_area == "Accounting"
+    assert qualification.source.specification_url.endswith("accounting-specification.pdf")
+    assert qualification.source.first_teaching == "September 2017"
+    assert qualification.source.first_assessment == "June 2019"
+    assert "Pearson Edexcel" in qualification.route_tags
+
+
+def test_pearson_parse_qualification_rejects_page_without_spec_pdf(monkeypatch):
+    parser = FakeParser(
+        title="Pearson Edexcel International GCSE Accounting (2017)",
+        links=[Link(text="Welcome guide", href="https://example.test/welcome-guide.pdf")],
+    )
+    monkeypatch.setattr(pearson_module, "parse_page", lambda _url: parser)
+
+    with pytest.raises(ValueError, match="No Pearson specification PDF link"):
+        PearsonEdexcelProvider().parse_qualification("https://example.test/accounting.html", "igcse")
+
+
+def test_cambridge_parse_qualification_uses_exam_year_to_choose_syllabus(monkeypatch):
+    parser = FakeParser(
+        title="Cambridge IGCSE Accounting (0452)",
+        links=[
+            Link(
+                text="2023 - 2025 Syllabus",
+                href="https://www.cambridgeinternational.org/Images/123-2023-2025-syllabus.pdf",
+            ),
+            Link(
+                text="2026 - 2028 Syllabus",
+                href="https://www.cambridgeinternational.org/Images/456-2026-2028-syllabus.pdf",
+            ),
+            Link(
+                text="2026 - 2028 Syllabus update",
+                href="https://www.cambridgeinternational.org/Images/999-2026-2028-syllabus-update.pdf",
+            ),
+        ],
+    )
+    monkeypatch.setattr(cambridge_module, "parse_page", lambda _url: parser)
+
+    qualification = CambridgeInternationalProvider().parse_qualification(
+        "https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-igcse-accounting-0452/",
+        "igcse",
+        exam_year="2027",
+    )
+
+    assert qualification.provider == "cambridge"
+    assert qualification.code == "0452"
+    assert qualification.source.syllabus_year_range == "2026-2028"
+    assert qualification.source.selected_exam_year == "2027"
+    assert qualification.source.specification_url.endswith("456-2026-2028-syllabus.pdf")
+    assert qualification.selected_exam_year == "2027"
+
+
+def test_cambridge_parse_direct_pdf_validates_exam_year():
+    qualification = CambridgeInternationalProvider().parse_qualification(
+        "https://www.cambridgeinternational.org/Images/123-2026-2028-syllabus.pdf",
+        "igcse",
+        exam_year="2027",
+    )
+
+    assert qualification.source.syllabus_year_range == "2026-2028"
+    assert qualification.source.selected_exam_year == "2027"
+    assert qualification.source.specification_url.endswith("123-2026-2028-syllabus.pdf")
 
 
 def test_pearson_igcse_subject_slug_preserves_mathematics_a_suffix():

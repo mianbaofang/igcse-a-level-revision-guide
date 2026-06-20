@@ -32,3 +32,19 @@ def test_extract_pdf_pages_reports_invalid_pdf(tmp_path):
         assert "Could not read PDF" in str(exc)
     else:
         raise AssertionError("Expected PdfTextExtractionError")
+
+
+def test_extract_pdf_pages_reports_encrypted_pdf_that_stays_locked(tmp_path):
+    pdf_path = tmp_path / "locked.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    writer.encrypt("secret")
+    with pdf_path.open("wb") as handle:
+        writer.write(handle)
+
+    try:
+        extract_pdf_pages(pdf_path)
+    except PdfTextExtractionError as exc:
+        assert "Encrypted PDF could not be decrypted" in str(exc)
+    else:
+        raise AssertionError("Expected PdfTextExtractionError")

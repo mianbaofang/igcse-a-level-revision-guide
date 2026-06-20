@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 import re
@@ -572,28 +572,41 @@ def render_infographic_required(
     source = topic.source_snippets[0] if topic.source_snippets else None
     source_label = format_source_reference(source, language)
     if asset and has_renderable_infographic(asset):
-        filename = str(asset["file"])
-        provider = str(asset.get("image_provider") or visual.image_provider)
-        caption = "Generated Infographic" if language == "en" else "已生成信息图"
-        source_prefix = "Source anchor" if language == "en" else "来源依据"
-        model_note = "reviewed visual asset" if language == "en" else "已复核视觉资产"
-        question = "Use the infographic to explain or apply:" if language == "en" else "用这张信息图解释或应用："
-        prompt_label = "Generation prompt" if language == "en" else "生图提示词"
-        visual_steps = (
-            [
-                "Read the labels and locate the key relationship.",
-                "Match the visual evidence to one precise syllabus term.",
-                "Write the final answer in the command word's form.",
-            ]
-            if language == "en"
-            else [
-                "阅读标签，定位核心关系。",
-                "把图中证据对应到一个准确的大纲术语。",
-                "按指令词要求写出最终答案。",
-            ]
-        )
-        step_items = "".join(f"<li>{html_escape(step)}</li>" for step in visual_steps)
-        return f"""
+        return render_generated_infographic(title, visual, asset, source_label, language)
+    if asset and has_renderable_svg_fallback(asset):
+        return render_svg_fallback_infographic(title, visual, asset, source_label, language)
+    return render_pending_infographic(title, visual, source_label, language)
+
+
+def render_generated_infographic(
+    title: str,
+    visual: VisualBrief,
+    asset: dict[str, Any],
+    source_label: str,
+    language: str,
+) -> str:
+    filename = str(asset["file"])
+    provider = str(asset.get("image_provider") or visual.image_provider)
+    caption = "Generated Infographic" if language == "en" else "已生成信息图"
+    source_prefix = "Source anchor" if language == "en" else "来源依据"
+    model_note = "reviewed visual asset" if language == "en" else "已复核视觉资产"
+    question = "Use the infographic to explain or apply:" if language == "en" else "用这张信息图解释或应用："
+    prompt_label = "Generation prompt" if language == "en" else "生图提示词"
+    visual_steps = (
+        [
+            "Read the labels and locate the key relationship.",
+            "Match the visual evidence to one precise syllabus term.",
+            "Write the final answer in the command word's form.",
+        ]
+        if language == "en"
+        else [
+            "阅读标签，定位核心关系。",
+            "把图中证据对应到一个准确的大纲术语。",
+            "按指令词要求写出最终答案。",
+        ]
+    )
+    step_items = "".join(f"<li>{html_escape(step)}</li>" for step in visual_steps)
+    return f"""
 <figure class="visual-example generated-infographic" aria-label="Generated infographic for {html_escape(title)}">
   <figcaption>{render_icon("visual")}<span>{html_escape(caption)}</span></figcaption>
   <div class="generated-infographic-grid">
@@ -611,32 +624,40 @@ def render_infographic_required(
   </div>
 </figure>
 """
-    if asset and has_renderable_svg_fallback(asset):
-        filename = str(asset["file"])
-        caption = "SVG Fallback - Review Needed" if language == "en" else "SVG 兜底图 - 需要复核"
-        source_prefix = "Source anchor" if language == "en" else "来源依据"
-        model_note = (
-            "No callable image model was provided. This SVG is a fallback for a complex infographic, so details may be less accurate and need review."
-            if language == "en"
-            else "未提供可调用生图模型或方式；这是复杂信息图的 SVG 兜底图，细节可能不够准确，需要复核。"
-        )
-        question = "Use this draft only as a study aid for:" if language == "en" else "这张草图仅用于辅助理解："
-        prompt_label = "External image brief" if language == "en" else "外部生图需求"
-        visual_steps = (
-            [
-                "Check whether the shape, labels, and relationships match the syllabus point.",
-                "Replace this SVG with a reviewed infographic if a suitable image model or designer is available.",
-                "Do not treat this fallback as a factual source.",
-            ]
-            if language == "en"
-            else [
-                "先检查形状、标签和关系是否符合大纲知识点。",
-                "如果有合适的生图模型或人工设计方式，应替换成复核后的信息图。",
-                "不要把这张兜底图当作事实来源。",
-            ]
-        )
-        step_items = "".join(f"<li>{html_escape(step)}</li>" for step in visual_steps)
-        return f"""
+
+
+def render_svg_fallback_infographic(
+    title: str,
+    visual: VisualBrief,
+    asset: dict[str, Any],
+    source_label: str,
+    language: str,
+) -> str:
+    filename = str(asset["file"])
+    caption = "SVG Fallback - Review Needed" if language == "en" else "SVG 兜底图 - 需要复核"
+    source_prefix = "Source anchor" if language == "en" else "来源依据"
+    model_note = (
+        "No callable image model was provided. This SVG is a fallback for a complex infographic, so details may be less accurate and need review."
+        if language == "en"
+        else "未提供可调用生图模型或方式；这是复杂信息图的 SVG 兜底图，细节可能不够准确，需要复核。"
+    )
+    question = "Use this draft only as a study aid for:" if language == "en" else "这张草图仅用于辅助理解："
+    prompt_label = "External image brief" if language == "en" else "外部生图需求"
+    visual_steps = (
+        [
+            "Check whether the shape, labels, and relationships match the syllabus point.",
+            "Replace this SVG with a reviewed infographic if a suitable image model or designer is available.",
+            "Do not treat this fallback as a factual source.",
+        ]
+        if language == "en"
+        else [
+            "先检查形状、标签和关系是否符合大纲知识点。",
+            "如果有合适的生图模型或人工设计方式，应替换成复核后的信息图。",
+            "不要把这张兜底图当作事实来源。",
+        ]
+    )
+    step_items = "".join(f"<li>{html_escape(step)}</li>" for step in visual_steps)
+    return f"""
 <figure class="visual-example svg-fallback" aria-label="SVG fallback for {html_escape(title)}">
   <figcaption>{render_icon("visual")}<span>{html_escape(caption)}</span></figcaption>
   <div class="generated-infographic-grid">
@@ -654,6 +675,14 @@ def render_infographic_required(
   </div>
 </figure>
 """
+
+
+def render_pending_infographic(
+    title: str,
+    visual: VisualBrief,
+    source_label: str,
+    language: str,
+) -> str:
     provider = visual.image_provider
     source_prefix = "Source anchor" if language == "en" else "来源依据"
     if provider.startswith("ask-user"):

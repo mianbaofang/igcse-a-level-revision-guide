@@ -4,6 +4,7 @@ import hashlib
 import re
 import urllib.parse
 import urllib.request
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
@@ -133,8 +134,10 @@ def is_pdf_url(value: str) -> bool:
 
 def first_node_text(source: object, *tags: str) -> str | None:
     nodes = getattr(source, "nodes", source)
+    if not isinstance(nodes, Iterable):
+        return None
     for node in nodes:
-        if node.tag in tags:
+        if isinstance(node, TextNode) and node.tag in tags:
             return node.text
     return None
 
@@ -334,6 +337,7 @@ def parse_pearson_topic_tables(pages: list[tuple[int, str]]) -> list[Topic]:
     current_points: list[str] = []
     current_page: int | None = None
     in_learning_table = False
+    stopped = False
 
     def flush() -> None:
         nonlocal current_code, current_title_parts, current_points, current_page
@@ -366,7 +370,11 @@ def parse_pearson_topic_tables(pages: list[tuple[int, str]]) -> list[Topic]:
         current_page = None
 
     for page_number, page_text in pages:
+        if stopped:
+            break
         for raw_line in page_text.splitlines():
+            if stopped:
+                break
             line = clean_topic_line(raw_line)
             if not line or is_noise_line(line):
                 continue
@@ -389,6 +397,7 @@ def parse_pearson_topic_tables(pages: list[tuple[int, str]]) -> list[Topic]:
                 in_learning_table = False
                 if lower.startswith(("appendix ", "administration ")):
                     current_topic_number = None
+                    stopped = True
                 continue
             if "what students need to learn" in lower:
                 in_learning_table = True
@@ -457,7 +466,7 @@ def is_pearson_front_matter_line(line: str) -> bool:
 def select_content_pages(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
     detailed_start = first_detailed_topic_page(pages)
     if detailed_start is not None:
-        selected = []
+        detailed_selected: list[tuple[int, str]] = []
         for page_number, page_text in pages:
             if page_number < detailed_start:
                 continue
@@ -468,8 +477,8 @@ def select_content_pages(pages: list[tuple[int, str]]) -> list[tuple[int, str]]:
             ):
                 break
             lines = [clean_text(line) for line in page_text.splitlines() if clean_text(line)]
-            selected.append((page_number, "\n".join(lines)))
-        return selected
+            detailed_selected.append((page_number, "\n".join(lines)))
+        return detailed_selected
 
     selected: list[tuple[int, str]] = []
     started = False

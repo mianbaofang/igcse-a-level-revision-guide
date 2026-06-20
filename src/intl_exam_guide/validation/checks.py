@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 import os
 from pathlib import Path
 import re
 
-from intl_exam_guide.models import GuidePlan
+from intl_exam_guide.models import GuidePlan, PracticeItem, VisualBrief
 from intl_exam_guide.rendering.visual_assets import (
     PENDING_ASSET_STATUSES,
     has_renderable_infographic,
@@ -245,7 +246,7 @@ def validate_practice(plan: GuidePlan) -> list[ValidationIssue]:
     return issues
 
 
-def validate_practice_item(plan: GuidePlan, item: object) -> list[ValidationIssue]:
+def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     topic_title = getattr(item, "topic_title", "")
     if not item.command_word.strip():
@@ -524,7 +525,7 @@ def validate_image_assets(plan: GuidePlan, images_dir: Path) -> list[ValidationI
 
 
 def validate_infographic_assets(
-    infographic_briefs: list[object],
+    infographic_briefs: Sequence[VisualBrief],
     manifest_entries: list[dict[str, object]],
     images_dir: Path,
 ) -> list[ValidationIssue]:

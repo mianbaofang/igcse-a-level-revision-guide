@@ -2,6 +2,7 @@ from intl_exam_guide.models import Topic, VisualBrief
 from intl_exam_guide.planning.guide_plan import choose_visual_type
 from intl_exam_guide.planning.guide_plan import zh_visual_type
 from intl_exam_guide.rendering.html import render_topic_visual_svg
+from intl_exam_guide.rendering.story_modes import chinese_story_lines, english_story_lines
 
 
 def route(title: str, points: list[str], subject: str) -> tuple[str, str, str]:
@@ -202,3 +203,15 @@ def test_chinese_visual_type_keeps_accounting_specific_route():
     assert zh_type == "会计记录流程图"
     assert "会计记录流程" in svg
     assert "原始凭证" in svg
+
+
+def test_story_modes_choose_topic_specific_scenes():
+    accounting = english_story_lines("Ledger accounts", "source documents", 1)
+    economics = english_story_lines("Demand and supply", "market equilibrium", 1)
+    chemistry = chinese_story_lines("气体检验", "氧气复燃", 1)
+    maths = chinese_story_lines("集合与韦恩图", "交集区域", 1)
+
+    assert "shop's records" in accounting[0]
+    assert "curve or trade-off" in economics[1]
+    assert "实验台" in chemistry[0]
+    assert "图上的标记" in maths[0]

@@ -21,8 +21,15 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: Lint
         run: python -m ruff check .
+      - name: Type check
+        run: python -m mypy
       - name: Test
-        run: python -m pytest --cov --cov-report=term-missing --cov-fail-under=60
+        run: python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=60
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
       - name: Compile
         run: python -m compileall -q src tests scripts
       - name: Raw key scan

@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.2.14 - 2026-06-20
+
+### Changed
+
+- Completed the actionable third-round audit items except for embedding a built-in
+  image model, which remains intentionally out of scope.
+- Split the former monolithic `guide_plan.py` into smaller planning modules for
+  localization, explanation styles, practice generation, and visual routing while
+  preserving the old public import path for Agent compatibility.
+- Split infographic rendering into separate generated-asset, SVG-fallback, and
+  pending-queue renderers.
+- Made narrative explanation cards more topic-aware for accounting, economics,
+  chemistry, and mathematics instead of relying only on index-based rotation.
+- Added CI type checking with mypy and coverage XML upload through Codecov.
+
+### Fixed
+
+- Tightened Pearson Edexcel specification PDF selection so welcome guides, past
+  papers, and mark schemes are not accepted as specifications.
+- Cleaned Pearson subject names so issue years such as `(2017)` do not leak into
+  `subject_area`.
+- Stopped Pearson learning-table parsing at appendix/administration sections.
+
+### Verified
+
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=60 -q`
+  (`101 passed`, coverage `70.68%`)
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py .` (`raw_key_matches: 0`)
+- `git diff --check`
+
 ## 0.2.13 - 2026-06-20
 
 ### Changed

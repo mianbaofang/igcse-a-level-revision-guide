@@ -72,6 +72,8 @@ class PearsonEdexcelProvider(ExamBoardProvider):
                 "onboarding",
             ),
         )
+        if specification_url and not pearson_is_specification_pdf(specification_url):
+            specification_url = None
         if not specification_url:
             raise ValueError(
                 "No Pearson specification PDF link found on the supplied page. "
@@ -168,7 +170,7 @@ class PearsonEdexcelProvider(ExamBoardProvider):
 
 def pearson_subject_area(title: str, url: str) -> str | None:
     cleaned = re.sub(
-        r"\b(Pearson|Edexcel|International|GCSE|Advanced|Levels?|A\s*Level|Specification|\(\d{4}\))\b",
+        r"\b(Pearson|Edexcel|International|GCSE|Advanced|Levels?|A\s*Level|Specification)\b|\(\d{4}\)",
         " ",
         title,
         flags=re.I,
@@ -178,6 +180,15 @@ def pearson_subject_area(title: str, url: str) -> str | None:
         return cleaned
     parts = [part for part in re.split(r"[-_/]", url) if part and not part.isdigit()]
     return clean_text(" ".join(parts[-4:])).title() if parts else None
+
+
+def pearson_is_specification_pdf(url: str) -> bool:
+    lower = url.lower()
+    if ".pdf" not in lower:
+        return False
+    if any(term in lower for term in ["past-paper", "past paper", "mark-scheme", "welcome", "guide"]):
+        return False
+    return "specification" in lower or "/spec" in lower
 
 
 def pearson_summary(
