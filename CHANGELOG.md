@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.2.26 - 2026-06-21
+
+### Tests
+
+- Closed the thirteenth-round audit follow-up by adding dedicated
+  `subject_profiles.py` tests for declared subject routing, ambiguous science
+  source-text routing, and the mathematics prefix heuristic.
+- Added dedicated `validation/checks.py` tests for preflight/source checks,
+  custom image-provider validation, guide/practice/visual validators,
+  qualification notes, output package validation, HTML language checks, visual
+  asset checks, review summaries, mixed-language labels, and small helper
+  branches.
+- Tightened `zh_topic_reference()` tests from loose containment checks to exact
+  Chinese return values.
+- Expanded `zh_visual_type()` tests so OR-condition aliases such as
+  `prime-entry`, `reconciliation`, `financial-statement`, `venn`, and
+  `probability` are tested as standalone triggers.
+- Strengthened the intro-animation version guard so it rejects any stale
+  `v0.2.x` label, not only the historical `v0.2.20` value.
+
+### Changed
+
+- Updated package version and public intro animation labels to `v0.2.26`.
+- Updated README release histories, project operations notes, and the public
+  homepage version card for the thirteenth-round audit closure.
+
+### Verified
+
+- Fresh offline demo evidence was regenerated from the current working copy:
+  `python -m intl_exam_guide demo --out ./outputs/_fresh-v026-demo --language en --image-provider deterministic-svg --explanation-style friendly --skip-pdf`.
+  HTML guide generated; PDF skipped (--skip-pdf). The resulting validation
+  output reported `issues: []`, 3 topics, 6 practice cards, 3 topic guides,
+  3 visual briefs, 3 SVG-safe visuals, 3 topic diagrams in HTML, 3 visual
+  examples in HTML, 7 section files, 3 image files, and both visual/package
+  manifests. The ignored output folder was removed after collecting release
+  evidence and is not committed.
+- `python -m pytest tests/test_subject_profiles.py tests/test_validation_checks.py tests/test_localization.py tests/test_release_scripts.py::test_intro_animation_visible_version_labels_match_package_version -q`
+  (`16 passed`).
+- `python -m pytest tests/test_subject_profiles.py --cov=intl_exam_guide.planning.subject_profiles --cov-report=term-missing -q`
+  (`3 passed`, `94%`).
+- `python -m pytest tests/test_validation_checks.py --cov=intl_exam_guide.validation.checks --cov-report=term-missing -q`
+  (`7 passed`, `79%`).
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q`
+  (`203 passed`, coverage `85.51%`).
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py . ./outputs` (`raw_key_matches: 0`)
+- `git diff --check` (only Windows line-ending notices, no whitespace errors)
+
 ## 0.2.25 - 2026-06-21
 
 ### Tests

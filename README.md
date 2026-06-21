@@ -285,6 +285,10 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   and explanation-style tests now assert exact input-to-output mappings,
   `zh_visual_type()` has dedicated route coverage, and the public intro
   animation labels are guarded against drifting behind the package version.
+- **v0.2.26:** closes the thirteenth-round audit follow-up by adding dedicated
+  `subject_profiles.py` and `validation/checks.py` tests, tightening
+  `zh_topic_reference()` and `zh_visual_type()` route assertions, and making the
+  animation version guard reject any stale `v0.2.x` label.
 
 ## Developer Quick Start
 

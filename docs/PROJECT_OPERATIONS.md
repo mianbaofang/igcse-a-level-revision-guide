@@ -125,6 +125,11 @@ explanation-style tests use exact input-to-output assertions, `zh_visual_type()`
 has dedicated route coverage, and public animation source/export HTML is guarded
 so visible version labels match the package version.
 
+v0.2.26 closed the thirteenth-round audit follow-up: dedicated tests now cover
+subject profile routing and validation checks directly, `zh_topic_reference()`
+and `zh_visual_type()` assertions are more precise, and the animation version
+guard rejects any stale `v0.2.x` label rather than only one historical version.
+
 ## 4. Version And Release Rules
 
 Use GitHub Releases, not tags alone.

@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -160,7 +161,12 @@ def test_intro_animation_visible_version_labels_match_package_version():
     for animation_file in animation_files:
         text = animation_file.read_text(encoding="utf-8")
         assert expected_label in text, animation_file
-        assert "v0.2.20" not in text, animation_file
+        stale_labels = {
+            label
+            for label in re.findall(r"v0\.2\.\d+", text)
+            if label != expected_label
+        }
+        assert stale_labels == set(), (animation_file, stale_labels)
 
 
 def test_public_repo_does_not_ship_built_in_image_router():
