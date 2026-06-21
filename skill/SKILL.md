@@ -316,9 +316,12 @@ python -m pytest tests/test_subject_profiles.py --cov=intl_exam_guide.planning.s
 python -m pytest tests/test_validation_checks.py --cov=intl_exam_guide.validation.checks --cov-report=term-missing -q
 ```
 
-Before release or handoff, also run the full project checks: `python -m pytest
---cov --cov-report=term-missing -q`, `python -m ruff check .`, and `python -m
-mypy`.
+Before release or handoff, also run the full project checks from
+`docs/PROJECT_OPERATIONS.md`: `python -m pytest --cov
+--cov-report=term-missing -q`, `python -m ruff check .`, `python -m mypy`,
+`python -m compileall -q src tests scripts`, `python scripts/scan_for_raw_keys.py
+. ./outputs`, and `git diff --check`. For functional releases, record fresh demo
+evidence in `CHANGELOG.md` or the GitHub Release notes before publishing.
 
 ## Workflow
 

@@ -27,12 +27,23 @@
 
 ### Verified
 
+- Fresh offline demo evidence was regenerated from the current working copy:
+  `python -m intl_exam_guide demo --out ./outputs/_fresh-v027-demo --language en --image-provider deterministic-svg --explanation-style friendly --skip-pdf`.
+  HTML guide generated at `outputs/_fresh-v027-demo/guide.html`; PDF skipped
+  (`--skip-pdf`). The resulting validation output reported `issues: []`, 3
+  topics, 6 practice cards, 3 topic guides, 3 visual briefs, 3 SVG-safe visuals,
+  0 infographic visuals, 3 topic diagrams in HTML, 3 visual examples in HTML, 7
+  section files, 3 image files, and both visual/package manifests. The ignored
+  output folder was removed after collecting release evidence and is not
+  committed.
 - `python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py -q`
   (`17 passed`).
 - `python -m pytest tests/test_subject_profiles.py tests/test_localization.py tests/test_validation_checks.py -q`
   (`23 passed`).
 - `python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py tests/test_subject_profiles.py tests/test_localization.py tests/test_validation_checks.py -q`
   (`40 passed`).
+- `python -m pytest tests/test_release_scripts.py tests/test_visual_routing.py tests/test_visual_routing_benchmark.py tests/test_subject_profiles.py tests/test_localization.py tests/test_validation_checks.py -q`
+  (`52 passed`).
 - `python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py --cov=intl_exam_guide.planning.visual_routing --cov-report=term-missing -q`
   (`17 passed`, `100%` for `visual_routing.py`).
 - `python -m pytest tests/test_subject_profiles.py --cov=intl_exam_guide.planning.subject_profiles --cov-report=term-missing -q`
@@ -43,6 +54,9 @@
   `86%`).
 - `python -m ruff check .`
 - `python -m mypy`
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py . ./outputs` (`raw_key_matches: 0`).
+- `git diff --check`
 
 ## 0.2.26 - 2026-06-21
 
