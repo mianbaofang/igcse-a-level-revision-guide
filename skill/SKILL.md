@@ -280,6 +280,46 @@ repository into a workspace directory, then run commands from that checkout:
 https://github.com/mianbaofang/igcse-a-level-revision-guide.git
 ```
 
+## Maintenance And Audit Closure
+
+Use this section only when the user asks to update, audit, or release the
+generator/Skill itself. Do not run maintenance steps during an ordinary handbook
+generation request.
+
+Final-round P3 closure requires these checks before calling the project ready:
+
+- `visual_routing.py` has a dedicated test file and direct coverage for
+  `build_visual_brief`, provider selection, subject-specific infographic routes,
+  SVG routes, and text-only fallbacks.
+- `validation/checks.py` branch coverage is above 90% in its dedicated test run,
+  with direct tests for `validate_plan`, custom image-provider success/failure,
+  Chinese placeholder checks, image manifest edge cases, review-summary asset
+  counts, `is_contents_or_index_snippet`, and all localized topic marker groups.
+- `subject_profiles.py` dedicated coverage reaches 100%, including declared
+  subject routing, ambiguous science routing, Mathematics prefix routing, and
+  Economics/Accounting source-text fallbacks. Accounting source-text must be
+  checked before broader Economics text so `bank reconciliation` does not route
+  as Economics.
+- Chinese visual OR aliases are tested as standalone triggers, including
+  `accounting process` and `neutralisation`; weak assertions pin full messages
+  or exact return values, not only severity/truthiness.
+- Public release copy, especially `docs/index.html` detail cards, reflects the
+  actual release changes instead of stale prior-round text.
+
+Run at least these focused checks after such maintenance:
+
+```bash
+python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py -q
+python -m pytest tests/test_subject_profiles.py tests/test_localization.py tests/test_validation_checks.py -q
+python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py --cov=intl_exam_guide.planning.visual_routing --cov-report=term-missing -q
+python -m pytest tests/test_subject_profiles.py --cov=intl_exam_guide.planning.subject_profiles --cov-report=term-missing -q
+python -m pytest tests/test_validation_checks.py --cov=intl_exam_guide.validation.checks --cov-report=term-missing -q
+```
+
+Before release or handoff, also run the full project checks: `python -m pytest
+--cov --cov-report=term-missing -q`, `python -m ruff check .`, and `python -m
+mypy`.
+
 ## Workflow
 
 1. Confirm the required preflight choices: subject/provider, required exam

@@ -767,7 +767,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.2.26</div>
+          <div class="kicker">三大考试局支持 · v0.2.27</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -1057,36 +1057,36 @@
     <section class="band">
       <div class="shell">
         <div class="section-head">
-          <h2>v0.2.26：最后一轮审计后的测试护栏。</h2>
-          <p>主流程仍然围绕“如何生成复习手册”：选择考试局、科目、语言和讲解风格，生成知识点、例题与图文学习单元。本次更新补齐学科识别和交付验证的专用测试，并让动画版本标签随包版本自动守住一致性。</p>
+          <h2>v0.2.27：最后一轮审计后的测试护栏。</h2>
+          <p>主流程仍然围绕“如何生成复习手册”：选择考试局、科目、语言和讲解风格，生成知识点、例题与图文学习单元。本次更新收尾最终 P3 缺口：补齐 visual_routing.py 专属测试、提升验证器分支覆盖，并锁住 Economics / Accounting 与中文边角路由。</p>
         </div>
         <div class="flow">
           <article class="flow-item">
-            <div class="num">01 · 证据</div>
+            <div class="num">01 · 学科</div>
             <div>
-              <h3>发布证据</h3>
-              <p>发布说明会明确写出 HTML guide generated; PDF skipped (--skip-pdf)，避免 demo 证据含糊。</p>
+              <h3>学科识别测试</h3>
+              <p>新增 subject_profiles.py 专属测试，直接覆盖声明科目、模糊 Science 文本路由，以及 Economics / Accounting source-text 回退。</p>
             </div>
           </article>
           <article class="flow-item">
-            <div class="num">02 · SVG</div>
+            <div class="num">02 · 视觉</div>
             <div>
-              <h3>SVG 文本</h3>
-              <p>SVG 模板补齐斜杠换行和超长文本截断测试，英文 fallback 删除永远走不到的中文分支。</p>
+              <h3>视觉路由测试</h3>
+              <p>新增 visual_routing.py 专属测试，锁住 Accounting、Economics、Chemistry、Mathematics、Generic 的 infographic / SVG / text-only 分支。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">03 · 中文</div>
             <div>
-              <h3>中文渲染</h3>
-              <p>中文手册入口、中文 helper、本地化标签和讲解风格分支都有直接契约测试。</p>
+              <h3>中文边角路由</h3>
+              <p>zh_topic_reference 继续使用精确值断言，zh_visual_type 额外单独触发 accounting process 与 neutralisation 两个 OR 边角。</p>
             </div>
           </article>
           <article class="flow-item">
             <div class="num">04 · 验证</div>
             <div>
-              <h3>检查命令</h3>
-              <p>剩余 truthy 弱断言改为精确 lookup，raw-key scan 命令与发布清单字面对齐，并忽略本地 uv.lock。</p>
+              <h3>验证器覆盖</h3>
+              <p>validation/checks.py 收紧 HTML language 弱断言，并直接覆盖 contents/index snippet、14 组中文 topic marker 与交付包验证分支。</p>
             </div>
           </article>
         </div>

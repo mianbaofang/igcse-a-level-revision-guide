@@ -198,6 +198,7 @@ README 只保留会影响 Skill 实际生成流程的变化；完整历史统一
 - **v0.2.24：** 闭环第十一轮 P3 建议：为讲解风格和本地化 helper 增加专用测试，补齐中文 HTML helper 与 `render_html()` 中文入口直接覆盖，覆盖 SVG 斜杠换行和超长文本截断，raw-key 扫描命令与发布清单对齐，并移除英文概念 fallback SVG 中不会被生产路径调用的中文分支。
 - **v0.2.25：** 闭环第十二轮精确断言建议：中文本地化和讲解风格测试改为锁定具体输入到具体输出，`zh_visual_type()` 补齐专用路由覆盖，公开介绍动画的版本标签也加入守卫，避免再次落后于包版本。
 - **v0.2.26：** 闭环第十三轮审计建议：新增 `subject_profiles.py` 与 `validation/checks.py` 专用测试，收紧 `zh_topic_reference()` 和 `zh_visual_type()` 路由断言，并让动画版本守卫能拒绝任何过时的 `v0.2.x` 标签。
+- **v0.2.27：** 闭环最终轮 P3：补齐 `visual_routing.py` 专属覆盖，`subject_profiles.py` 达到 100% 覆盖，`validation/checks.py` 分支覆盖超过 90%，中文边角路由改为精确断言，并补强 Skill 发布同步门禁。
 
 ## 开发者快速开始
 

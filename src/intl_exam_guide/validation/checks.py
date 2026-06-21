@@ -722,6 +722,7 @@ def expected_topic_marker(topic_title: str, index: int, output_language: str) ->
 
 def localized_topic_marker(topic_title: str) -> str | None:
     text = topic_title.lower()
+    tokens = set(re.findall(r"[a-z0-9]+", text))
     keyword_titles = [
         (("measurement", "data", "graph"), "测量与数据"),
         (("force", "motion"), "力与运动"),
@@ -739,7 +740,7 @@ def localized_topic_marker(topic_title: str) -> str | None:
         (("statistics", "probability"), "统计与概率"),
     ]
     for keywords, label in keyword_titles:
-        if any(keyword in text for keyword in keywords):
+        if any(keyword in text if " " in keyword else keyword in tokens for keyword in keywords):
             return label
     if re.search(r"[\u4e00-\u9fff]", topic_title):
         return topic_title[:32]

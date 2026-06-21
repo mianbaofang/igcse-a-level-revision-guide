@@ -110,10 +110,10 @@ def resolve_subject_profile(
     if prefix in {"N", "A", "G", "S"} and looks_like_mathematics(text):
         return MATHEMATICS
 
-    if looks_like_economics(text):
-        return ECONOMICS
     if looks_like_accounting(text):
         return ACCOUNTING
+    if looks_like_economics(text):
+        return ECONOMICS
     if looks_like_chemistry(text):
         return CHEMISTRY
     if looks_like_biology(text):

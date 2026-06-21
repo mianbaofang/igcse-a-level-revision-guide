@@ -64,3 +64,16 @@ def test_mathematics_prefix_route_only_applies_when_text_looks_mathematical():
         Topic("N4 - Non-maths title"),
         "portfolio annotation and creative process",
     ).example_domain == GENERIC.example_domain
+
+
+def test_ambiguous_subject_uses_source_text_for_economics_and_accounting():
+    assert resolve_subject_profile(
+        'General',
+        Topic('Markets'),
+        'demand, supply, scarcity, opportunity cost and market equilibrium',
+    ).example_domain == ECONOMICS.example_domain
+    assert resolve_subject_profile(
+        'Example',
+        Topic('Records'),
+        'source document, double entry, trial balance and bank reconciliation',
+    ).example_domain == ACCOUNTING.example_domain

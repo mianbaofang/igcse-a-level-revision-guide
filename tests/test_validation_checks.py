@@ -24,6 +24,7 @@ from intl_exam_guide.validation.checks import (
     normalize_practice_question,
     review_summary,
     validate_custom_image_provider,
+    validate_plan,
     validate_guides,
     validate_html_language,
     validate_html_output,
@@ -293,7 +294,10 @@ def test_html_language_output_assets_and_summary_helpers_have_direct_contracts(t
     assert summary["topic_diagrams_in_html"] == 1
     assert mixed_language_label_matches("<p>复习路线 / Study Roadmap</p>")
     assert expected_topic_marker("3.1 Source documents", 1, "zh-CN") == "第 3.1 节"
-    assert issues_to_dict(validate_html_language("en", ""))[0]["severity"] == "error"
+    assert issues_to_dict(validate_html_language("en", ""))[0] == {
+        "severity": "error",
+        "message": "HTML missing required section phrase: How to Study",
+    }
     assert duplicate_practice_question_topics([plan.practice_items[0], plan.practice_items[0]]) == [
         "3.1 Source documents"
     ]
@@ -311,9 +315,12 @@ def test_validation_small_helpers_have_direct_branch_contracts():
         SourceSnippet(page=2, text="Students should explain source documents.", matched_term="source")
     )
     assert is_contents_or_index_snippet(
+        SourceSnippet(page=12, text="Contents Specification at a glance", matched_term="contents")
+    )
+    assert is_contents_or_index_snippet(
         SourceSnippet(
             page=2,
-            text="Contents Specification at a glance Scheme of assessment General administration",
+            text="Source document index",
             matched_term="contents",
         )
     )
@@ -338,3 +345,130 @@ def test_html_visual_block_validator_catches_missing_visual_and_diagram_counts()
 
     assert "HTML missing required visual explanation block." in messages
     assert "HTML has 0 topic diagrams for 1 topics." in messages
+
+
+def test_expected_topic_marker_localizes_all_keyword_fallback_groups():
+    cases = {
+        "Measurement data graph": "测量与数据",
+        "Force and motion": "力与运动",
+        "Material change": "材料与变化",
+        "Particle state solid liquid gas": "粒子模型与物质状态",
+        "Bond structure": "结构与性质",
+        "Acid alkali pH": "酸碱与 pH",
+        "Accounting ledger bookkeeping": "会计记录",
+        "Financial statement profit position": "财务报表",
+        "Ratio liquidity profitability": "比率分析",
+        "Demand supply market": "市场供需",
+        "Opportunity scarcity choice": "选择与机会成本",
+        "Set Venn": "集合与韦恩图",
+        "Triangle Pythagoras geometry": "几何图形",
+        "Statistics probability": "统计与概率",
+    }
+
+    assert {title: expected_topic_marker(title, 1, "zh-CN") for title in cases} == cases
+
+
+def test_validate_plan_aggregates_html_pdf_and_output_package_checks(tmp_path):
+    plan = valid_plan()
+    html_path = tmp_path / "missing.html"
+    pdf_path = tmp_path / "missing.pdf"
+
+    messages = [issue.message for issue in validate_plan(plan, html_path, pdf_path, tmp_path)]
+
+    assert any(message.startswith("HTML output is missing:") for message in messages)
+    assert any(message.startswith("PDF output is missing:") for message in messages)
+    assert any(message.startswith("Sections directory is missing:") for message in messages)
+    assert any(message.startswith("Images directory is missing:") for message in messages)
+
+
+def test_custom_image_provider_accepts_complete_environment(monkeypatch):
+    plan = valid_plan()
+    plan.run_options.image_provider = "custom"
+    plan.run_options.image_model = "reviewed-model"
+    plan.run_options.image_endpoint_url = "https://example.test/images"
+    plan.run_options.image_api_key_env = "IMAGE_PROVIDER_OK"
+    monkeypatch.setenv("IMAGE_PROVIDER_OK", "set")
+
+    assert validate_custom_image_provider(plan.run_options) == []
+    assert not [
+        issue for issue in validate_preflight_and_source(plan)
+        if issue.message.startswith("Custom image provider")
+    ]
+
+
+def test_chinese_placeholder_checks_cover_guide_practice_and_visual_branches():
+    plan = valid_plan()
+    plan.run_options.output_language = "zh-CN"
+    plan.topic_guides[0].essence = "官方大纲要求 本单元第 1 个细分要求"
+    plan.practice_items[0].question = "官方大纲要求 知识点 1"
+    plan.visual_briefs[0].prompt = "官方大纲要求 知识单元 1"
+
+    messages = [
+        *[issue.message for issue in validate_guides(plan)],
+        *[issue.message for issue in validate_practice_item(plan, plan.practice_items[0])],
+        *[issue.message for issue in validate_visual_briefs(plan)],
+    ]
+
+    assert "Chinese topic guide contains generic syllabus placeholder text: 3.1 Source documents" in messages
+    assert "Chinese practice item contains generic syllabus placeholder text: 3.1 Source documents" in messages
+    assert "Chinese visual brief contains generic syllabus placeholder text: 3.1 Source documents" in messages
+
+
+def test_image_assets_catch_missing_manifest_file_reference_and_svg_shortfall(tmp_path):
+    plan = valid_plan()
+    plan.visual_briefs.append(
+        VisualBrief(
+            topic_title="3.1 Source documents",
+            focus_point="source flow",
+            trigger="diagram",
+            visual_type="source flow",
+            complexity="svg-basic",
+            image_provider="deterministic-svg",
+            prompt="draw source flow",
+            source_points=["Students should explain source documents."],
+        )
+    )
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps([
+            {"complexity": "infographic", "asset_status": "generated", "file": "missing.png"},
+        ]),
+        encoding="utf-8",
+    )
+
+    messages = [issue.message for issue in validate_image_assets(plan, images_dir)]
+
+    assert "Images directory has 0 SVG drafts for 1 SVG-safe visual briefs." in messages
+    assert "Visual manifest references a missing image file: missing.png" in messages
+    assert "0/1 selected infographic briefs have generated raster assets." in messages
+
+
+def test_review_summary_counts_generated_fallback_and_pending_assets(tmp_path):
+    plan = valid_plan()
+    output_dir = tmp_path
+    images_dir = output_dir / "images"
+    sections_dir = output_dir / "sections"
+    images_dir.mkdir()
+    sections_dir.mkdir()
+    (sections_dir / "cover.txt").write_text("cover", encoding="utf-8")
+    (output_dir / "handbook-package.json").write_text("{}", encoding="utf-8")
+    (images_dir / "generated.png").write_bytes(b"png")
+    (images_dir / "fallback.svg").write_text("<svg></svg>", encoding="utf-8")
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps([
+            {"complexity": "infographic", "asset_status": "generated", "file": "generated.png"},
+            {"complexity": "infographic", "asset_status": "svg-fallback-needs-review", "file": "fallback.svg"},
+        ]),
+        encoding="utf-8",
+    )
+
+    summary = review_summary(plan, output_dir=output_dir)
+
+    assert summary["section_files"] == 1
+    assert summary["image_files"] == 2
+    assert summary["generated_infographic_assets"] == 1
+    assert summary["svg_fallback_assets"] == 1
+    assert summary["pending_infographic_assets"] == 1
+    assert summary["has_visual_manifest"] is True
+    assert summary["has_package_manifest"] is True

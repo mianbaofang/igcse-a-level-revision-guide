@@ -130,6 +130,13 @@ subject profile routing and validation checks directly, `zh_topic_reference()`
 and `zh_visual_type()` assertions are more precise, and the animation version
 guard rejects any stale `v0.2.x` label rather than only one historical version.
 
+Final-round maintenance updates that touch `skill/`, validation behavior,
+release-facing docs, or public audit claims must not stop at local edits. Before
+handoff, synchronize the installed local Skill copy, commit and push the
+repository update, and create or update the matching GitHub Release notes with
+the exact validation evidence. If the change is intentionally not published,
+state that exception explicitly in the handoff.
+
 ## 4. Version And Release Rules
 
 Use GitHub Releases, not tags alone.
@@ -151,11 +158,13 @@ Then:
 2. Update `src/intl_exam_guide/__init__.py`.
 3. Update `CHANGELOG.md`.
 4. Update README/project docs if the public promise changed.
-5. Commit intentionally.
-6. Create an annotated tag, for example `vX.Y.Z`.
-7. Push `main`.
-8. Push the tag.
-9. Create or update the GitHub Release for that tag.
+5. If `skill/` changed, synchronize the installed local Skill copy and verify it
+   matches the repository copy.
+6. Commit intentionally.
+7. Create an annotated tag, for example `vX.Y.Z`.
+8. Push `main`.
+9. Push the tag.
+10. Create or update the GitHub Release for that tag.
 
 The Release should contain:
 
@@ -255,7 +264,9 @@ Ask for the subject/language/style first. Report complex infographic needs after
 the base handbook plan exists.
 
 After changing `skill/`, synchronize any locally installed Skill copy from the
-repository's `skill/` directory.
+repository's `skill/` directory, verify the installed files match the repository
+files, and publish the change through the normal GitHub Release flow unless the
+user explicitly asks for a local-only draft.
 
 ## 8. Validation Rules
 
@@ -323,6 +334,9 @@ rg -n "local-private-path-pattern" . -S -g "!outputs/**" -g "!.git/**"
 
 Run `git clean -fdX` only after reviewing the dry run. Never remove unrelated
 user folders or subject-study materials.
+
+Do not commit temporary review notes, subagent scratch files, local API outputs,
+or one-off audit transcripts unless they are promoted into public documentation.
 
 ## 10. Local Folder Migration Notes
 

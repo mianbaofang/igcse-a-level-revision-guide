@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.2.27 - 2026-06-21
+
+### Tests
+
+- Closed the final-round P3 follow-up by adding dedicated
+  `visual_routing.py` tests for visual brief creation, provider selection,
+  subject-specific infographic branches, SVG routes, and text-only fallbacks.
+- Expanded `validation/checks.py` tests for aggregate validation,
+  custom-provider success, Chinese placeholder branches, image manifest edges,
+  review-summary asset counts, all localized topic marker groups, and isolated
+  contents/index snippet branches.
+- Completed `subject_profiles.py` dedicated coverage for Economics and
+  Accounting source-text routing, and pinned standalone `zh_visual_type()`
+  aliases for `accounting process` and `neutralisation`.
+
+### Fixed
+
+- Route ambiguous Accounting source text before broader Economics matching so
+  `bank reconciliation` and related accounting phrases do not get claimed by
+  generic Economics terms such as `bank`.
+- Match localized topic marker keywords with token-aware logic so `statement`
+  and `liquidity` no longer accidentally match `state` and `liquid`.
+- Updated the public homepage v0.2.27 detail cards to describe the actual final
+  audit closure work instead of stale earlier-round details.
+
+### Verified
+
+- `python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py -q`
+  (`17 passed`).
+- `python -m pytest tests/test_subject_profiles.py tests/test_localization.py tests/test_validation_checks.py -q`
+  (`23 passed`).
+- `python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py tests/test_subject_profiles.py tests/test_localization.py tests/test_validation_checks.py -q`
+  (`40 passed`).
+- `python -m pytest tests/test_visual_routing.py tests/test_visual_routing_benchmark.py --cov=intl_exam_guide.planning.visual_routing --cov-report=term-missing -q`
+  (`17 passed`, `100%` for `visual_routing.py`).
+- `python -m pytest tests/test_subject_profiles.py --cov=intl_exam_guide.planning.subject_profiles --cov-report=term-missing -q`
+  (`4 passed`, `100%`).
+- `python -m pytest tests/test_validation_checks.py --cov=intl_exam_guide.validation.checks --cov-report=term-missing -q`
+  (`13 passed`, `91%` for `validation/checks.py`).
+- `python -m pytest --cov --cov-report=term-missing -q` (`220 passed`, coverage
+  `86%`).
+- `python -m ruff check .`
+- `python -m mypy`
+
 ## 0.2.26 - 2026-06-21
 
 ### Tests

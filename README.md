@@ -289,6 +289,11 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   `subject_profiles.py` and `validation/checks.py` tests, tightening
   `zh_topic_reference()` and `zh_visual_type()` route assertions, and making the
   animation version guard reject any stale `v0.2.x` label.
+- **v0.2.27:** closes the final-round P3 follow-up with dedicated
+  `visual_routing.py` coverage, 100% `subject_profiles.py` coverage,
+  `validation/checks.py` branch coverage above 90%, exact Chinese route edge
+  assertions, token-aware topic-marker matching, and a documented Skill release
+  sync gate.
 
 ## Developer Quick Start
 

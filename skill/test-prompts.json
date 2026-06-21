@@ -18,5 +18,10 @@
     "id": "image-model-not-callable",
     "prompt": "用 SenseNova U1 Fast 给复杂图都生出来。",
     "expected": "The agent verifies that a callable image-generation skill, script, custom provider configuration, or matching asset directory exists. If none exists, it does not pretend SenseNova is callable and instead reports the pending infographic count plus SVG fallback review risk."
+  },
+  {
+    "id": "final-audit-maintenance",
+    "prompt": "根据最后一轮审查结果修复剩余 P3，并确认复习手册 Skill 已更新。",
+    "expected": "The agent treats this as repository maintenance, not a handbook generation request. It closes the visual_routing, validation/checks, subject_profiles, docs/index.html, weak assertion, and standalone OR-trigger gaps; runs the focused coverage commands plus full pytest/ruff/mypy; updates both the repository skill and installed skill with the final audit closure standard; and reports any residual risk."
   }
 ]

@@ -54,6 +54,11 @@ def test_zh_visual_type_maps_subject_visual_routes_to_specific_labels():
     assert {route: zh_visual_type(route) for route in routes} == routes
 
 
+def test_zh_visual_type_final_edge_terms_have_standalone_routes():
+    assert zh_visual_type("accounting process") == "会计记录流程图"
+    assert zh_visual_type("neutralisation") == "酸碱与流程示意图"
+
+
 def test_zh_visual_type_or_conditions_work_as_standalone_triggers():
     standalone_routes = {
         "prime-entry": "会计记录流程图",
@@ -79,19 +84,37 @@ def test_zh_visual_type_or_conditions_work_as_standalone_triggers():
 
 def test_zh_visual_trigger_covers_process_structure_graph_flow_and_default_routes():
     triggers = {
-        "apparatus process observation": "process",
-        "spatial structure model": "structure",
-        "curve graph movement": "graph",
-        "scenario flow relationship": "flow",
+        "apparatus observation": "apparatus",
+        "process observation": "process",
+        "spatial model": "spatial",
+        "structure model": "structure",
+        "curve movement": "curve",
+        "graph movement": "graph",
+        "scenario relationship": "scenario",
+        "flow relationship": "flow",
         "plain visual support": "default",
     }
     outputs = {name: zh_visual_trigger(trigger) for trigger, name in triggers.items()}
 
-    assert set(outputs) == {"process", "structure", "graph", "flow", "default"}
+    assert set(outputs) == {
+        "apparatus",
+        "process",
+        "spatial",
+        "structure",
+        "curve",
+        "graph",
+        "scenario",
+        "flow",
+        "default",
+    }
     assert outputs == {
+        "apparatus": "需要同时看清装置、步骤和观察结果，单纯文字不够直观。",
         "process": "需要同时看清装置、步骤和观察结果，单纯文字不够直观。",
+        "spatial": "结构关系需要空间示意，单纯文字容易误解。",
         "structure": "结构关系需要空间示意，单纯文字容易误解。",
+        "curve": "曲线、坐标或移动方向需要图上标注。",
         "graph": "曲线、坐标或移动方向需要图上标注。",
+        "scenario": "场景、因果和流程需要用箭头串起来。",
         "flow": "场景、因果和流程需要用箭头串起来。",
         "default": "这个知识点用图文结合更容易理解和复习。",
     }
