@@ -42,7 +42,14 @@ def test_styled_explanation_delegates_english_output_to_english_styles():
 
 def test_chinese_explanation_styles_cover_all_public_branches_without_bilingual_fallback():
     topic = Topic(title="A2 Ledger entries")
-    styles = ["formal", "life", "story", "detective", "adventure", "friendly"]
+    expected_fragments = {
+        "formal": "准确掌握",
+        "life": "生活中看得见",
+        "story": "小故事",
+        "detective": "破案",
+        "adventure": "闯关",
+        "friendly": "核心任务",
+    }
 
     outputs = {
         style: styled_explanation(
@@ -52,14 +59,15 @@ def test_chinese_explanation_styles_cover_all_public_branches_without_bilingual_
             style,
             "zh-CN",
         )
-        for style in styles
+        for style in expected_fragments
     }
 
-    for lines in outputs.values():
+    for style, lines in outputs.items():
         joined = " ".join(lines)
         assert len(lines) == 4
+        assert expected_fragments[style] in joined
         assert "source document" in joined
         assert "This unit asks" not in joined
         assert "learning mission" not in joined
 
-    assert len({lines[0] for lines in outputs.values()}) == len(styles)
+    assert len({lines[0] for lines in outputs.values()}) == len(expected_fragments)

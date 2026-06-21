@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from intl_exam_guide import __version__
+
 
 SAMPLES = {
     "mathematics-9260-sample": (90, 180, 39),
@@ -143,6 +145,22 @@ def test_render_intro_animation_exposes_cli_help():
     assert "--html" in result.stdout
     assert "--mp4" in result.stdout
     assert "--gif" in result.stdout
+
+
+def test_intro_animation_visible_version_labels_match_package_version():
+    repo_root = Path(__file__).resolve().parents[1]
+    expected_label = f"v{__version__}"
+    animation_files = [
+        repo_root / "docs" / "assets" / "three-board-support-video" / "index.html",
+        repo_root / "docs" / "assets" / "three-board-support-video" / "video.jsx",
+        repo_root / "docs" / "assets" / "three-board-support-video-en" / "index.html",
+        repo_root / "docs" / "assets" / "three-board-support-video-en" / "video.jsx",
+    ]
+
+    for animation_file in animation_files:
+        text = animation_file.read_text(encoding="utf-8")
+        assert expected_label in text, animation_file
+        assert "v0.2.20" not in text, animation_file
 
 
 def test_public_repo_does_not_ship_built_in_image_router():

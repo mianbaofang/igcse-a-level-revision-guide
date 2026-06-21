@@ -397,7 +397,7 @@ def test_chinese_html_helpers_have_direct_contracts():
         output_language="zh-CN",
     )
 
-    assert style_display("friendly", "zh-CN") != "Friendly"
+    assert style_display("friendly", "zh-CN") == "轻松愉快"
     assert style_display("unknown-style", "zh-CN") == "unknown-style"
     assert "SenseNova U1 Fast" in image_provider_display(custom_options, "zh-CN")
     assert "custom illustration model" not in image_provider_display(custom_options, "zh-CN")

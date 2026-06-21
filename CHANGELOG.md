@@ -1,5 +1,55 @@
 # Changelog
 
+## 0.2.25 - 2026-06-21
+
+### Tests
+
+- Closed the twelfth-round precision follow-up by replacing the remaining weak
+  Chinese assertions with exact input-to-output checks for `style_display()`,
+  `zh_point_labels()`, and `zh_visual_trigger()`.
+- Added dedicated `zh_visual_type()` coverage for accounting, chemistry,
+  economics, mathematics, and default visual routes so Chinese visual labels are
+  no longer only covered through broader generation tests.
+- Strengthened Chinese explanation-style tests with style-specific fragments for
+  formal, life-scene, story, detective, adventure, and friendly/default modes.
+- Added a release-asset guard that checks the Chinese and English intro
+  animation `index.html` and `video.jsx` files contain the current package
+  version and do not retain the old `v0.2.20` label.
+
+### Changed
+
+- Updated public intro animation labels in both Chinese and English assets to
+  `v0.2.25`.
+- Added the animation-version guard to the operations guide so future releases
+  check visible animation labels alongside `pyproject.toml` and
+  `src/intl_exam_guide/__init__.py`.
+- Updated README release histories and the public homepage version card for the
+  twelfth-round precision pass.
+
+### Verified
+
+- Fresh offline demo evidence was regenerated from the current working copy:
+  `python -m intl_exam_guide demo --out ./outputs/_fresh-v025-demo --language en --image-provider deterministic-svg --explanation-style friendly --skip-pdf`.
+  HTML guide generated; PDF skipped (--skip-pdf). The resulting validation
+  output reported `issues: []`, 3 topics, 6 practice cards, 3 topic guides,
+  3 visual briefs, 3 SVG-safe visuals, 3 topic diagrams in HTML, 3 visual
+  examples in HTML, 7 section files, 3 image files, and both visual/package
+  manifests. The ignored output folder was removed after collecting release
+  evidence and is not committed.
+- `python -m pytest tests/test_localization.py tests/test_explanation_styles.py tests/test_rendering_contracts.py tests/test_release_scripts.py -q`
+  (`37 passed`).
+- `python -m pytest tests/test_localization.py --cov=intl_exam_guide.planning.localization --cov-report=term-missing -q`
+  (`4 passed`, `100%`).
+- `python -m pytest tests/test_explanation_styles.py --cov=intl_exam_guide.planning.explanation_styles --cov-report=term-missing -q`
+  (`3 passed`, `100%`).
+- `python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -q`
+  (`192 passed`, coverage `83.67%`).
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m compileall -q src tests scripts`
+- `python scripts/scan_for_raw_keys.py . ./outputs` (`raw_key_matches: 0`)
+- `git diff --check` (only Windows line-ending notices, no whitespace errors)
+
 ## 0.2.24 - 2026-06-21
 
 ### Tests

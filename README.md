@@ -281,6 +281,10 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   and `render_html()` have direct coverage, SVG text edge cases are covered,
   raw-key release scans match the checklist, and the unused Chinese branch in
   the English concept fallback SVG was removed.
+- **v0.2.25:** closes the twelfth-round precision pass: Chinese localization
+  and explanation-style tests now assert exact input-to-output mappings,
+  `zh_visual_type()` has dedicated route coverage, and the public intro
+  animation labels are guarded against drifting behind the package version.
 
 ## Developer Quick Start
 

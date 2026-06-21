@@ -120,6 +120,11 @@ The concept fallback SVG is English-only because Chinese visuals already use
 `render_zh_visual_svg()`. Raw-key release scans must use the same command as
 `docs/RELEASE_CHECKLIST.md`: `python scripts/scan_for_raw_keys.py . ./outputs`.
 
+v0.2.25 closed the twelfth-round precision pass: Chinese localization and
+explanation-style tests use exact input-to-output assertions, `zh_visual_type()`
+has dedicated route coverage, and public animation source/export HTML is guarded
+so visible version labels match the package version.
+
 ## 4. Version And Release Rules
 
 Use GitHub Releases, not tags alone.
@@ -204,6 +209,9 @@ Rules:
 - Stage duration is `48` seconds.
 - README GIF preview should be 16:9, normally `960x540`.
 - HTML animation must autoplay in page, not require opening raw code.
+- Visible animation version labels must match `pyproject.toml` and
+  `src/intl_exam_guide/__init__.py`; `tests/test_release_scripts.py` guards
+  this for both Chinese and English animation sources.
 - If animation source text changes, regenerate the relevant preview GIF.
 - MP4 export is optional and should not be committed unless a release explicitly
   needs a downloadable video file.
