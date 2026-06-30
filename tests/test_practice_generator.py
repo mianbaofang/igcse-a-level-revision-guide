@@ -44,6 +44,29 @@ def test_build_practice_item_uses_requested_style_and_source_snippets():
     assert "ledger" in combined
 
 
+def test_chinese_practice_focus_falls_back_from_untranslated_formula_detail():
+    topic = Topic(
+        title="P1.1 - Algebra: Solution of linear and quadratic inequalities",
+        points=[
+            "Solution of linear and quadratic inequalities.",
+            "eg 2 2xx + /greaterthanorequalangled6",
+        ],
+    )
+
+    item = build_practice_item(
+        topic,
+        topic.points,
+        number=1,
+        qualification_type="international_as_a_level",
+        explanation_style="friendly",
+        output_language="zh-CN",
+        subject_area="Mathematics",
+    )
+
+    assert item.focus_point == "一次与二次不等式求解"
+    assert "本节核心主题" not in item.focus_point
+
+
 def test_accounting_and_chemistry_examples_route_to_subject_specific_branches():
     accounting_question, _, accounting_steps, _ = concrete_example(
         Topic(
@@ -125,9 +148,9 @@ def test_generic_example_fallback_remains_exam_focused():
     )
     combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
 
-    assert "memorised phrase" in combined
-    assert "command word" in combined
-    assert "evidence from the question" in combined
+    assert "using only the syllabus point" in combined
+    assert "relationship or boundary" in combined
+    assert "without borrowing another subject's template" in combined
 
 
 def test_mathematics_examples_cover_major_strands():
@@ -143,6 +166,119 @@ def test_mathematics_examples_cover_major_strands():
 
     for title, focus, number, expected_terms in cases:
         text = combined_text(concrete_example(Topic(title=title, points=[focus]), focus, number, "Mathematics"))
+        for expected in expected_terms:
+            assert expected in text
+
+
+def test_mathematics_specialist_fallbacks_stay_concrete_for_as_topics():
+    cases = [
+        ("P1.3 - Differentiation", "The derivative as the gradient of the tangent.", "切线"),
+        ("PP1.3 - Exponential and logarithms", "Logarithms and the laws of logarithms.", "log"),
+        ("S1.2 - Discrete random variables", "Mean and variance of a discrete random variable.", "概率"),
+        ("M1.3 - Forces and Newton's Laws", "Newton's Second Law F = ma.", "力"),
+    ]
+
+    for title, focus, expected in cases:
+        question, frame, steps, checkpoints = concrete_example_zh(
+            Topic(title=title, points=[focus]),
+            focus,
+            0,
+            "Mathematics",
+        )
+        combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+        assert "完成一道原创练习" not in combined
+        assert "先找关键信息" not in combined
+        assert expected in combined
+
+
+def test_a_level_math_momentum_examples_do_not_route_to_newton_force_template():
+    momentum_topic = Topic(
+        title="M1.4 - Momentum and impulse (Restricted to motion in a straight line): The principle of conservation of momentum applied to two particles",
+        points=["The principle of conservation of momentum applied to two particles."],
+    )
+    direct_impact_topic = Topic(
+        title="M1.4 - Momentum and impulse (Restricted to motion in a straight line): Direct impact with a fixed surface",
+        points=["Direct impact with a fixed surface. Restricted to particles which are moving perpendicular to a fixed smooth surface."],
+    )
+    impulse_topic = Topic(
+        title="M1.4 - Momentum and impulse (Restricted to motion in a straight line): Impulse",
+        points=["Impulse. Impulse = change in momentum"],
+    )
+
+    zh_momentum = combined_text(
+        concrete_example_zh(momentum_topic, momentum_topic.points[0], 0, "Mathematics")
+    )
+    zh_direct_impact = combined_text(
+        concrete_example_zh(direct_impact_topic, direct_impact_topic.points[0], 0, "Mathematics")
+    )
+    en_impulse = combined_text(concrete_example(impulse_topic, impulse_topic.points[0], 0, "Mathematics"))
+
+    assert "合力" not in zh_momentum
+    assert "牛顿第二定律" not in zh_momentum
+    assert "动量守恒" in zh_momentum
+    assert "8/3" in zh_momentum
+    assert "固定墙" in zh_direct_impact
+    assert "动量变化" in zh_direct_impact
+    assert "resultant force" not in en_impulse
+    assert "impulse = -7 n s" in en_impulse
+
+
+def test_a_level_math_rational_terms_do_not_misroute_to_ratio_examples():
+    surd_topic = Topic(
+        title="P1.1 - Algebra: Use and manipulation of surds",
+        points=[
+            "Use and manipulation of surds. To include simplification and rationalisation of the denominator of a fraction."
+        ],
+    )
+    index_topic = Topic(
+        title="P1.1 - Algebra: Laws of indices for all rational exponents",
+        points=["Laws of indices for all rational exponents."],
+    )
+
+    zh_surd = combined_text(
+        concrete_example_zh(surd_topic, surd_topic.points[0], 0, "Mathematics")
+    )
+    zh_indices = combined_text(
+        concrete_example_zh(index_topic, index_topic.points[0], 0, "Mathematics")
+    )
+    en_surd = combined_text(concrete_example(surd_topic, surd_topic.points[0], 0, "Mathematics"))
+
+    assert "果汁" not in zh_surd
+    assert "果汁" not in zh_indices
+    assert "juice" not in en_surd.lower()
+    assert "sqrt(72)" in zh_surd
+    assert "a^(3/2)" in zh_indices
+    assert "sqrt(72)" in en_surd
+
+
+def test_a_level_math_pure_algebra_examples_match_focus():
+    cases = [
+        (
+            "P1.1 - Algebra: Quadratic functions and their graphs",
+            "Quadratic functions and their graphs. To include reference to the vertex and line of symmetry of the graph.",
+            ["顶点", "对称轴", "(3,2)"],
+        ),
+        (
+            "P1.1 - Algebra: The discriminant of a quadratic function",
+            "The discriminant of a quadratic function. To include the conditions for equal roots, for distinct real roots and for no real roots",
+            ["判别式", "没有实根"],
+        ),
+        (
+            "P1.1 - Algebra: Factorisation of quadratic polynomials",
+            "Factorisation of quadratic polynomials. eg factorisation of 2x2 + x −6",
+            ["因式分解", "(2x-3)(x+2)"],
+        ),
+        (
+            "P1.1 - Algebra: Completing the square",
+            "Completing the square. eg x2 + 6x−1 = (x+3)2−10;",
+            ["配方", "(x+3)^2 - 10"],
+        ),
+    ]
+
+    for title, focus, expected_terms in cases:
+        text = combined_text(concrete_example_zh(Topic(title=title, points=[focus]), focus, 0, "Mathematics"))
+        assert "果汁" not in text
         for expected in expected_terms:
             assert expected in text
 
@@ -228,13 +364,28 @@ def test_chinese_examples_cover_subject_specific_branches():
         ("Economics", Topic(title="Demand and supply", points=["demand supply market price"]), "demand supply market price", ["需求曲线", "均衡"]),
         ("Accounting", Topic(title="Bank reconciliation", points=["trial balance bank reconciliation"]), "trial balance bank reconciliation", ["银行调节表", "现金簿"]),
         ("Mathematics", Topic(title="G1 - Geometry", points=["triangle geometry"]), "triangle geometry", ["直角三角形", "斜边"]),
-        ("Unmapped", Topic(title="Unknown", points=["source detail"]), "source detail", ["原创练习", "最终答案"]),
+        ("Unmapped", Topic(title="Unknown", points=["source detail"]), "source detail", ["只围绕", "来源点"]),
     ]
 
     for subject, topic, focus, expected_terms in cases:
         text = combined_text(concrete_example_zh(topic, focus, 0, subject))
         for expected in expected_terms:
             assert expected in text
+
+
+def test_chinese_mathematics_ratio_example_uses_chinese_units_and_symbols():
+    question, frame, steps, checkpoints = concrete_example_zh(
+        Topic(title="N1 - Ratio", points=["Ratio and percentage calculations."]),
+        "Ratio and percentage calculations.",
+        0,
+        "Mathematics",
+    )
+    combined = " ".join([question, *frame, *steps, *checkpoints])
+
+    assert "350 毫升" in combined
+    assert "ml" not in combined.lower()
+    assert "140 / 2" not in combined
+    assert "5 x 70" not in combined
 
 
 def test_command_words_and_difficulty_rotate_by_level_and_language():

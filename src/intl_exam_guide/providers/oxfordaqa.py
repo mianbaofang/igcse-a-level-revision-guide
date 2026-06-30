@@ -149,7 +149,15 @@ def filter_candidates_by_level(candidates: list[Link], level_norm: str | None) -
             or "international gcse" in candidate.text.lower()
         ]
         return filtered or candidates
-    if level_norm in {"alevel", "a-level", "as-a-level", "international-as-a-level"}:
+    if level_norm in {
+        "as",
+        "as-level",
+        "international-as",
+        "alevel",
+        "a-level",
+        "as-a-level",
+        "international-as-a-level",
+    }:
         filtered = [
             candidate
             for candidate in candidates
@@ -159,6 +167,32 @@ def filter_candidates_by_level(candidates: list[Link], level_norm: str | None) -
         ]
         return filtered or candidates
     return candidates
+
+
+def normalize_level_scope(level: str | None) -> str:
+    if not level:
+        return "qualification"
+    normalized = level.lower().replace("_", "-").strip()
+    if normalized in {"as", "as-level", "international-as"}:
+        return "as"
+    if normalized in {"a-level", "alevel", "international-a-level"}:
+        return "a-level"
+    return "qualification"
+
+
+def filter_assessments_for_level_scope(
+    papers: list[AssessmentPaper],
+    level: str | None,
+) -> list[AssessmentPaper]:
+    if normalize_level_scope(level) != "as":
+        return papers
+    filtered = [
+        paper
+        for paper in papers
+        if paper.title.lower().startswith("as ")
+        or paper.title.lower().startswith("assessment evidence")
+    ]
+    return filtered or papers
 
 
 class OxfordAQAProvider(ExamBoardProvider):
@@ -236,7 +270,15 @@ class OxfordAQAProvider(ExamBoardProvider):
                 level_norm = level.lower().replace("_", "-")
                 if level_norm in {"gcse", "igcse", "international-gcse"} and "international gcse" in text:
                     score += 30
-                if level_norm in {"alevel", "a-level", "as-a-level", "international-as-a-level"}:
+                if level_norm in {
+                    "as",
+                    "as-level",
+                    "international-as",
+                    "alevel",
+                    "a-level",
+                    "as-a-level",
+                    "international-as-a-level",
+                }:
                     if "international as" in text or "a-level" in text:
                         score += 30
             if score:
@@ -296,6 +338,7 @@ class OxfordAQAProvider(ExamBoardProvider):
             page_url=page_url,
             specification_url=specification_url,
         )
+        route_tags = [f"level-scope:{normalize_level_scope(level)}"] if level else []
         return Qualification(
             title=title,
             code=code,
@@ -307,6 +350,7 @@ class OxfordAQAProvider(ExamBoardProvider):
             assessments=assessments,
             source=source,
             audience_note=audience_note(qtype),
+            route_tags=route_tags,
         )
 
     def apply_listing_metadata(self, qualification: Qualification, link: Link) -> Qualification:
@@ -341,16 +385,28 @@ class OxfordAQAProvider(ExamBoardProvider):
         pdf_path.write_bytes(pdf_bytes)
         pages = extract_pdf_pages(pdf_path)
         text_path.write_text(extract_pdf_text(pdf_path), encoding="utf-8")
-        detailed_topics = extract_detailed_topics_from_pdf(pages)
+        level_scope = qualification_level_scope(qualification)
+        detailed_topics = extract_detailed_topics_from_pdf(pages, level=level_scope)
         if detailed_topics:
             qualification.topics = detailed_topics
         attach_source_snippets(qualification, pages)
+        qualification.assessments = filter_assessments_for_level_scope(
+            qualification.assessments,
+            level_scope,
+        )
 
         qualification.source.specification_sha256 = digest
         qualification.source.specification_path = str(pdf_path)
         qualification.source.extracted_text_path = str(text_path)
         qualification.source.downloaded_at = datetime.now(UTC).isoformat()
         return qualification
+
+
+def qualification_level_scope(qualification: Qualification) -> str | None:
+    for tag in qualification.route_tags:
+        if tag.startswith("level-scope:"):
+            return tag.split(":", 1)[1]
+    return None
 
 
 def title_from_links(links: list[Link], page_url: str) -> str:
@@ -446,7 +502,14 @@ def topics_from_region(region: list[TextNode], default_title: str | None = None)
     return clean_topics(topics)
 
 
-def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic]:
+def extract_detailed_topics_from_pdf(
+    pages: list[tuple[int, str]],
+    level: str | None = None,
+) -> list[Topic]:
+    mathematics_topics = extract_oxfordaqa_mathematics_module_topics(pages, level)
+    if mathematics_topics:
+        return mathematics_topics
+
     reference_topics: list[Topic] = []
     numeric_topics: list[Topic] = []
     numeric_sections: list[NumericContentSection] = []
@@ -646,6 +709,104 @@ def extract_detailed_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic
     return choose_detailed_topics(reference_topics, numeric_topics, numeric_sections)
 
 
+def extract_oxfordaqa_mathematics_module_topics(
+    pages: list[tuple[int, str]],
+    level: str | None = None,
+) -> list[Topic]:
+    allowed_prefixes = {"P1", "PP1", "S1", "M1"}
+    if normalize_level_scope(level) != "as":
+        allowed_prefixes |= {"P2", "S2", "M2"}
+
+    topics: list[Topic] = []
+    current_code: str | None = None
+    current_title: str | None = None
+    current_page: int | None = None
+    current_lines: list[str] = []
+    used_titles: set[str] = set()
+    saw_math_module = False
+
+    def flush() -> None:
+        nonlocal current_code, current_title, current_page, current_lines
+        if current_code and current_title and current_page is not None:
+            for unit_title, unit_points in split_section_units(current_lines):
+                if not unit_points:
+                    continue
+                title = unique_topic_title(
+                    f"{current_code} - {current_title}: {unit_title}",
+                    used_titles,
+                )
+                snippet = clean_text(" ".join([current_code, current_title, *unit_points[:5]]))
+                topics.append(
+                    Topic(
+                        title=title,
+                        points=unit_points[:8],
+                        source_snippets=[
+                            SourceSnippet(
+                                page=current_page,
+                                text=snippet_around(snippet, unit_points[0], radius=420),
+                                matched_term=current_code,
+                            )
+                        ],
+                    )
+                )
+        current_code = None
+        current_title = None
+        current_page = None
+        current_lines = []
+
+    module_re = re.compile(r"^((?:P1|PP1|S1|M1|P2|S2|M2)\.\d+):\s+(.+)$")
+    for page_number, page_text in pages:
+        for raw_line in page_text.splitlines():
+            line = clean_text(raw_line)
+            if not line:
+                continue
+            if normalize_level_scope(level) == "as" and re.match(r"^3\.3(\s|$)", line):
+                flush()
+                current_code = None
+                continue
+            if current_code and re.match(r"^3\.\d+(?:\.\d+)?\s+", line):
+                flush()
+                current_code = None
+                continue
+            module_match = module_re.match(line)
+            if module_match:
+                saw_math_module = True
+                flush()
+                module_code = module_match.group(1)
+                module_prefix = module_code.split(".", 1)[0]
+                if module_prefix in allowed_prefixes:
+                    current_code = module_code
+                    current_title = strip_bullet(module_match.group(2))
+                    current_page = page_number
+                    current_lines = []
+                continue
+            if current_code and not is_oxfordaqa_math_boilerplate(line):
+                current_lines.append(line)
+    flush()
+    if not saw_math_module:
+        return []
+    return clean_topics(topics)
+
+
+def is_oxfordaqa_math_boilerplate(line: str) -> bool:
+    lower = line.lower()
+    if lower in {"content additional information"}:
+        return True
+    ignored_prefixes = (
+        "--- page",
+        "for international ",
+        "oxfordaqa international",
+        "students should learn the following formulae",
+        "students may use relevant formulae",
+        "students will be expected",
+        "students will be required",
+        "unit psm1 is comprised",
+        "visit oxfordaqa.com",
+        "scheme of assessment",
+    )
+    return lower.startswith(ignored_prefixes)
+
+
 def choose_detailed_topics(
     reference_topics: list[Topic],
     numeric_topics: list[Topic],
@@ -766,14 +927,30 @@ def starts_new_teachable_unit(line: str) -> bool:
     lower = line.lower()
     if lower in {"content", "additional information"}:
         return False
+    if is_formula_or_example_continuation_line(line):
+        return False
     continuation_prefixes = (
         "including ",
         "could include",
         "will include",
         "may include",
+        "to include",
         "note:",
         "the benefits",
         "limitations will include",
+        "the form ",
+        "the term ",
+        "the notation ",
+        "where ",
+        "students are expected",
+        "questions will",
+        "questions may",
+        "knowledge of the formulae",
+        "maximum level of difficulty",
+        "derivations of",
+        "including use",
+        "will be expected",
+        "will be accepted",
     )
     return not lower.startswith(continuation_prefixes)
 
@@ -861,7 +1038,57 @@ def is_valid_detailed_content_line(line: str) -> bool:
         return False
     if re.fullmatch(r"\d+", lower):
         return False
+    if is_formula_noise_line(line):
+        return False
     return is_valid_topic_point(line)
+
+
+def is_formula_or_example_continuation_line(line: str) -> bool:
+    text = re.sub(r"\s+", " ", line.strip())
+    lower = text.lower()
+    if lower.startswith(("eg ", "e.g.", "for example", "where ")):
+        return True
+    if re.match(r"^[\d(=+\-*/∑∫]", text):
+        return True
+    if re.match(r"^[a-z]\s*[-=+\-*/]", lower):
+        return True
+    if re.match(r"^(?:e|var|p)\(", lower):
+        return True
+    if re.match(r"^[a-z]{1,3}\s+[a-z]{1,3}.*[=+\-*/]", lower):
+        return True
+    return False
+
+
+def is_formula_noise_line(line: str) -> bool:
+    text = re.sub(r"\s+", " ", line.strip())
+    lower = text.lower()
+    if re.search(r"[\uf000-\uf8ff]", text):
+        return True
+    if re.match(r"^[A-Z]{1,4}\d?\b.*[=()]", text):
+        return True
+    if re.match(r"(?i)^var\w*.*[=()]", text):
+        return True
+    if re.fullmatch(r"[=+\-*/;,\s]+", lower):
+        return True
+    if re.fullmatch(r"\d+(?:\s+\d+)+", lower):
+        return True
+    if re.fullmatch(r"(?:eg\s*)?[\d\s+\-*/=;,.()]+", lower):
+        return True
+    if re.search(r"\d|[=+\-*/^()<>∑∫]", text) and not formula_semantic_words(lower):
+        return True
+    if lower.startswith("eg ") and re.search(r"\d|[=+\-*/;]", lower):
+        words = [word for word in re.findall(r"[a-z]+", lower) if word != "eg"]
+        return not any(len(word) >= 3 for word in words)
+    return False
+
+
+def formula_semantic_words(lower: str) -> list[str]:
+    math_function_words = {"cos", "sin", "tan", "log", "var", "exp", "sqrt"}
+    return [
+        word
+        for word in re.findall(r"[a-z]+", lower)
+        if len(word) >= 3 and word not in math_function_words
+    ]
 
 
 def clean_detailed_topics(topics: list[Topic]) -> list[Topic]:

@@ -22,7 +22,7 @@ def render_infographic_required(
         return _render_generated_infographic(title, visual, asset, source_label, language)
     if asset and has_renderable_svg_fallback(asset):
         return _render_svg_fallback_infographic(title, visual, asset, source_label, language)
-    return _render_pending_infographic(title, visual, source_label, language)
+    return _render_pending_infographic(title, visual, asset, source_label, language)
 
 
 def _render_generated_infographic(
@@ -105,6 +105,7 @@ def _render_svg_fallback_infographic(
         ]
     )
     step_items = "".join(f"<li>{html_escape(step)}</li>" for step in visual_steps)
+    replacement_note = _render_replacement_note(asset, language)
     return f"""
 <figure class="visual-example svg-fallback" aria-label="SVG fallback for {html_escape(title)}">
   <figcaption>{render_icon("visual")}<span>{html_escape(caption)}</span></figcaption>
@@ -113,6 +114,7 @@ def _render_svg_fallback_infographic(
     <div class="visual-notes">
       <div class="visual-model">{html_escape(model_note)}</div>
       <div class="visual-source">{html_escape(source_prefix)}: {html_escape(source_label)}</div>
+      {replacement_note}
       <p class="visual-question">{html_escape(question)} <strong>{html_escape(visual.focus_point)}</strong>.</p>
       <ol>{step_items}</ol>
       <details class="visual-prompt">
@@ -128,6 +130,7 @@ def _render_svg_fallback_infographic(
 def _render_pending_infographic(
     title: str,
     visual: VisualBrief,
+    asset: dict[str, Any] | None,
     source_label: str,
     language: str,
 ) -> str:
@@ -146,12 +149,14 @@ def _render_pending_infographic(
     type_label = "Visual type" if language == "en" else "图形类型"
     focus_label = "Focus" if language == "en" else "聚焦知识点"
     prompt_label = "Prompt queue" if language == "en" else "生图提示词"
+    replacement_note = _render_replacement_note(asset, language)
     return f"""
 <figure class="visual-example infographic-required" aria-label="Infographic required for {html_escape(title)}">
   <figcaption>{render_icon("visual")}<span>{html_escape(caption)}</span></figcaption>
   <div class="infographic-card">
     <div class="visual-model">{html_escape(status)}</div>
     <div class="visual-source">{html_escape(source_prefix)}: {html_escape(source_label)}</div>
+    {replacement_note}
     <p><strong>{html_escape(why_label)}:</strong> {html_escape(visual.trigger)}</p>
     <p><strong>{html_escape(type_label)}:</strong> {html_escape(visual.visual_type)}</p>
     <p><strong>{html_escape(focus_label)}:</strong> {html_escape(visual.focus_point)}</p>
@@ -162,3 +167,19 @@ def _render_pending_infographic(
   </div>
 </figure>
 """
+
+
+def _render_replacement_note(asset: dict[str, Any] | None, language: str) -> str:
+    visual_id = str((asset or {}).get("id") or "").strip()
+    if not visual_id:
+        return ""
+    label = "Visual job:" if language == "en" else "信息图任务："
+    note = (
+        "Generate or import a reviewed image for this visual ID to replace it automatically."
+        if language == "en"
+        else "导入这个 visual ID 对应的复核图片后，会自动替换当前草图。"
+    )
+    return (
+        f"<p><strong>{html_escape(label)}</strong> {html_escape(visual_id)}</p>"
+        f"<p>{html_escape(note)}</p>"
+    )

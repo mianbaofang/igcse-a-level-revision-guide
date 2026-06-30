@@ -190,3 +190,58 @@ class GuidePlan:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "GuidePlan":
+        def snippets(items: list[dict[str, Any]] | None) -> list[SourceSnippet]:
+            return [SourceSnippet(**item) for item in items or []]
+
+        return cls(
+            qualification=Qualification.from_dict(data["qualification"]),
+            run_options=GuideRunOptions(**data["run_options"]),
+            topic_guides=[
+                TopicGuide(
+                    topic_title=item["topic_title"],
+                    essence=item["essence"],
+                    analogy=item["analogy"],
+                    mini_worked_example=item["mini_worked_example"],
+                    worked_solution_steps=item.get("worked_solution_steps", []),
+                    pitfall=item["pitfall"],
+                    checklist=item.get("checklist", []),
+                    diagram_brief=item["diagram_brief"],
+                    source_snippets=snippets(item.get("source_snippets")),
+                )
+                for item in data.get("topic_guides", [])
+            ],
+            practice_items=[
+                PracticeItem(
+                    topic_title=item["topic_title"],
+                    command_word=item["command_word"],
+                    difficulty=item["difficulty"],
+                    focus_point=item["focus_point"],
+                    question=item["question"],
+                    answer_frame=item.get("answer_frame", []),
+                    public_solution_steps=item.get("public_solution_steps", []),
+                    answer_checkpoints=item.get("answer_checkpoints", []),
+                    source_points=item.get("source_points", []),
+                    source_snippets=snippets(item.get("source_snippets")),
+                )
+                for item in data.get("practice_items", [])
+            ],
+            visual_briefs=[
+                VisualBrief(
+                    topic_title=item["topic_title"],
+                    focus_point=item["focus_point"],
+                    trigger=item["trigger"],
+                    visual_type=item["visual_type"],
+                    complexity=item["complexity"],
+                    image_provider=item["image_provider"],
+                    prompt=item["prompt"],
+                    source_points=item.get("source_points", []),
+                    source_snippets=snippets(item.get("source_snippets")),
+                )
+                for item in data.get("visual_briefs", [])
+            ],
+            diagram_briefs=data.get("diagram_briefs", []),
+            revision_stages=data.get("revision_stages", []),
+        )

@@ -15,3 +15,8 @@ source/*.pdf
 source/*.txt
 docs/preview-*.png
 designs/
+AGENTS.md
+.agents/
+.specify/
+.superpowers/
+docs/superpowers/

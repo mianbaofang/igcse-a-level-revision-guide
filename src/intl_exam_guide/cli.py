@@ -18,7 +18,20 @@ from intl_exam_guide.providers import PROVIDER_NAMES, get_provider, infer_provid
 from intl_exam_guide.rendering.handbook_package import write_handbook_package
 from intl_exam_guide.rendering.html import render_html
 from intl_exam_guide.rendering.pdf import PdfExportError, export_pdf
-from intl_exam_guide.validation.checks import issues_to_dict, review_summary, validate_plan
+from intl_exam_guide.validation.checks import (
+    delivery_status_from_issues,
+    issues_to_dict,
+    review_summary,
+    validate_plan,
+)
+
+
+def print_json_payload(payload: object) -> None:
+    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(json.dumps(payload, ensure_ascii=True, indent=2))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -42,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     generate.add_argument(
         "--level",
-        choices=["gcse", "igcse", "a-level", "alevel", "as-a-level"],
+        choices=["gcse", "igcse", "as", "as-level", "a-level", "alevel", "as-a-level"],
         help="Qualification level.",
     )
     generate.add_argument(
@@ -50,15 +63,21 @@ def main(argv: list[str] | None = None) -> int:
         help="Exam year used by year-ranged syllabuses, especially Cambridge subject pages.",
     )
     generate.add_argument("--out", required=True, help="Output directory.")
-    generate.add_argument("--questions-per-topic", type=int, default=2)
+    generate.add_argument("--questions-per-topic", type=int, default=1)
     add_generation_choice_args(generate)
     generate.add_argument("--skip-pdf", action="store_true")
 
     demo = subcommands.add_parser("demo", help="Generate an offline synthetic demo guide.")
     demo.add_argument("--out", required=True, help="Output directory.")
-    demo.add_argument("--questions-per-topic", type=int, default=2)
+    demo.add_argument("--questions-per-topic", type=int, default=1)
     add_generation_choice_args(demo)
     demo.add_argument("--skip-pdf", action="store_true")
+
+    review = subcommands.add_parser(
+        "review",
+        help="Build a final Agent/LLM review packet for an output directory.",
+    )
+    review.add_argument("--out", required=True, help="Existing handbook output directory.")
 
     args = parser.parse_args(argv)
 
@@ -80,6 +99,13 @@ def main(argv: list[str] | None = None) -> int:
         else:
             for item in provider.discover_subject_pages():
                 print(f"{item.text}\t{item.href}")
+        return 0
+
+    if args.command == "review":
+        from intl_exam_guide.auditing.final_review import write_final_review_packet
+
+        path = write_final_review_packet(Path(args.out))
+        print_json_payload({"final_review_packet": str(path)})
         return 0
 
     if args.command == "generate":
@@ -266,22 +292,24 @@ def write_guide_outputs(
         pdf_path=None if skip_pdf else pdf_path,
         output_dir=out_dir,
     )
+    summary = review_summary(
+        plan,
+        html_path=html_path,
+        pdf_path=None if skip_pdf else pdf_path,
+        output_dir=out_dir,
+    )
     payload = {
         "qualification": qualification.title,
         "html": str(html_path),
         "pdf": str(pdf_path) if pdf_path.exists() else None,
         "pdf_error": pdf_error,
         "package": package_manifest,
-        "review_summary": review_summary(
-            plan,
-            html_path=html_path,
-            pdf_path=None if skip_pdf else pdf_path,
-            output_dir=out_dir,
-        ),
+        "review_summary": summary,
+        "delivery_status": delivery_status_from_issues(issues, summary),
         "issues": issues_to_dict(issues),
     }
     validation_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    print_json_payload(payload)
     return 1 if any(issue.severity == "error" for issue in issues) else 0
 
 

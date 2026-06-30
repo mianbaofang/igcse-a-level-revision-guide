@@ -16,56 +16,60 @@ def test_complex_subject_visuals_are_routed_to_infographic_queue():
             ["source documents, books of prime entry, ledger accounts, double entry"],
             "Accounting",
             "ledger flow",
+            "svg-basic",
         ),
         (
-            "2.1 - Markets and allocation of resources",
-            ["demand, supply, equilibrium price, market changes"],
+            "2.4.2 - Market equilibrium",
+            ["demand curve, supply curve, equilibrium price, market changes"],
             "Economics",
             "demand-supply",
+            "svg-basic",
         ),
         (
             "8.3 - Gas tests",
             ["test for hydrogen, oxygen, carbon dioxide and chlorine using observations"],
             "Chemistry",
             "gas tests",
+            "svg-basic",
         ),
         (
             "4.1 - Set notation and Venn diagrams",
             ["use set notation including n(A), union, intersection and complement"],
             "Mathematics",
             "Venn",
+            "svg-basic",
         ),
         (
             "5.2 - Forces and motion",
             ["draw force arrows and explain acceleration in a real scenario"],
             "Physics",
             "force and motion",
+            "svg-basic",
         ),
     ]
 
-    for title, points, subject, expected_phrase in cases:
+    for title, points, subject, expected_phrase, expected_complexity in cases:
         visual_type, complexity, trigger = route(title, points, subject)
 
-        assert complexity == "infographic", (subject, visual_type, trigger)
+        assert complexity == expected_complexity, (subject, visual_type, trigger)
         assert expected_phrase.lower() in visual_type.lower()
 
 
-def test_additional_complex_visual_routes_cover_all_major_subject_branches():
+def test_additional_visual_routes_do_not_overqueue_optional_images():
     cases = [
-        ("Accounting", "Adjustments", ["depreciation, receivables, payables and prudence"], "adjustment"),
-        ("Accounting", "Financial statements", ["income statement, statement of financial position and ratio analysis"], "financial-statement"),
-        ("Economics", "Sectors", ["primary, secondary and tertiary sectors"], "sectors"),
-        ("Economics", "Banking", ["money, banks, financial markets and interest rates"], "banking"),
-        ("Chemistry", "Rates", ["rate of reaction, equilibrium and reversible reactions"], "reaction-rate"),
-        ("Chemistry", "Organic", ["organic chemistry, hydrocarbons, polymers and crude oil"], "organic"),
-        ("Mathematics", "Matrices", ["vectors, matrices and transformations"], "matrix"),
-        ("Mathematics", "Sampling", ["histograms, cumulative frequency, sampling and population"], "statistics method"),
+        ("Accounting", "Adjustments", ["depreciation, receivables, payables and prudence"], "text-ok", "optional table"),
+        ("Accounting", "Financial statements", ["income statement, statement of financial position and ratio analysis"], "svg-basic", "financial-statement"),
+        ("Economics", "Sectors", ["primary, secondary and tertiary sectors"], "text-ok", "mini case"),
+        ("Economics", "Banking", ["money, banks, financial markets and interest rates"], "text-ok", "mini case"),
+        ("Chemistry", "Rates", ["rate of reaction, equilibrium and reversible reactions"], "svg-basic", "reaction-rate"),
+        ("Chemistry", "Organic", ["organic chemistry, hydrocarbons, polymers and crude oil"], "infographic", "organic"),
+        ("Mathematics", "Matrices", ["vectors, matrices and transformations"], "infographic", "matrix"),
     ]
 
-    for subject, title, points, expected_phrase in cases:
+    for subject, title, points, expected_complexity, expected_phrase in cases:
         visual_type, complexity, trigger = route(title, points, subject)
 
-        assert complexity == "infographic", (subject, visual_type, trigger)
+        assert complexity == expected_complexity, (subject, visual_type, trigger)
         assert expected_phrase.lower() in visual_type.lower()
 
 
@@ -82,7 +86,7 @@ def test_simple_svg_routes_stay_subject_specific():
             "6.1 - Right-angled triangles",
             ["use Pythagoras' theorem in a simple right-angled triangle"],
             "Mathematics",
-            "triangle",
+            "geometry",
             "Right triangle",
         ),
         (
@@ -126,7 +130,7 @@ def test_additional_simple_svg_routes_use_deterministic_diagrams():
     cases = [
         ("Chemistry", "States", ["solid liquid particles atoms"], "particle model"),
         ("Chemistry", "Energy", ["exothermic and endothermic energy profiles"], "energy profile"),
-        ("Mathematics", "Algebra", ["algebra equations functions and sequences"], "function graph"),
+        ("Mathematics", "Sampling", ["histograms, cumulative frequency, sampling and population"], "statistics chart"),
         ("Mathematics", "Probability", ["probability statistics charts and data"], "statistics chart"),
         ("Generic", "Data skills", ["measurements, tables and graphs"], "data table"),
     ]
@@ -138,17 +142,28 @@ def test_additional_simple_svg_routes_use_deterministic_diagrams():
         assert expected_phrase.lower() in visual_type.lower()
 
 
+def test_plain_symbolic_mathematics_does_not_get_a_visual_by_default():
+    visual_type, complexity, _ = route(
+        "Algebra",
+        ["algebra equations functions and sequences"],
+        "Mathematics",
+    )
+
+    assert complexity == "text-ok"
+    assert visual_type == "text explanation with no custom visual"
+
+
 def test_statistics_is_not_used_as_generic_fallback_for_unrelated_topics():
     unrelated_cases = [
-        ("Accounting", "bank reconciliation", ["cash book, bank statement, unpresented cheques"]),
-        ("Chemistry", "chromatography", ["separate dyes using chromatography and calculate Rf values"]),
-        ("Economics", "opportunity cost", ["choices, scarcity, opportunity cost, trade-offs"]),
+        ("Accounting", "bank reconciliation", ["cash book, bank statement, unpresented cheques"], "svg-basic"),
+        ("Chemistry", "chromatography", ["separate dyes using chromatography and calculate Rf values"], "svg-basic"),
+        ("Economics", "opportunity cost", ["choices, scarcity, opportunity cost, trade-offs"], "text-ok"),
     ]
 
-    for subject, title, points in unrelated_cases:
+    for subject, title, points, expected_complexity in unrelated_cases:
         visual_type, complexity, _ = route(title, points, subject)
 
-        assert complexity == "infographic"
+        assert complexity == expected_complexity
         assert "statistics" not in visual_type.lower()
 
 
@@ -162,8 +177,8 @@ def test_complex_svg_fallbacks_use_subject_templates():
             "Prime entry",
         ),
         (
-            "2.1 - Markets and allocation of resources",
-            ["demand, supply, equilibrium price, market changes"],
+            "2.4.2 - Market equilibrium",
+            ["demand curve, supply curve, equilibrium price, market changes"],
             "Economics",
             "Demand and supply market diagram",
             "Equilibrium",
@@ -207,7 +222,7 @@ def test_complex_svg_fallbacks_use_subject_templates():
             index=1,
         )
 
-        assert complexity == "infographic"
+        assert complexity in {"infographic", "svg-basic"}
         assert expected_title in svg
         assert expected_label in svg
         assert "Particle model" not in svg

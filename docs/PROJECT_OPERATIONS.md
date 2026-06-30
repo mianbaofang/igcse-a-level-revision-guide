@@ -1,6 +1,6 @@
 # Project Operations Guide / 项目维护说明
 
-Last updated: 2026-06-21
+Last updated: 2026-06-30
 
 This file is the operational memory for future sessions and agents. Update it
 whenever release flow, validation rules, animation assets, repository hygiene, or
@@ -31,8 +31,16 @@ User-facing promise:
 3. Agent confirms exam board, subject, required exam year, output language, and
    explanation style.
 4. Agent fetches official public syllabus/specification sources.
-5. Agent builds topic guides, worked examples, visual briefs, HTML, PDF, and
-   validation output.
+5. Agent builds topic guides, concept-writing jobs, worked examples, visual
+   briefs, HTML, PDF, and validation output.
+6. Agent writes/imports reviewed concept explanations from
+   `concepts/concept_jobs.json` before treating the handbook as final.
+
+Verified delivery entries are only the routes recorded in the delivery matrix
+with current evidence. Candidate routes must not be described as verified
+delivery until a fresh output passes validation,
+`python -m intl_exam_guide review --out <output-dir>`, concept-status checks,
+and visual-status checks recorded in `final-review-packet.json`.
 
 ## 2. Source Of Truth
 
@@ -43,6 +51,7 @@ User-facing promise:
 - Release history: `CHANGELOG.md` and GitHub Releases
 - Public home page: `docs/index.html`
 - English/Chinese README: `README.md`, `README.zh-CN.md`
+- Delivery matrix: `tests/fixtures/delivery_matrix.json`
 
 Do not use old local clones or generated outputs as proof of current behavior.
 When verifying user experience, start from the GitHub repository or the clean
@@ -129,6 +138,22 @@ v0.2.26 closed the thirteenth-round audit follow-up: dedicated tests now cover
 subject profile routing and validation checks directly, `zh_topic_reference()`
 and `zh_visual_type()` assertions are more precise, and the animation version
 guard rejects any stale `v0.2.x` label rather than only one historical version.
+
+Concept-explanation quality is a cross-subject pipeline rule, not a per-subject
+patch area. The shared generator may create source-bound draft prompts and
+`concepts/concept_jobs.json`; final student-facing concept text must be written
+from those jobs and imported with `scripts/import_concept_explanations.py`.
+Release evidence is not ready while
+`validation.json.review_summary.pending_concept_explanations` is nonzero.
+
+v0.3 resets the final-delivery bar around actual student-facing usefulness.
+For every release sample or user-facing final guide, inspect the rendered
+roadmap for duplicate knowledge-unit titles and duplicate mastery targets,
+verify `final-review-packet.json` reports `delivery_status: ready`, and make
+sure complex infographic assets are either reviewed/imported or clearly left as
+non-final image jobs. SVG is appropriate only for SVG-safe simple diagrams; it
+must not be used as a blanket substitute for complex instructional
+infographics.
 
 Final-round maintenance updates that touch `skill/`, validation behavior,
 release-facing docs, or public audit claims must not stop at local edits. Before
@@ -280,6 +305,7 @@ Important error cases:
 - repeated practice questions under the same topic;
 - cross-subject borrowed practice templates;
 - missing source URLs or missing specification metadata;
+- pending or missing concept-explanation review jobs;
 - Edexcel/CAIE ambiguity resolved by guessing instead of returning candidates;
 - downloaded official PDFs that only produce generic `Content unit` topics;
 - downloaded official PDFs that produce no assessment-paper structure;
@@ -297,16 +323,24 @@ masking the rest of the generation run.
 Do not treat `issues: []` as meaningful unless the run was generated from the
 current code and not copied from old `outputs/` folders.
 
+For concept-output audits, read these counters together:
+
+- `concept_jobs`: concept-writing jobs emitted for the current guide;
+- `reviewed_concept_explanations`: topics whose reviewed concept explanations
+  were imported;
+- `pending_concept_explanations`: topics still blocked from final delivery.
+
 For visual-output audits, read the three counters together:
 
 - `generated_infographic_assets`: reviewed/generated raster infographic files;
-- `svg_fallback_assets`: local SVG fallback files written for draft review;
+- `svg_fallback_assets`: legacy SVG fallback files detected for replacement;
 - `pending_infographic_assets`: complex briefs still waiting for external
   image generation or human review.
 
 A prompt-queue run can legitimately have `generated_infographic_assets: 0` if
-SVG fallback assets were written and the warning clearly states that final
-complex infographics still need an external model, script, or imported asset.
+pending infographic jobs were written and the warning clearly states that final
+complex infographics still need an external model, script, or imported raster
+asset.
 
 ## 9. Repository Hygiene
 

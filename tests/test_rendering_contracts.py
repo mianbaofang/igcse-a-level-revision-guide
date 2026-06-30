@@ -110,6 +110,39 @@ def sample_rendering_qualification() -> Qualification:
     )
 
 
+def sample_oxfordaqa_as_math_9660() -> Qualification:
+    return Qualification(
+        title="International AS and A-level Mathematics (9660)",
+        code="9660",
+        qualification_type="international_as_a_level",
+        subject_area="Mathematics",
+        page_url="https://www.oxfordaqa.com/qualifications/international-as-a-level-mathematics/",
+        summary=["International AS and A-level Mathematics qualification."],
+        topics=[
+            Topic(
+                title="M1.3 - Forces and Newton's Laws",
+                points=["Newton's three laws of motion."],
+            )
+        ],
+        assessments=[
+            AssessmentPaper(
+                title="AS Paper 2 - Unit PSM1",
+                details=[
+                    "80 marks consisting of 40 marks Pure maths, 20 marks Statistics and 20 marks Mechanics."
+                ],
+            )
+        ],
+        source=SourceRecord(
+            provider="oxfordaqa",
+            page_url="https://www.oxfordaqa.com/qualifications/international-as-a-level-mathematics/",
+            specification_url="https://example.test/oxfordaqa-9660-specification.pdf",
+            specification_sha256="abc123",
+        ),
+        audience_note="OxfordAQA International AS-A-level qualification.",
+        provider="OxfordAQA",
+    )
+
+
 def sample_topic_guide(topic_title: str = "3.1 - Source documents") -> TopicGuide:
     return TopicGuide(
         topic_title=topic_title,
@@ -205,7 +238,7 @@ def test_stylesheet_keeps_handbook_cover_responsive_and_print_contracts():
     ]:
         assert selector in css
 
-    assert ".cover { min-height: 270mm" in css
+    assert "min-height: 220mm" in css
     assert "print-color-adjust: exact" in css
     assert "letter-spacing: 0" in css
 
@@ -283,6 +316,28 @@ def test_render_cover_keeps_first_page_to_course_identity():
     assert "Study Order" not in html
     assert "Knowledge units" not in html
     assert "Assessment Structure" not in html
+
+
+def test_render_cover_clarifies_oxfordaqa_9660_as_math_mechanics_scope():
+    qualification = sample_oxfordaqa_as_math_9660()
+    options = GuideRunOptions(
+        requested_subject="9660",
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+    )
+
+    english = render_cover(qualification, options)
+    options.output_language = "zh-CN"
+    chinese = render_cover(qualification, options)
+
+    assert "Unit P1 + Unit PSM1" in english
+    assert "Mechanics" in english
+    assert "part of this mathematics specification" in english
+    assert "Unit P1 + Unit PSM1" in chinese
+    assert "应用力学" in chinese
+    assert "属于本数学大纲" in chinese
+    assert "course-scope-note" in stylesheet()
 
 
 def test_render_html_writes_full_handbook_from_manifest_assets(tmp_path):
@@ -476,12 +531,22 @@ def test_topic_renderers_cover_guides_practice_story_and_visual_blocks():
     assert "Key Ideas" in rendered_topics
     assert "Exam Logic" in rendered_topics
     assert "One-Sentence Essence" in rendered_topics
-    assert "Concept Map" in rendered_topics
+    assert "Concept Map" not in rendered_topics
     assert "Visual Worked Example" in rendered_topics
-    assert "Life Scene" in rendered_topics
+    assert "Life Scene" not in rendered_topics
     assert "Worked Example" in rendered_topics
     assert "Explain where a sales invoice should be recorded first." in rendered_topics
     assert rendered_topics.count("<article class=\"practice\">") == 1
+    story_topics = render_topics(
+        [topic],
+        [guide],
+        [practice],
+        [visual],
+        {},
+        "en",
+        "story",
+    )
+    assert "Life Scene" in story_topics
 
     assert "Everyday Analogy" in render_topic_guide(guide, "en")
     assert "Concept map for 3.1 - Source documents" in render_topic_diagram(topic, guide, 1, "en")
@@ -542,7 +607,7 @@ def test_secondary_html_sections_and_chinese_rendering_paths():
     qualification = sample_rendering_qualification()
     qualification.assessments = []
     qualification.source.specification_sha256 = None
-    guide = sample_topic_guide()
+    guide = sample_topic_guide("Demand and supply")
     topic = Topic(
         title="Demand and supply",
         points=["Market demand shifts"],
@@ -581,6 +646,9 @@ def test_secondary_html_sections_and_chinese_rendering_paths():
     chinese_title = display_topic_title(chinese_topic, 4, "zh-CN")
 
     assert "topic-1" in chinese_map
+    assert guide.checklist[0] in chinese_map
+    assert guide.checklist[1] not in chinese_map
+    assert guide.checklist[2] not in chinese_map
     assert "topic-1" in chinese_nav
     assert "story-modes" in chinese_story
     assert "source-snippets" in chinese_source
@@ -653,6 +721,50 @@ def test_source_snippets_and_topic_titles_have_direct_rendering_guards():
         "long-topic-source-documents-ledger-entries"
     )
     assert slugify("!!!") == "topic"
+
+
+def test_chinese_math_module_titles_keep_code_and_teachable_concept():
+    topic = Topic(title="PP1.2 - Trigonometry: Their graphs, symmetries and periodicity")
+
+    assert display_topic_title(topic, 90, "zh-CN") == "PP1.2 三角函数：图像、对称性与周期性"
+    assert display_topic_title(Topic(title="P1 Quadratics"), 1, "zh-CN") == "P1 二次函数"
+
+
+def test_topic_map_disambiguates_duplicate_chinese_topic_titles():
+    topics = [
+        Topic(title="P1.1 - Algebra: Factor Theorem", points=["Factor Theorem."]),
+        Topic(
+            title="P1.1 - Algebra: Application of the Factor Theorem",
+            points=["Application of the Factor Theorem."],
+        ),
+    ]
+    guides = [
+        TopicGuide(
+            topic_title=topics[0].title,
+            essence="Factor theorem links roots and factors.",
+            analogy="A root is a key that unlocks a factor.",
+            mini_worked_example="If f(2)=0, x-2 is a factor.",
+            worked_solution_steps=["Substitute", "Check zero", "State factor", "Verify"],
+            pitfall="Do not confuse factor theorem with long division.",
+            checklist=["因式定理说明 f(a)=0 与 x-a 是 f(x) 的因式互相等价。"],
+            diagram_brief="Show root to factor link.",
+        ),
+        TopicGuide(
+            topic_title=topics[1].title,
+            essence="Factor theorem applications find factors of cubics.",
+            analogy="Test integer roots like trying likely keys.",
+            mini_worked_example="If f(1)=0, divide by x-1.",
+            worked_solution_steps=["Test roots", "Find factor", "Divide", "Factor remaining"],
+            pitfall="Do not stop after finding one factor.",
+            checklist=["因式定理应用是用 f(a)=0 寻找三次多项式的线性因式。"],
+            diagram_brief="Show application flow.",
+        ),
+    ]
+
+    html = render_topic_map(topics, "zh-CN", guides)
+
+    assert "P1.1 代数：因式定理说明" in html
+    assert "P1.1 代数：因式定理应用" in html
 
 
 def test_visual_manifest_loading_and_asset_classification_edges(tmp_path):
@@ -759,6 +871,7 @@ def test_write_visual_assets_preserves_generated_raster_and_rebuilds_svg_manifes
     images_dir = tmp_path / "images"
     images_dir.mkdir()
     (images_dir / "old.svg").write_text("<svg>old</svg>", encoding="utf-8")
+    (images_dir / "stale.png").write_bytes(b"stale")
     (images_dir / "ledger.png").write_bytes(b"png")
     (images_dir / "visual_manifest.json").write_text(
         json.dumps(
@@ -779,17 +892,70 @@ def test_write_visual_assets_preserves_generated_raster_and_rebuilds_svg_manifes
     manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
 
     assert not (images_dir / "old.svg").exists()
-    assert len(written) == 3
+    assert not (images_dir / "stale.png").exists()
+    assert len(written) == 2
     assert [entry["asset_status"] for entry in manifest] == [
         "svg-draft",
         "reviewed-generated",
-        "svg-fallback-needs-review",
+        "external-generation-required",
     ]
     assert manifest[0]["fallback_route"] == "scripted-scientific-vector"
     assert manifest[1]["file"] == "ledger.png"
-    assert manifest[2]["file"].endswith("-svg-fallback.svg")
+    assert manifest[2]["file"] is None
+    assert manifest[2]["fallback_route"] == "no-svg-complex-infographic"
     assert (images_dir / manifest[0]["file"]).exists()
-    assert (images_dir / manifest[2]["file"]).exists()
+
+
+def test_write_visual_assets_preserves_reviewed_raster_for_svg_basic(tmp_path):
+    visual = VisualBrief(
+        topic_title="Quadratic graph",
+        focus_point="turning point",
+        trigger="graph sketch",
+        visual_type="axis graph",
+        complexity="svg-basic",
+        image_provider="deterministic-svg",
+        prompt="Draw a quadratic graph.",
+        source_points=["Sketch quadratic graphs."],
+    )
+    plan = GuidePlan(
+        qualification=sample_rendering_qualification(),
+        run_options=GuideRunOptions(
+            requested_subject="Accounting",
+            image_provider="deterministic-svg",
+            explanation_style="friendly",
+            output_language="en",
+        ),
+        topic_guides=[],
+        practice_items=[],
+        visual_briefs=[visual],
+        diagram_briefs=[],
+        revision_stages=[],
+    )
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    (images_dir / "quadratic-reviewed.png").write_bytes(b"png")
+    (images_dir / "old.svg").write_text("<svg>old</svg>", encoding="utf-8")
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "key": visual_asset_key_from_brief(visual),
+                    "file": "quadratic-reviewed.png",
+                    "asset_status": "reviewed-generated",
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    written = write_visual_assets(plan, images_dir)
+    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+
+    assert written == [images_dir / "quadratic-reviewed.png"]
+    assert manifest[0]["file"] == "quadratic-reviewed.png"
+    assert manifest[0]["asset_status"] == "reviewed-generated"
+    assert not list(images_dir.glob("*.svg"))
 
 
 def test_write_handbook_package_writes_modular_sections_manifest_and_images(tmp_path):
@@ -813,7 +979,9 @@ def test_write_handbook_package_writes_modular_sections_manifest_and_images(tmp_
         "04_topic_guides_and_examples.txt",
         "05_source_appendix.txt",
     ]
-    assert len(manifest["image_files"]) == len(plan.visual_briefs)
+    assert len(manifest["image_files"]) == 1
+    assert manifest["image_files"][0].endswith("source-documents.svg")
+    assert (tmp_path / "images" / manifest["image_files"][0]).exists()
     assert (tmp_path / "handbook-package.json").exists()
     assert (tmp_path / "sections" / "01_cover.txt").read_text(encoding="utf-8").count("AQA")
     assert "How to Study" in (tmp_path / "sections" / "02_study_overview.txt").read_text(
@@ -826,3 +994,6 @@ def test_write_handbook_package_writes_modular_sections_manifest_and_images(tmp_
         encoding="utf-8"
     )
     assert (tmp_path / "images" / "visual_manifest.json").exists()
+    visual_manifest = json.loads((tmp_path / "images" / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert visual_manifest[0]["asset_status"] == "svg-draft"
+    assert visual_manifest[0]["file"] == manifest["image_files"][0]

@@ -1,4 +1,4 @@
-from intl_exam_guide.models import Qualification, SourceRecord, SourceSnippet, Topic
+from intl_exam_guide.models import AssessmentPaper, Qualification, SourceRecord, SourceSnippet, Topic
 from intl_exam_guide.planning.guide_plan import build_guide_plan
 from intl_exam_guide.providers.oxfordaqa import (
     Link,
@@ -8,6 +8,7 @@ from intl_exam_guide.providers.oxfordaqa import (
     extract_assessments,
     extract_detailed_topics_from_pdf,
     extract_topics,
+    filter_assessments_for_level_scope,
     find_source_snippets,
     find_specification_url,
     clean_text,
@@ -35,6 +36,209 @@ def test_clean_text_does_not_rewrite_plain_repeated_union():
 def test_normalize_extracted_symbols_handles_empty_inputs():
     assert normalize_extracted_symbols(None) == ""
     assert normalize_extracted_symbols("") == ""
+
+
+def test_oxfordaqa_as_math_extraction_uses_teachable_as_units_only():
+    pages = [
+        (
+            9,
+            """
+            3 Subject content
+            3.1  International AS Unit P1 (Pure Maths)
+            Students will be required to demonstrate
+            1. construction and presentation of mathematical arguments
+            P1.1: Algebra
+            Content Additional information
+            Use and manipulation of surds. To include simplification and rationalisation.
+            Quadratic functions and their graphs. To include reference to the vertex.
+            P1.2: Coordinate geometry
+            Content Additional information
+            Equation of a straight line, including the form y = mx + c.
+            3.2  International AS Unit PSM1 (Pure Maths, Statistics and Mechanics)
+            S1.1: Further probability
+            Content Additional information
+            Addition law of probability.
+            M1.1: Motion in a straight line with constant acceleration
+            Content Additional information
+            Displacement, speed, velocity, acceleration.
+            3.2.3 M1: Mechanics
+            Weight W = mg
+            3.3  International A-level Unit P2 (Pure Maths)
+            P2.1: Proof
+            Content Additional information
+            Proof by contradiction.
+            4 Scheme of assessment
+            """,
+        )
+    ]
+
+    topics = extract_detailed_topics_from_pdf(pages, level="as")
+    titles = [topic.title for topic in topics]
+
+    assert any("P1.1" in title and "surds" in title.lower() for title in titles)
+    assert any("S1.1" in title and "Addition law" in title for title in titles)
+    assert any("M1.1" in title and "Displacement" in title for title in titles)
+    assert not any("Students will be required" in title for title in titles)
+    assert not any(title.endswith(" - 1") or title.endswith(" - 2") for title in titles)
+    assert not any("Weight W = mg" in title for title in titles)
+    assert not any("P2" in title or "Proof by contradiction" in title for title in titles)
+
+
+def test_oxfordaqa_as_math_extraction_does_not_promote_formula_fragments_to_topics():
+    pages = [
+        (
+            10,
+            """
+            3 Subject content
+            3.1  International AS Unit P1 (Pure Maths)
+            P1.1: Algebra
+            Content Additional information
+            Use and manipulation of surds. To include simplification and rationalisation of the denominator of a fraction.
+            eg 12 22 78 3+= ;
+            =+ ;
+            23 2
+            Laws of indices for all rational exponents.
+            Quadratic functions and their graphs.
+            4 Scheme of assessment
+            """,
+        )
+    ]
+
+    topics = extract_detailed_topics_from_pdf(pages, level="as")
+    titles = [topic.title for topic in topics]
+
+    assert any("Use and manipulation of surds" in title for title in titles)
+    assert any("Laws of indices" in title for title in titles)
+    assert any("Quadratic functions" in title for title in titles)
+    assert not any("eg 12" in title for title in titles)
+    assert not any("=+" in title for title in titles)
+    assert not any("23 2" in title for title in titles)
+
+
+def test_oxfordaqa_as_math_extraction_keeps_formula_examples_out_of_titles():
+    pages = [
+        (
+            10,
+            """
+            3 Subject content
+            3.1  International AS Unit P1 (Pure Maths)
+            P1.1: Algebra
+            Content Additional information
+            Completing the square.
+            2x2 -6x+2 = 2(x-1.5)2 -2.5
+            Use of factorisation, -+ -bb ac a.
+            2 or completing the square may be required.
+            Solution of linear and quadratic inequalities.
+            eg 2 2xx + /greaterthanorequalangled6
+            Use of the Remainder Theorem and the Factor Theorem.
+            x - a, where a is an integer.
+            P1.3: Differentiation
+            Content Additional information
+            Differentiation of x n, where n is a rational number.
+            eg expressions such as 2523xx - , x x
+            3+ ,
+            P1.4: Integration
+            Content Additional information
+            Integration of xn, where n is a rational number not equal to -1.
+            eg expressions such as
+            2523xx - , x x
+            - or x x xx+ =+
+            -2 2
+            S1.2: Discrete random variables
+            Content Additional information
+            Mean, variance and standard deviation for discrete random variables.
+            Knowledge of the formulae.
+            E(aX+b) = a E(X)+b and Var(aX+b) = a2Var(X) will be expected.
+            eg Var(3X), Var(4X - 5), Var(6X -1)
+            M1.1: Motion in a straight line with constant acceleration
+            Content Additional information
+            Knowledge and use of constant acceleration equations.
+            =+ as ut 21
+            2 vu at=+ s u + vt()1
+            Vertical motion under gravity.
+            4 Scheme of assessment
+            """,
+        )
+    ]
+
+    topics = extract_detailed_topics_from_pdf(pages, level="as")
+    titles = [topic.title for topic in topics]
+
+    assert any("Completing the square" in title for title in titles)
+    assert any("Solution of linear and quadratic inequalities" in title for title in titles)
+    assert any("Differentiation of x n" in title for title in titles)
+    assert any("Integration of xn" in title for title in titles)
+    assert any("Mean, variance and standard deviation" in title for title in titles)
+    assert any("Knowledge and use of constant acceleration equations" in title for title in titles)
+    forbidden_fragments = [
+        "2x2",
+        "Use of factorisation",
+        "greaterthanorequalangled",
+        "where a is an integer",
+        "eg expressions",
+        "3+",
+        "Knowledge of the formulae",
+        "E(aX+b)",
+        "Var(3X)",
+        "=+ as",
+        "2 vu",
+    ]
+    assert not any(fragment in title for title in titles for fragment in forbidden_fragments)
+
+
+def test_oxfordaqa_as_math_extraction_drops_private_font_formula_fragments():
+    pages = [
+        (
+            10,
+            """
+            3 Subject content
+            3.1  International AS Unit P1 (Pure Maths)
+            P1.5: Sequences and series
+            Content Additional information
+            The binomial expansion of
+            (1+ x)n for positive integer n.
+            
+            (a + b) n will be accepted.
+            PP1.3: Exponential and logarithms
+            Content Additional information
+            Logarithms and the laws of logarithms.
+             k loga x = loga(xk)
+            S1.1: Further probability
+            Content Additional information
+            Addition law of probability.
+            AAP1 P' = −(( )
+            4 Scheme of assessment
+            """,
+        )
+    ]
+
+    topics = extract_detailed_topics_from_pdf(pages, level="as")
+    titles = [topic.title for topic in topics]
+
+    assert any("binomial expansion" in title.lower() for title in titles)
+    assert any("laws of logarithms" in title.lower() for title in titles)
+    assert any("Addition law" in title for title in titles)
+    assert not any("" in title for title in titles)
+    assert not any("loga(xk)" in title for title in titles)
+    assert not any("AAP1" in title for title in titles)
+
+
+def test_oxfordaqa_as_scope_removes_a_level_assessments():
+    papers = [
+        AssessmentPaper(title="Assessment evidence and objectives"),
+        AssessmentPaper(title="AS Paper 1 - Unit P1"),
+        AssessmentPaper(title="AS Paper 2 - Unit PSM1"),
+        AssessmentPaper(title="A-level Paper 1 - Unit P2"),
+        AssessmentPaper(title="A-level Paper 2 (Option A) - Unit S2"),
+    ]
+
+    filtered = filter_assessments_for_level_scope(papers, "as")
+
+    assert [paper.title for paper in filtered] == [
+        "Assessment evidence and objectives",
+        "AS Paper 1 - Unit P1",
+        "AS Paper 2 - Unit PSM1",
+    ]
 
 
 def test_common_first_node_text_accepts_parser_or_nodes():
@@ -340,6 +544,31 @@ def test_parser_captures_subject_listing_level_metadata():
     assert gcse.style_class == "btn btn--type-8"
     assert alevel.qualification_type == "international_as_a_level"
     assert alevel.group_label == "red International AS-A-level subject listing"
+
+
+def test_oxfordaqa_subject_query_respects_as_level_filter():
+    class FakeProvider(OxfordAQAProvider):
+        def discover_subject_pages(self):
+            return [Link(text="Mathematics", href="https://example.test/subjects/mathematics/")]
+
+        def list_qualifications(self, subject_url: str):
+            return [
+                Link(
+                    text="International GCSE Mathematics (9260)",
+                    href="https://example.test/international-gcse-mathematics/",
+                    qualification_type="international_gcse",
+                ),
+                Link(
+                    text="International AS and A-level Mathematics (9660)",
+                    href="https://example.test/international-as-a-level-mathematics/",
+                    qualification_type="international_as_a_level",
+                ),
+            ]
+
+    link = FakeProvider().find_qualification("mathematics", level="as")
+
+    assert link.href.endswith("international-as-a-level-mathematics/")
+    assert link.qualification_type == "international_as_a_level"
 
 
 def test_listing_metadata_promotes_unknown_epq_type():

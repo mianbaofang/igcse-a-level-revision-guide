@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.3 - 2026-06-30
+
+### Changed
+
+- Reset the delivery-quality contract around source-grounded handbook output:
+  topic guides now require reviewed concept explanations before a guide can be
+  presented as final, and `python -m intl_exam_guide review --out <output-dir>`
+  writes a final review packet with machine validation, visual status, and
+  agent self-review status.
+- Reworked the study roadmap so each row shows one independent, topic-specific
+  mastery target. Repeated roadmap titles or repeated "what to master" cells are
+  now delivery errors instead of issues left for the user to spot manually.
+- Tightened visual routing across subjects: simple SVG is reserved for
+  SVG-safe diagrams, complex infographic briefs stay in the image job queue
+  until reviewed raster assets are imported, and generated-image prompts are
+  content-only rather than branded/course-packaged.
+- Improved OxfordAQA AS Mathematics extraction and AS-only filtering so
+  AS-focused guides exclude A-level-only units while still preserving source
+  traceability for every teachable topic.
+- Updated the Skill and release workflow so final presentation depends on
+  concept review, image review, PDF inspection, output package manifests, and a
+  fresh final-review packet rather than broad validation alone.
+
+### Fixed
+
+- Blocked repeated checklist/mastery text in topic guides and repeated roadmap
+  cells in rendered HTML.
+- Added PDF quality checks for excessive page counts, file size, and blank text
+  pages so oversized or mostly blank outputs cannot pass as final.
+- Added SVG repetition checks for repeated titles and repeated SVG structures.
+- Added validation for encoding artifacts, mixed-language labels, stale visual
+  prompt packaging, fragment-like syllabus titles, cross-subject borrowed
+  examples, and AS-only/A-level scope leakage.
+
+### Verified
+
+- Fresh AQA AS Mathematics Chinese/friendly handbook package was regenerated
+  with reviewed GPT Image 2 1k infographic assets at
+  `outputs/aqa-as-mathematics-9660-zh-CN-friendly-20260630-full-gpt-image2-1k`.
+  Final review reported `delivery_status: ready`, 99 handbook topics, 99
+  reviewed concept explanations, 99 practice cards, 26 visual examples, 21
+  generated raster infographics, 5 SVG assets, 0 pending concept explanations,
+  0 pending infographic assets, 105 PDF pages, and 0 blank text pages. The
+  rendered study roadmap had 99 rows, 0 duplicate titles, and 0 duplicate
+  mastery cells. The generated output directory is ignored and is not committed.
+- `python -m intl_exam_guide review --out outputs/aqa-as-mathematics-9660-zh-CN-friendly-20260630-full-gpt-image2-1k`
+  wrote `final-review-packet.json` with `error_count: 0`,
+  `warning_count: 0`, and `delivery_status: ready`.
+- Fresh offline demo smoke:
+  `python -m intl_exam_guide demo --out ./outputs/_fresh-v03-demo --language en --image-provider deterministic-svg --explanation-style friendly --skip-pdf`.
+  The package generated HTML, 3 topics, 3 practice cards, 3 concept jobs, 3 SVG
+  visuals, 7 section files, and 3 image files. Review correctly reported
+  `delivery_status: draft_needs_concept_review`, `warning_count: 1`, and
+  `agent_self_review.must_not_present_as_final: true` because the synthetic demo
+  intentionally had 3 pending concept explanations. The ignored demo output was
+  removed after collecting evidence and is not committed.
+- `python -m pytest -q` (`326 passed`).
+- `python -m ruff check .`
+- `python -m mypy`
+- `python -m compileall -q src tests scripts`
+- `git diff --check` (Windows line-ending notices only, no whitespace errors).
+
 ## 0.2.27 - 2026-06-21
 
 ### Tests

@@ -130,6 +130,16 @@ visual_002_market-equilibrium.png
 visual_003.webp
 ```
 
+When the base handbook package is written, the `images/` directory now includes:
+
+- `visual_manifest.json`: every visual entry and its current file/status
+- `infographic_jobs.json`: only pending complex infographic replacement jobs
+- `infographic_jobs.md`: the same pending jobs in a review-friendly checklist
+
+Each pending job records the visual ID, prompt, replacement target, source
+pages, and the import hint. Pending or SVG-fallback handbook blocks also show
+the visual job ID so the reviewed raster file can replace that slot by name.
+
 Generate complex images with whatever callable workflow the user actually has:
 an image Skill, API, script, design tool, or designer review process. If the
 workflow is callable, the Agent can run it automatically after the base guide is
@@ -143,12 +153,12 @@ python scripts/import_infographic_assets.py ./outputs/chemistry-9202 \
 ```
 
 The script copies matching raster images into `images/`, updates
-`images/visual_manifest.json`, and marks imported entries as generated. After
-import, regenerate/finalize the guide so the HTML/PDF uses the images:
+`images/visual_manifest.json`, replaces pending or SVG-fallback infographic
+slots that share the same visual ID, and marks imported entries as generated.
+After a successful import it prints the exact handbook review command to run:
 
 ```bash
-python scripts/finalize_release_samples.py --outputs-root ./outputs
-python scripts/verify_release_samples.py --outputs-root ./outputs
+python -m intl_exam_guide review --out ./outputs/chemistry-9202
 ```
 
 ## Routing Rules

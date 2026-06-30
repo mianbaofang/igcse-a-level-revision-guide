@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from intl_exam_guide.models import PracticeItem, Topic
 from intl_exam_guide.planning.anti_ai_language import polish_ai_language, polish_texts
-from intl_exam_guide.planning.localization import zh_point_label
+from intl_exam_guide.planning.practice_focus import (
+    add_question_variant_marker,
+    choose_command_word,
+    choose_difficulty,
+    visible_zh_practice_focus,
+    visible_zh_single_focus,
+)
+from intl_exam_guide.planning.practice_math_examples import (
+    mathematics_specialist_example,
+    mathematics_specialist_example_zh,
+)
 from intl_exam_guide.planning.subject_profiles import has_terms, resolve_subject_profile
 
 
@@ -14,15 +24,22 @@ def build_practice_item(
     explanation_style: str = "friendly",
     output_language: str = "en",
     subject_area: str | None = None,
+    variant_number: int | None = None,
 ) -> PracticeItem:
     focus = points[number % len(points)]
-    visible_focus = focus if output_language == "en" else zh_point_label(focus, number)
-    command_word = choose_command_word(number, qualification_type, output_language)
-    difficulty = choose_difficulty(number, output_language)
+    example_number = number if variant_number is None else variant_number
+    visible_focus = (
+        focus
+        if output_language == "en"
+        else visible_zh_practice_focus(topic, points, focus, number)
+    )
+    command_word = choose_command_word(example_number, qualification_type, output_language)
+    difficulty = choose_difficulty(example_number, output_language)
     if output_language == "zh-CN":
-        question, frame, steps, checkpoints = concrete_example_zh(topic, focus, number, subject_area)
+        question, frame, steps, checkpoints = concrete_example_zh(topic, focus, example_number, subject_area)
     else:
-        question, frame, steps, checkpoints = concrete_example(topic, focus, number, subject_area)
+        question, frame, steps, checkpoints = concrete_example(topic, focus, example_number, subject_area)
+    question = contextualize_question(question, visible_focus, output_language)
     question = add_question_variant_marker(question, number, output_language)
     while len(steps) < 4:
         steps.append(
@@ -47,13 +64,6 @@ def build_practice_item(
         source_snippets=topic.source_snippets[:2],
     )
 
-def add_question_variant_marker(question: str, number: int, output_language: str) -> str:
-    if number == 0:
-        return question
-    if output_language == "zh-CN":
-        return f"变式 {number + 1}：换一个证据点再做一遍。{question}"
-    return f"Variant {number + 1}: use a different source detail. {question}"
-
 def decorate_question(question: str, explanation_style: str, output_language: str = "en") -> str:
     if output_language == "zh-CN":
         prefixes = {
@@ -75,6 +85,17 @@ def decorate_question(question: str, explanation_style: str, output_language: st
     }
     return f"{prefixes.get(explanation_style, prefixes['friendly'])}{question}"
 
+
+def contextualize_question(question: str, focus: str, output_language: str) -> str:
+    focus = focus.strip()
+    if not focus:
+        return question
+    if focus.lower() in question.lower():
+        return question
+    if output_language == "zh-CN":
+        return f"围绕“{focus}”：{question}"
+    return f"Focus on {focus}: {question}"
+
 def concrete_example(
     topic: Topic,
     focus: str,
@@ -95,7 +116,9 @@ def concrete_example(
         return accounting_example(text, focus, number)
     if profile.example_domain == "generic":
         return generic_example(focus)
-    if prefix == "N" or any(word in text for word in ["number", "ratio", "fraction", "percentage"]):
+    if profile.example_domain == "mathematics" and "." in code:
+        return mathematics_specialist_example(text, number)
+    if prefix == "N" or has_terms(text, ["number", "ratio", "fraction", "percentage"]):
         if "ratio" in text or number % 3 == 0:
             if number % 2:
                 return (
@@ -123,7 +146,7 @@ def concrete_example(
             ["3/4 of 280 = 210.", "210/350 = 0.6.", "0.6 = 60%.", "Answer: 60%."],
             ["Fraction operation is done before percentage conversion.", "The denominator for the percentage is 350.", "Answer is between 0% and 100%."],
         )
-    if prefix == "A" or any(word in text for word in ["algebra", "equation", "function", "sequence"]):
+    if prefix == "A" or has_terms(text, ["algebra", "equation", "function", "sequence"]):
         if "function" in text or "graph" in text:
             if number % 2:
                 return (
@@ -165,7 +188,7 @@ def concrete_example(
             ["3(x - 2) + 5 = 3x - 6 + 5.", "3x - 1 = 20.", "3x = 21.", "Answer: x = 7."],
             ["The bracket is expanded correctly.", "The same operation is applied to both sides.", "x=7 checks in the original equation."],
         )
-    if prefix == "G" or any(word in text for word in ["geometry", "triangle", "angle", "area", "volume"]):
+    if prefix == "G" or has_terms(text, ["geometry", "triangle", "angle", "area", "volume"]):
         if "angle" in text:
             if number % 2:
                 return (
@@ -193,7 +216,7 @@ def concrete_example(
             ["c^2 = 5^2 + 12^2.", "c^2 = 25 + 144 = 169.", "c = sqrt(169) = 13.", "Answer: 13 cm."],
             ["Only perpendicular sides are added.", "Final answer is longer than 12 cm.", "The unit is cm."],
         )
-    if prefix == "S" or any(word in text for word in ["probability", "statistics", "data", "mean"]):
+    if prefix == "S" or has_terms(text, ["probability", "statistics", "data", "mean"]):
         if "probability" in text:
             if number % 2:
                 return (
@@ -221,6 +244,8 @@ def concrete_example(
             ["Total = 2 + 5 + 5 + 8 + 10 = 30.", "Mean = 30 / 5 = 6.", "Range = 10 - 2 = 8.", "Answer: mean 6, range 8."],
             ["The repeated 5 is counted twice.", "There are five values.", "Range uses largest minus smallest."],
         )
+    if profile.example_domain == "mathematics":
+        return mathematics_specialist_example(text, number)
     return (
         f"Using the idea '{focus}', answer a short exam-style question that asks for one definition, one application, and one check.",
         ["Identify the command word.", "Choose the matching syllabus term.", "Apply it to the given context."],
@@ -236,7 +261,7 @@ def concrete_example_zh(
 ) -> tuple[str, list[str], list[str], list[str]]:
     text = f"{topic.title} {focus}".lower()
     prefix = topic.title.split(" ", 1)[0][:1]
-    visible_focus = zh_point_label(focus, number)
+    visible_focus = visible_zh_single_focus(topic, focus, number)
     profile = resolve_subject_profile(subject_area, topic, text)
     if profile.example_domain == "chemistry":
         if any(word in text for word in ["solid", "liquid", "states of matter", "diffusion"]):
@@ -298,28 +323,33 @@ def concrete_example_zh(
         return accounting_example_zh(text, visible_focus, number)
     if profile.example_domain == "generic":
         return generic_example_zh(visible_focus)
-    if prefix == "N" or any(word in text for word in ["number", "ratio", "fraction", "percentage"]):
+    if profile.example_domain == "mathematics" and "." in topic.title.split(" ", 1)[0]:
+        return mathematics_specialist_example_zh(text, number)
+    if prefix == "N" or has_terms(text, ["number", "ratio", "fraction", "percentage"]):
         return (
-            "一杯饮料中果汁和水的比例是 2:5。若用了 140 ml 果汁，需要多少水？",
+            "一杯饮料中果汁和水的比例是 2:5。若用了 140 毫升果汁，需要多少水？",
             ["写出果汁:水 = 2:5。", "求出 1 份是多少。", "乘以水对应的份数。"],
-            ["2 份 = 140 ml。", "1 份 = 140 / 2 = 70 ml。", "水 = 5 份 = 5 x 70 = 350 ml。", "答案：350 ml。"],
-            ["比例顺序不能颠倒。", "答案要带 ml。", "水应比果汁多，因为 5 份大于 2 份。"],
+            ["2 份 = 140 毫升。", "1 份 = 140 ÷ 2 = 70 毫升。", "水 = 5 份 = 5 × 70 = 350 毫升。", "答案：350 毫升。"],
+            ["比例顺序不能颠倒。", "答案要带毫升。", "水应比果汁多，因为 5 份大于 2 份。"],
         )
-    if prefix == "A" or any(word in text for word in ["algebra", "equation", "function", "sequence"]):
+    if prefix == "A" or has_terms(text, ["algebra", "equation", "function", "sequence"]):
         return (
             "解方程 3(x - 2) + 5 = 20。",
             ["先展开括号。", "合并常数项。", "再除以 x 的系数。"],
             ["3(x - 2) + 5 = 3x - 6 + 5。", "3x - 1 = 20。", "3x = 21。", "答案：x = 7。"],
             ["括号要展开正确。", "等式两边要做同样操作。", "把 x=7 代回去能成立。"],
         )
-    if any(word in text for word in ["triangle", "angle", "pythagoras", "trigonometry", "geometry"]):
+    if has_terms(text, ["triangle", "angle", "pythagoras", "trigonometry", "geometry"]):
         return (
             "一个直角三角形两条直角边分别为 5 cm 和 12 cm。求斜边长度。",
             ["确认这是直角三角形。", "使用勾股定理。", "开平方得到长度。"],
             ["c^2 = 5^2 + 12^2。", "c^2 = 25 + 144 = 169。", "c = 13。", "答案：斜边为 13 cm。"],
             ["斜边是最长边。", "平方后再相加。", "答案要带 cm。"],
         )
+    if profile.example_domain == "mathematics":
+        return mathematics_specialist_example_zh(text, number)
     return generic_example_zh(visible_focus)
+
 
 def biology_example(text: str, focus: str, number: int) -> tuple[str, list[str], list[str], list[str]]:
     if any(word in text for word in ["water", "solvent", "dipole", "transport"]):
@@ -365,19 +395,21 @@ def biology_example(text: str, focus: str, number: int) -> tuple[str, list[str],
     )
 
 def generic_example(focus: str) -> tuple[str, list[str], list[str], list[str]]:
+    focus_label = focus.strip().rstrip(".") or "this syllabus point"
     return (
-        f"A student revises the syllabus point '{focus}' but writes only a memorised phrase. Improve the answer by adding a clear command-word action and one piece of evidence from the question.",
-        ["Identify the command word.", "Choose one relevant evidence phrase.", "Connect the evidence to the syllabus point."],
-        [f"The answer must use the syllabus point: {focus}.", "A memorised phrase is not enough because exam answers must respond to the question context.", "Add the evidence or condition given in the question.", "Finish with a sentence that directly answers the command word."],
-        ["Mentions the syllabus point.", "Adds evidence from the question.", "Answers the command word instead of copying notes."],
+        f"Using only the syllabus point '{focus_label}', explain what the idea means, what relationship or boundary it describes, and one exam context where it would be applied.",
+        ["State the idea in the words of the source point.", "Name the relationship, condition, or boundary it controls.", "Apply it to one short exam context without adding outside facts."],
+        [f"The focus point is: {focus_label}.", "A complete answer first defines or describes that focus point.", "It then names the relationship or limit stated by the source.", "The final sentence applies the idea to the question context and stays inside the source point."],
+        ["The answer stays inside the source wording.", "It explains a relationship or boundary, not just a keyword.", "It gives an application without borrowing another subject's template."],
     )
 
 def generic_example_zh(visible_focus: str) -> tuple[str, list[str], list[str], list[str]]:
+    focus_label = visible_focus.strip().rstrip("。") or "本节知识点"
     return (
-        f"围绕“{visible_focus}”完成一道原创练习：先找关键信息，再选择方法，最后写出可检查的答案。",
-        ["圈出题目给出的数据或关键词。", "选择对应的公式、定义或判断规则。", "写出步骤并检查单位。"],
-        [f"本题考查“{visible_focus}”。", "先把题目信息整理成可用条件。", "再按对应方法完成计算或解释。", "最后检查答案是否回应题问。"],
-        ["使用了正确知识点。", "步骤能被复核。", "最终答案回应题目要求。"],
+        f"本题只围绕“{focus_label}”：说明这个概念是什么意思，它描述了哪一种关系或边界，并给出一个不超出本节来源点的应用情境。",
+        ["先用来源点的范围说明概念。", "指出它控制的关系、条件或边界。", "给出一个短情境，但不借用其他学科模板。"],
+        [f"本题聚焦“{focus_label}”。", "完整答案先解释这个知识点本身，而不是只写关键词。", "然后说明它对应的关系、限制或判断边界。", "最后把这个想法放进题目情境中，且不加入来源点之外的事实。"],
+        ["内容必须留在当前来源点内。", "要解释关系或边界。", "不能套用其他科目的例题场景。"],
     )
 
 def accounting_example(
@@ -876,21 +908,3 @@ def economics_example(
         [f"The focus idea is {focus}.", "Apply it to a consumer, producer or government decision.", "Explain how incentives or scarcity affect the decision.", "Finish with the likely economic outcome."],
         ["Uses an economics agent.", "Explains a cause-and-effect link.", "Avoids unsupported real-world claims."],
     )
-
-def choose_command_word(number: int, qualification_type: str, output_language: str = "en") -> str:
-    if output_language == "zh-CN":
-        if qualification_type == "international_as_a_level":
-            words = ["解释", "分析", "比较", "评价"]
-        else:
-            words = ["写出", "描述", "解释", "提出"]
-        return words[number % len(words)]
-    if qualification_type == "international_as_a_level":
-        words = ["explain", "analyse", "compare", "evaluate"]
-    else:
-        words = ["state", "describe", "explain", "suggest"]
-    return words[number % len(words)]
-
-def choose_difficulty(number: int, output_language: str = "en") -> str:
-    if output_language == "zh-CN":
-        return ["基础", "标准", "挑战"][number % 3]
-    return ["core", "standard", "stretch"][number % 3]

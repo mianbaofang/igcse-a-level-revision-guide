@@ -12,11 +12,13 @@ from intl_exam_guide.models import (
     VisualBrief,
 )
 from intl_exam_guide.planning.anti_ai_language import polish_ai_language, polish_texts
+from intl_exam_guide.planning.checklists import build_checklist
 from intl_exam_guide.planning.explanation_styles import (
     styled_explanation,
     styled_explanation_en,
 )
 from intl_exam_guide.planning.localization import (
+    is_generic_zh_label,
     zh_point_label,
     zh_point_labels,
     zh_topic_reference,
@@ -91,7 +93,7 @@ __all__ = [
 
 def build_guide_plan(
     qualification: Qualification,
-    questions_per_topic: int = 2,
+    questions_per_topic: int = 1,
     image_provider: str | None = None,
     explanation_style: str = "friendly",
     output_language: str = "en",
@@ -117,7 +119,9 @@ def build_guide_plan(
     visual_briefs: list[VisualBrief] = []
     diagram_briefs: list[str] = []
 
-    for topic in qualification.topics:
+    handbook_topics = [topic for topic in qualification.topics if not is_scope_exclusion_topic(topic)]
+
+    for topic_index, topic in enumerate(handbook_topics):
         points = topic.points[:4]
         if not points:
             points = [topic.title]
@@ -133,6 +137,7 @@ def build_guide_plan(
             visual_briefs.append(visual)
         diagram_briefs.append(guide.diagram_brief)
         for number in range(questions_per_topic):
+            variant_number = topic_index * max(1, questions_per_topic) + number
             practice_items.append(
                 build_practice_item(
                     topic,
@@ -142,6 +147,7 @@ def build_guide_plan(
                     run_options.explanation_style,
                     run_options.output_language,
                     qualification.subject_area,
+                    variant_number=variant_number,
                 )
             )
 
@@ -158,6 +164,38 @@ def build_guide_plan(
         diagram_briefs=diagram_briefs,
         revision_stages=revision_stages,
     )
+
+def is_scope_exclusion_topic(topic: Topic) -> bool:
+    """Return True when a source point is only an exam-scope exclusion note."""
+
+    primary = topic.points[0] if topic.points else ""
+    title_focus = topic.title.rsplit(":", 1)[-1]
+    text = f"{title_focus} {primary}".lower()
+    exclusion_phrases = [
+        "will not be set",
+        "will not be assessed",
+        "will not be tested",
+        "is not required",
+        "are not required",
+        "not required",
+        "not be required",
+        "not be tested",
+        "not expected",
+        "outside the scope",
+    ]
+    if not any(phrase in text for phrase in exclusion_phrases):
+        return False
+    learning_terms = [
+        "restricted to",
+        "include",
+        "includes",
+        "including",
+        "to include",
+        "use of",
+        "application of",
+        "applications of",
+    ]
+    return not any(term in text for term in learning_terms)
 
 def build_run_options(
     qualification: Qualification,
@@ -215,7 +253,14 @@ def build_topic_guide(
     output_language: str,
 ) -> TopicGuide:
     points = topic.points[:5] or [topic.title]
-    visible_points = points if output_language == "en" else zh_point_labels(points)
+    if output_language == "en":
+        visible_points = points
+    else:
+        labels = zh_point_labels(points)
+        visible_points = [label for label in labels if not is_generic_zh_label(label)]
+        if not visible_points:
+            fallback = zh_point_label(topic.title, 0)
+            visible_points = [fallback if not is_generic_zh_label(fallback) else zh_topic_reference(topic)]
     primary = visible_points[0]
     if output_language == "en":
         level_hint = "AS-A-level unit" if qualification_type == "international_as_a_level" else "GCSE topic"
@@ -247,7 +292,11 @@ def build_topic_guide(
             "检查：单位、精度、符号和最终句子是否回答了题问。",
         ]
     )
-    checklist = build_checklist(visible_points, output_language)
+    checklist = build_checklist(
+        visible_points,
+        output_language,
+        source_text=" ".join([topic.title, *points]),
+    )
     diagram_brief = (
         (
             f"Draw a clean concept map for '{topic.title}' with the central title in the middle, "
@@ -270,19 +319,6 @@ def build_topic_guide(
         diagram_brief=polish_ai_language(diagram_brief, output_language),
         source_snippets=topic.source_snippets[:3],
     )
-
-def build_checklist(points: list[str], output_language: str) -> list[str]:
-    if output_language == "en":
-        return [
-            *[f"Can explain: {point}" for point in points[:4]],
-            "Can answer at least one original exam-style prompt without looking at notes.",
-            "Can name one common mistake and how to avoid it.",
-        ]
-    return [
-        *[f"能解释：{point}" for point in points[:4]],
-        "不看笔记也能完成至少一道原创考试风格练习。",
-        "能说出一个常见错误，并知道如何避开。",
-    ]
 
 def build_revision_stages(qualification_type: str, output_language: str = "en") -> list[str]:
     if output_language == "zh-CN":

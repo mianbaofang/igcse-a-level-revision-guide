@@ -1,13 +1,26 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
+from html import escape as html_escape, unescape as html_unescape
+import json
 import os
 from pathlib import Path
 import re
 
-from intl_exam_guide.models import GuidePlan, PracticeItem, VisualBrief
+from pypdf import PdfReader
+
+from intl_exam_guide.auditing.content_quality import (
+    student_visible_text_issues,
+    topic_title_quality_issues,
+)
+from intl_exam_guide.auditing.concept_jobs import CONCEPT_REVIEW_FILE, reviewed_concept_titles
+from intl_exam_guide.models import GuidePlan, PracticeItem, Topic, VisualBrief
 from intl_exam_guide.planning.anti_ai_language import has_ai_language_smell
+from intl_exam_guide.planning.guide_plan import is_scope_exclusion_topic
+from intl_exam_guide.planning.localization import zh_teachable_topic_title, zh_topic_keyword_label
+from intl_exam_guide.rendering.html import display_topic_titles
 from intl_exam_guide.rendering.visual_assets import (
     PENDING_ASSET_STATUSES,
     has_renderable_infographic,
@@ -34,6 +47,100 @@ BILINGUAL_SLASH_PATTERN = re.compile(
     r"(?:[\u4e00-\u9fff][^<>\n/]{0,40}\s/\s[^<>\n/]{0,40}[A-Za-z]"
     r"|[A-Za-z][^<>\n/]{0,40}\s/\s[^<>\n/]{0,40}[\u4e00-\u9fff])"
 )
+ENCODING_ARTIFACT_PATTERN = re.compile(r"\ufffd|\?{3,}")
+SVG_REPETITION_MIN_FILES = 12
+SVG_REPETITION_MAX_UNIQUE_RATIO = 0.6
+SVG_REPETITION_MAX_REPEAT_RATIO = 0.25
+SVG_REPETITION_MIN_REPEAT = 10
+PDF_PAGE_HEADROOM = 24
+PDF_MAX_PAGES_PER_TOPIC = 2.0
+PDF_ABSOLUTE_MAX_PAGES = 260
+PDF_MAX_MIB_HEADROOM = 24
+PDF_MAX_MIB_PER_VISUAL = 0.75
+PDF_ABSOLUTE_MAX_MIB = 120
+IMAGE_PROMPT_PACKAGING_PATTERNS = [
+    r"\b(?:Oxford\s*)?AQA\b",
+    r"\bOxfordAQA\b",
+    r"\bPearson\b",
+    r"\bEdexcel\b",
+    r"\bCambridge\b",
+    r"\bCAIE\b",
+    r"\bInternational\s+(?:GCSE|AS(?:[-\s]A[-\s]level|[-\s]A-level|\s+Level)?|A[-\s]level)\b",
+    r"\bIGCSE\b",
+    r"\bGCSE\b",
+    r"\bAS[-\s]A[-\s]level\b",
+    r"\bAS[-\s]A-level\b",
+    r"\bAS\s+Level\b",
+    r"\bA[-\s]level\b",
+    r"\bA\s+Level\b",
+    r"\bcourse\s+code\s*[·:,-]?\s*\d+\b",
+    r"\bcode\s*[·:,-]?\s*\d+\b",
+    r"课程代码\s*[·:：,-]?\s*\d+",
+    r"国际课程",
+    r"官方英文来源",
+]
+SVG_SAFE_VISUAL_TERMS = {
+    "axis",
+    "bar",
+    "chart",
+    "circle",
+    "accounting",
+    "coordinate",
+    "curve",
+    "data",
+    "demand",
+    "distance-time",
+    "energy",
+    "flow",
+    "force",
+    "fraction",
+    "function",
+    "geometry",
+    "graph",
+    "ledger",
+    "line",
+    "market",
+    "mechanics",
+    "motion",
+    "number",
+    "particle",
+    "ph",
+    "probability",
+    "ratio",
+    "reconciliation",
+    "scatter",
+    "statement",
+    "statistics",
+    "supply",
+    "table",
+    "tree",
+    "triangle",
+    "venn",
+    "vector",
+    "angle",
+    "图",
+    "坐标",
+    "曲线",
+    "数轴",
+    "函数",
+    "几何",
+    "三角",
+    "角",
+    "圆",
+    "统计",
+    "概率",
+    "表",
+    "数据",
+    "韦恩",
+    "树",
+    "力",
+    "运动",
+    "动量",
+    "碰撞",
+    "能量",
+    "粒子",
+    "比例",
+}
 ZH_FORBIDDEN_TEMPLATE_PHRASES = [
     "How to Study",
     "Study Roadmap",
@@ -72,8 +179,11 @@ def validate_plan(
     issues.extend(validate_qualification_notes(plan))
     if html_path:
         issues.extend(validate_html_output(plan, html_path))
-    if pdf_path and not pdf_path.exists():
-        issues.append(ValidationIssue("warning", f"PDF output is missing: {pdf_path}"))
+    if pdf_path:
+        if not pdf_path.exists():
+            issues.append(ValidationIssue("warning", f"PDF output is missing: {pdf_path}"))
+        else:
+            issues.extend(validate_pdf_output(plan, pdf_path))
     if output_dir:
         issues.extend(validate_output_package(plan, output_dir))
     return issues
@@ -136,9 +246,27 @@ def validate_preflight_and_source(plan: GuidePlan) -> list[ValidationIssue]:
     if not qualification.assessments:
         severity = "error" if qualification.source.specification_path else "warning"
         issues.append(ValidationIssue(severity, "No assessment papers were extracted."))
-    if len(plan.practice_items) < len(qualification.topics):
+    if is_as_only_plan(plan):
+        for paper in qualification.assessments:
+            if is_a_level_only_title(paper.title):
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        f"AS-only guide includes an A-level assessment: {paper.title}",
+                    )
+                )
+        for topic in qualification.topics:
+            if is_a_level_only_title(topic.title):
+                issues.append(
+                    ValidationIssue(
+                        "error",
+                        f"AS-only guide includes an A-level topic: {topic.title}",
+                    )
+                )
+    teachable_topics = handbook_topics(plan)
+    if len(plan.practice_items) < len(teachable_topics):
         issues.append(ValidationIssue("warning", "Practice coverage is below one item per topic."))
-    if len(plan.topic_guides) != len(qualification.topics):
+    if len(plan.topic_guides) != len(teachable_topics):
         issues.append(ValidationIssue("error", "Topic guide coverage does not match topic count."))
     if not plan.visual_briefs:
         issues.append(ValidationIssue("warning", "No topics were selected for visual explanation."))
@@ -169,11 +297,22 @@ def validate_custom_image_provider(options: object) -> list[ValidationIssue]:
     return issues
 
 
+def handbook_topics(plan: GuidePlan) -> list[Topic]:
+    return [topic for topic in plan.qualification.topics if not is_scope_exclusion_topic(topic)]
+
+
 def validate_topic_coverage(plan: GuidePlan) -> list[ValidationIssue]:
     guide_topics = {guide.topic_title for guide in plan.topic_guides}
     practice_topics = {item.topic_title for item in plan.practice_items}
     issues: list[ValidationIssue] = []
-    for topic in plan.qualification.topics:
+    for topic in handbook_topics(plan):
+        if is_fragment_topic_title(topic):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Syllabus topic title looks like a parser fragment, not a teachable unit: {topic.title}",
+                )
+            )
         if topic.title not in guide_topics:
             issues.append(ValidationIssue("error", f"Missing authored guide block for topic: {topic.title}"))
         if topic.title not in practice_topics:
@@ -248,6 +387,70 @@ def validate_guides(plan: GuidePlan) -> list[ValidationIssue]:
                     f"Chinese topic guide contains generic syllabus placeholder text: {guide.topic_title}",
                 )
             )
+        if has_encoding_artifacts(
+            [
+                guide.essence,
+                guide.analogy,
+                guide.mini_worked_example,
+                guide.pitfall,
+                guide.diagram_brief,
+                *guide.worked_solution_steps,
+                *guide.checklist,
+            ]
+        ):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Topic guide contains encoding replacement artifacts: {guide.topic_title}",
+                )
+            )
+    issues.extend(validate_checklist_diversity(plan))
+    return issues
+
+
+def validate_checklist_diversity(plan: GuidePlan) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    topics_by_combo: dict[tuple[str, ...], list[str]] = {}
+    for guide in plan.topic_guides:
+        combo = tuple(item.strip() for item in guide.checklist[:3])
+        if len(combo) == 3 and all(combo):
+            topics_by_combo.setdefault(combo, []).append(guide.topic_title)
+
+    exact_duplicates = [
+        (combo, titles)
+        for combo, titles in topics_by_combo.items()
+        if len(titles) > 1
+    ]
+    if exact_duplicates:
+        combo, titles = max(exact_duplicates, key=lambda item: len(item[1]))
+        preview = " / ".join(combo)[:180]
+        topic_preview = "; ".join(titles[:3])
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Checklist mastery requirements are duplicated across topics: {len(titles)} topics share "
+                f"'{preview}' ({topic_preview}).",
+            )
+        )
+
+    if len(plan.topic_guides) < 12:
+        return issues
+    combos = Counter({combo: len(titles) for combo, titles in topics_by_combo.items()})
+    repeated = [
+        (combo, count)
+        for combo, count in combos.items()
+        if combo and count > max(4, int(len(plan.topic_guides) * 0.12))
+    ]
+    if not repeated:
+        return issues
+    combo, count = max(repeated, key=lambda item: item[1])
+    preview = " / ".join(combo)[:180]
+    issues.append(
+        ValidationIssue(
+            "error",
+            f"Checklist mastery requirements are too repetitive: {count} topics share '{preview}'.",
+        )
+    )
     return issues
 
 
@@ -325,6 +528,23 @@ def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[Validati
                 f"Chinese practice item contains generic syllabus placeholder text: {topic_title}",
             )
         )
+    if has_encoding_artifacts(
+        [
+            item.question,
+            item.command_word,
+            item.focus_point,
+            *item.answer_frame,
+            *item.public_solution_steps,
+            *item.answer_checkpoints,
+            *item.source_points,
+        ]
+    ):
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Practice item contains encoding replacement artifacts: {topic_title}",
+            )
+        )
     return issues
 
 
@@ -341,6 +561,13 @@ def validate_visual_briefs(plan: GuidePlan) -> list[ValidationIssue]:
             issues.append(ValidationIssue("error", f"Visual brief is missing an image provider: {brief.topic_title}"))
         if not brief.prompt.strip():
             issues.append(ValidationIssue("error", f"Visual brief is missing an image prompt: {brief.topic_title}"))
+        elif has_image_prompt_course_packaging(brief.prompt):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Visual image prompt includes board or course packaging: {brief.topic_title}",
+                )
+            )
         if plan.run_options.output_language == "zh-CN" and has_zh_placeholder_text(
             [brief.focus_point, brief.visual_type, brief.trigger, brief.prompt]
         ):
@@ -350,7 +577,48 @@ def validate_visual_briefs(plan: GuidePlan) -> list[ValidationIssue]:
                     f"Chinese visual brief contains generic syllabus placeholder text: {brief.topic_title}",
                 )
             )
+        if has_encoding_artifacts([brief.focus_point, brief.visual_type, brief.trigger, brief.prompt]):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Visual brief contains encoding replacement artifacts: {brief.topic_title}",
+                )
+            )
+        if brief.complexity == "svg-basic" and not is_svg_safe_visual_brief(brief):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"SVG visual brief is not in the SVG-safe scope: {brief.topic_title}",
+                )
+            )
     return issues
+
+
+def has_image_prompt_course_packaging(prompt: str) -> bool:
+    return any(
+        re.search(pattern, prompt, flags=re.IGNORECASE)
+        for pattern in IMAGE_PROMPT_PACKAGING_PATTERNS
+    )
+
+
+def has_encoding_artifacts(values: Sequence[str]) -> bool:
+    return any(ENCODING_ARTIFACT_PATTERN.search(value) for value in values)
+
+
+def is_svg_safe_visual_brief(brief: VisualBrief) -> bool:
+    text = f"{brief.visual_type} {brief.trigger}".lower()
+    tokens = set(re.findall(r"[a-z0-9]+", text))
+    for term in SVG_SAFE_VISUAL_TERMS:
+        normalized = term.lower()
+        if re.search(r"[\u4e00-\u9fff]", normalized):
+            if normalized in text:
+                return True
+        elif " " in normalized or "-" in normalized:
+            if normalized in text:
+                return True
+        elif normalized in tokens:
+            return True
+    return False
 
 
 def validate_qualification_notes(plan: GuidePlan) -> list[ValidationIssue]:
@@ -408,8 +676,14 @@ def validate_html_output(plan: GuidePlan, html_path: Path) -> list[ValidationIss
 
     html = html_path.read_text(encoding="utf-8", errors="replace")
     options = plan.run_options
-    qualification = plan.qualification
     issues: list[ValidationIssue] = []
+    if has_encoding_artifacts([html]):
+        issues.append(ValidationIssue("error", "HTML output contains encoding replacement artifacts."))
+    for message in student_visible_text_issues(html, options.output_language):
+        issues.append(ValidationIssue("error", message))
+    rendered_titles = rendered_topic_titles(html)
+    for message in topic_title_quality_issues(rendered_titles, options.output_language):
+        issues.append(ValidationIssue("error", message))
     for label in mixed_language_label_matches(html):
         issues.append(
             ValidationIssue(
@@ -417,13 +691,98 @@ def validate_html_output(plan: GuidePlan, html_path: Path) -> list[ValidationIss
                 f"HTML contains a bilingual mixed-language label: {label}",
             )
         )
-    for index, topic in enumerate(qualification.topics, start=1):
-        marker = expected_topic_marker(topic.title, index, options.output_language)
-        if marker not in html:
+    expected_markers = display_topic_titles(
+        handbook_topics(plan),
+        options.output_language,
+        plan.topic_guides,
+    )
+    for marker in expected_markers:
+        if marker not in html and html_escape(marker) not in html:
             issues.append(ValidationIssue("error", f"Topic missing from HTML: {marker}"))
     issues.extend(validate_html_language(options.output_language, html))
     issues.extend(validate_html_visual_and_diagram_blocks(plan, html))
+    issues.extend(validate_html_topic_map_mastery(html, options.output_language))
     return issues
+
+
+def validate_html_topic_map_mastery(html: str, language: str) -> list[ValidationIssue]:
+    section_heading = "Study Roadmap" if language == "en" else "复习路线"
+    section_match = re.search(
+        rf"<section\b[^>]*>\s*<h2>{re.escape(section_heading)}</h2>(.*?)</section>",
+        html,
+        flags=re.S,
+    )
+    if not section_match:
+        return []
+    issues: list[ValidationIssue] = []
+    cells_by_title: dict[str, list[str]] = {}
+    cells_by_mastery: dict[str, list[str]] = {}
+    for row in re.findall(r"<tr>(.*?)</tr>", section_match.group(1), flags=re.S):
+        cells = [
+            normalize_html_cell(cell)
+            for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.S)
+        ]
+        if len(cells) < 3:
+            continue
+        title = cells[1]
+        mastery = cells[2]
+        if title:
+            cells_by_title.setdefault(title, []).append(mastery)
+        if mastery:
+            cells_by_mastery.setdefault(mastery, []).append(title)
+    duplicated_titles = [
+        (title, mastery_values)
+        for title, mastery_values in cells_by_title.items()
+        if len(mastery_values) > 1
+    ]
+    if duplicated_titles:
+        title, mastery_values = max(duplicated_titles, key=lambda item: len(item[1]))
+        issues.append(
+            ValidationIssue(
+                "error",
+                "Topic map knowledge-unit title is duplicated across topics: "
+                f"{len(mastery_values)} rows share '{title}' ({'; '.join(mastery_values[:3])}).",
+            )
+        )
+    duplicated = [
+        (mastery, titles)
+        for mastery, titles in cells_by_mastery.items()
+        if len(titles) > 1
+    ]
+    if not duplicated:
+        return issues
+    mastery, titles = max(duplicated, key=lambda item: len(item[1]))
+    issues.append(
+        ValidationIssue(
+            "error",
+            "Topic map mastery summary is duplicated across topics: "
+            f"{len(titles)} topics share '{mastery[:180]}' ({'; '.join(titles[:3])}).",
+        )
+    )
+    return issues
+
+
+def normalize_html_cell(html: str) -> str:
+    text = re.sub(r"<[^>]+>", "", html)
+    return re.sub(r"\s+", " ", html_unescape(text)).strip()
+
+
+def rendered_topic_titles(html: str) -> list[str]:
+    titles: list[str] = []
+    topic_sections = re.findall(
+        r'<section\b[^>]*class="[^"]*\btopic\b[^"]*"[^>]*>(.*?)</section>',
+        html,
+        flags=re.S,
+    )
+    for section in topic_sections:
+        match = re.search(r"<h2[^>]*>(.*?)</h2>", section, flags=re.S)
+        if not match:
+            continue
+        title = re.sub(r"<[^>]+>", "", match.group(1))
+        title = re.sub(r"\s+", " ", title).strip()
+        if title:
+            titles.append(title)
+    return titles
 
 
 def validate_html_language(output_language: str, html: str) -> list[ValidationIssue]:
@@ -446,7 +805,6 @@ def validate_html_language(output_language: str, html: str) -> list[ValidationIs
             "Check",
             "Exam Pitfall",
             "Source anchor",
-            "Concept Map",
         ]
     else:
         for phrase in ZH_FORBIDDEN_TEMPLATE_PHRASES:
@@ -467,7 +825,6 @@ def validate_html_language(output_language: str, html: str) -> list[ValidationIs
             "检查答案",
             "考试陷阱",
             "来源依据",
-            "图文解释",
         ]
     for phrase in required_phrases:
         if phrase not in html:
@@ -490,14 +847,6 @@ def validate_html_visual_and_diagram_blocks(plan: GuidePlan, html: str) -> list[
         )
         if not any(marker in html for marker in visual_markers):
             issues.append(ValidationIssue("error", "HTML missing required visual explanation block."))
-    diagram_count = html.count('class="topic-diagram"')
-    if diagram_count < len(plan.qualification.topics):
-        issues.append(
-            ValidationIssue(
-                "error",
-                f"HTML has {diagram_count} topic diagrams for {len(plan.qualification.topics)} topics.",
-            )
-        )
     return issues
 
 
@@ -505,6 +854,7 @@ def validate_output_package(plan: GuidePlan, output_dir: Path) -> list[Validatio
     issues: list[ValidationIssue] = []
     sections_dir = output_dir / "sections"
     images_dir = output_dir / "images"
+    concepts_dir = output_dir / "concepts"
     package_manifest = output_dir / "handbook-package.json"
     if not sections_dir.exists():
         issues.append(ValidationIssue("error", f"Sections directory is missing: {sections_dir}"))
@@ -525,23 +875,130 @@ def validate_output_package(plan: GuidePlan, output_dir: Path) -> list[Validatio
         issues.append(ValidationIssue("error", "Run options file is missing from output directory."))
     if not package_manifest.exists():
         issues.append(ValidationIssue("error", f"Handbook package manifest is missing: {package_manifest}"))
+    review_path = concepts_dir / CONCEPT_REVIEW_FILE
+    _concept_jobs, _reviewed_concepts, pending_concepts = concept_review_counts(plan, output_dir)
+    if plan.topic_guides and not (concepts_dir / "concept_jobs.json").exists():
+        issues.append(
+            ValidationIssue(
+                "warning",
+                "Concept explanation jobs are missing. Rebuild the package so concepts/concept_jobs.json "
+                "is available for the LLM/Agent concept-writing pass.",
+            )
+        )
+    if pending_concepts:
+        issues.append(
+            ValidationIssue(
+                "warning",
+                f"{pending_concepts}/{len(plan.topic_guides)} topic concept explanations still need "
+                f"LLM/Agent review. Write them from concepts/concept_jobs.json, save {review_path.name}, and import with "
+                f"scripts/import_concept_explanations.py before final delivery.",
+            )
+        )
     return issues
+
+
+def validate_pdf_output(plan: GuidePlan, pdf_path: Path) -> list[ValidationIssue]:
+    summary = pdf_quality_summary(plan, pdf_path)
+    if summary.get("read_error"):
+        return [
+            ValidationIssue(
+                "error",
+                f"PDF output could not be inspected: {summary['read_error']}",
+            )
+        ]
+
+    page_count = summary_int(summary, "pdf_pages")
+    max_pages = summary_int(summary, "pdf_max_recommended_pages")
+    size_mib = summary_float(summary, "pdf_size_mib")
+    max_mib = summary_float(summary, "pdf_max_recommended_mib")
+    blank_text_pages = summary_int(summary, "pdf_blank_text_pages")
+    blank_limit = max(2, int(page_count * 0.03))
+    issues: list[ValidationIssue] = []
+    if page_count <= 0:
+        issues.append(ValidationIssue("error", f"PDF output has no pages: {pdf_path}"))
+    if page_count > max_pages:
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"PDF output has {page_count} pages, above the recommended maximum "
+                f"of {max_pages} for {len(handbook_topics(plan))} handbook topics.",
+            )
+        )
+    if max_mib and size_mib > max_mib:
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"PDF output is {size_mib:.1f} MiB, above the recommended maximum "
+                f"of {max_mib:.1f} MiB.",
+            )
+        )
+    if blank_text_pages > blank_limit:
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"PDF output has {blank_text_pages} pages with almost no extractable text.",
+            )
+        )
+    return issues
+
+
+def pdf_quality_summary(plan: GuidePlan, pdf_path: Path) -> dict[str, object]:
+    try:
+        reader = PdfReader(str(pdf_path))
+        page_text_lengths: list[int] = []
+        for page in reader.pages:
+            try:
+                text = page.extract_text() or ""
+            except (KeyError, ValueError, TypeError):
+                text = ""
+            page_text_lengths.append(len(text.strip()))
+    except (OSError, ValueError, KeyError) as exc:
+        return {"read_error": str(exc)}
+
+    page_count = len(page_text_lengths)
+    blank_text_pages = sum(1 for length in page_text_lengths if length < 20)
+    max_pages = pdf_recommended_max_pages(plan)
+    size_mib = pdf_path.stat().st_size / (1024 * 1024)
+    max_mib = pdf_recommended_max_mib(plan)
+    return {
+        "pdf_pages": page_count,
+        "pdf_max_recommended_pages": max_pages,
+        "pdf_size_mib": round(size_mib, 2),
+        "pdf_max_recommended_mib": round(max_mib, 2),
+        "pdf_blank_text_pages": blank_text_pages,
+        "pdf_average_text_chars": (
+            int(sum(page_text_lengths) / page_count) if page_count else 0
+        ),
+    }
+
+
+def pdf_recommended_max_pages(plan: GuidePlan) -> int:
+    topic_count = max(1, len(handbook_topics(plan)))
+    dynamic_limit = int(topic_count * PDF_MAX_PAGES_PER_TOPIC) + PDF_PAGE_HEADROOM
+    return max(PDF_PAGE_HEADROOM, min(PDF_ABSOLUTE_MAX_PAGES, dynamic_limit))
+
+
+def pdf_recommended_max_mib(plan: GuidePlan) -> float:
+    visual_count = max(1, len(plan.visual_briefs))
+    dynamic_limit = PDF_MAX_MIB_HEADROOM + visual_count * PDF_MAX_MIB_PER_VISUAL
+    return min(PDF_ABSOLUTE_MAX_MIB, dynamic_limit)
 
 
 def validate_image_assets(plan: GuidePlan, images_dir: Path) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     svg_briefs = [brief for brief in plan.visual_briefs if brief.complexity == "svg-basic"]
     infographic_briefs = [brief for brief in plan.visual_briefs if brief.complexity == "infographic"]
-    svg_count = len(list(images_dir.glob("*.svg")))
-    if svg_count < len(svg_briefs):
+    manifest_path = images_dir / "visual_manifest.json"
+    manifest_entries = load_visual_manifest(images_dir)
+    svg_safe_asset_count = count_renderable_svg_safe_assets(manifest_entries, images_dir)
+    if svg_safe_asset_count < len(svg_briefs):
         issues.append(
             ValidationIssue(
                 "error",
-                f"Images directory has {svg_count} SVG drafts for {len(svg_briefs)} SVG-safe visual briefs.",
+                f"Images directory has {svg_safe_asset_count} renderable assets for "
+                f"{len(svg_briefs)} SVG-safe visual briefs.",
             )
         )
-    manifest_path = images_dir / "visual_manifest.json"
-    manifest_entries = load_visual_manifest(images_dir)
     if not manifest_path.exists():
         issues.append(ValidationIssue("error", "Visual manifest is missing from images directory."))
     for entry in manifest_entries:
@@ -555,7 +1012,24 @@ def validate_image_assets(plan: GuidePlan, images_dir: Path) -> list[ValidationI
             )
     if infographic_briefs:
         issues.extend(validate_infographic_assets(infographic_briefs, manifest_entries, images_dir))
+    issues.extend(validate_svg_repetition(images_dir))
     return issues
+
+
+def count_renderable_svg_safe_assets(
+    manifest_entries: list[dict[str, object]],
+    images_dir: Path,
+) -> int:
+    count = 0
+    for entry in manifest_entries:
+        if str(entry.get("complexity")) != "svg-basic":
+            continue
+        filename = str(entry.get("file") or "")
+        if not filename or not (images_dir / filename).exists():
+            continue
+        if filename.lower().endswith(".svg") or has_renderable_infographic(entry, images_dir):
+            count += 1
+    return count
 
 
 def validate_infographic_assets(
@@ -590,7 +1064,8 @@ def validate_infographic_assets(
             ValidationIssue(
                 "warning",
                 f"{pending_external_generation} infographic briefs are queued for external image generation or review"
-                f"{fallback_note}.",
+                f"{fallback_note}. See images/infographic_jobs.md and import reviewed assets with "
+                "scripts/import_infographic_assets.py.",
             )
         )
     selected_or_generated = len(infographic_briefs) - pending_external_generation
@@ -604,13 +1079,135 @@ def validate_infographic_assets(
     return issues
 
 
+def validate_svg_repetition(images_dir: Path) -> list[ValidationIssue]:
+    summary = svg_repetition_summary(images_dir)
+    total = summary_int(summary, "svg_files")
+    if total < SVG_REPETITION_MIN_FILES:
+        return []
+
+    issues: list[ValidationIssue] = []
+    unique_titles = summary_int(summary, "svg_unique_titles")
+    max_title_repeats = summary_int(summary, "svg_max_title_repeats")
+    if is_svg_repetition_problem(total, unique_titles, max_title_repeats):
+        issues.append(
+            ValidationIssue(
+                "warning",
+                "SVG visual titles are too repetitive: "
+                f"{unique_titles}/{total} unique titles; {max_title_repeats} use "
+                f'"{summary["svg_most_common_title"]}". '
+                "Use topic-specific SVG titles or reviewed infographic assets before final delivery.",
+            )
+        )
+
+    unique_structures = summary_int(summary, "svg_unique_structures")
+    max_structure_repeats = summary_int(summary, "svg_max_structure_repeats")
+    if is_svg_repetition_problem(total, unique_structures, max_structure_repeats):
+        issues.append(
+            ValidationIssue(
+                "warning",
+                "SVG visual structures are too repetitive: "
+                f"{unique_structures}/{total} unique shape layouts; {max_structure_repeats} share one layout. "
+                "Add subject/topic-specific vector templates or import reviewed infographic assets.",
+            )
+        )
+    return issues
+
+
+def is_svg_repetition_problem(total: int, unique_count: int, max_repeats: int) -> bool:
+    if max_repeats / total > SVG_REPETITION_MAX_REPEAT_RATIO:
+        return True
+    if max_repeats >= SVG_REPETITION_MIN_REPEAT:
+        return True
+    unique_ratio = unique_count / total
+    return unique_ratio < 0.35 and max_repeats >= max(5, int(total * 0.2))
+
+
+def svg_repetition_summary(images_dir: Path) -> dict[str, object]:
+    svg_paths = sorted(images_dir.glob("*.svg"))
+    titles: list[str] = []
+    structures: list[str] = []
+    for path in svg_paths:
+        svg = path.read_text(encoding="utf-8", errors="replace")
+        titles.append(extract_svg_title(svg) or path.stem)
+        structures.append(svg_structure_fingerprint(svg))
+
+    title_counts = Counter(titles)
+    structure_counts = Counter(structures)
+    most_common_title, max_title_repeats = most_common_counter_item(title_counts)
+    _most_common_structure, max_structure_repeats = most_common_counter_item(structure_counts)
+    return {
+        "svg_files": len(svg_paths),
+        "svg_unique_titles": len(title_counts),
+        "svg_max_title_repeats": max_title_repeats,
+        "svg_most_common_title": most_common_title,
+        "svg_unique_structures": len(structure_counts),
+        "svg_max_structure_repeats": max_structure_repeats,
+    }
+
+
+def extract_svg_title(svg: str) -> str:
+    match = re.search(r"<title\b[^>]*>(.*?)</title>", svg, flags=re.I | re.S)
+    if not match:
+        return ""
+    title = re.sub(r"\s+", " ", match.group(1)).strip()
+    return html_unescape(title)
+
+
+def svg_structure_fingerprint(svg: str) -> str:
+    text = re.sub(r"<title\b[^>]*>.*?</title>", "", svg, flags=re.I | re.S)
+    text = re.sub(r"<text\b[^>]*>.*?</text>", "<text/>", text, flags=re.I | re.S)
+    text = re.sub(r"<tspan\b[^>]*>.*?</tspan>", "<tspan/>", text, flags=re.I | re.S)
+    text = re.sub(r'\baria-labelledby="[^"]*"', 'aria-labelledby=""', text)
+    text = re.sub(r"\baria-labelledby='[^']*'", "aria-labelledby=''", text)
+    text = re.sub(r'\bid="[^"]*"', 'id=""', text)
+    text = re.sub(r"\bid='[^']*'", "id=''", text)
+    text = re.sub(r"url\(#.*?\)", "url(#id)", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def most_common_counter_item(counter: Counter[str]) -> tuple[str, int]:
+    if not counter:
+        return "", 0
+    return counter.most_common(1)[0]
+
+
 def is_placeholder_practice_question(question: str) -> bool:
     text = question.lower()
     return (
         ("how the syllabus idea" in text and "could be used in an exam question" in text)
         or "answer an original short exam-style question" in text
         or "identify the relevant evidence, choose the correct method or definition" in text
+        or "完成一道原创练习" in question
+        or "先找关键信息，再选择方法" in question
+        or "围绕“考点要求" in question
     )
+
+
+def is_as_only_plan(plan: GuidePlan) -> bool:
+    return "level-scope:as" in getattr(plan.qualification, "route_tags", [])
+
+
+def is_a_level_only_title(title: str) -> bool:
+    lower = title.lower()
+    return (
+        lower.startswith("a-level ")
+        or lower.startswith("international a-level ")
+        or re.match(r"^(p2|s2|m2)\b", lower) is not None
+        or re.search(r"\bunit (p2|s2|m2)\b", lower) is not None
+    )
+
+
+def is_fragment_topic_title(topic: object) -> bool:
+    title = getattr(topic, "title", "").strip()
+    points = [str(point).strip().lower() for point in getattr(topic, "points", [])]
+    lower = title.lower()
+    if re.search(r"\s-\s\d+$", title):
+        return True
+    if lower.endswith("students will be required to demonstrate"):
+        return True
+    if points and all(point in {"students will be required to demonstrate"} for point in points):
+        return True
+    return False
 
 
 def has_zh_placeholder_text(values: list[str]) -> bool:
@@ -714,34 +1311,13 @@ def mixed_language_label_matches(html: str) -> list[str]:
 def expected_topic_marker(topic_title: str, index: int, output_language: str) -> str:
     if output_language == "en":
         return topic_title
-    match = re.match(r"^\s*([A-Z]\d+[A-Z]?|\d+(?:\.\d+)+)\b", topic_title)
-    if match:
-        return f"第 {match.group(1)} 节"
-    return localized_topic_marker(topic_title) or f"第 {index} 节"
+    return zh_teachable_topic_title(topic_title, index)
 
 
 def localized_topic_marker(topic_title: str) -> str | None:
-    text = topic_title.lower()
-    tokens = set(re.findall(r"[a-z0-9]+", text))
-    keyword_titles = [
-        (("measurement", "data", "graph"), "测量与数据"),
-        (("force", "motion"), "力与运动"),
-        (("material", "change"), "材料与变化"),
-        (("particle", "state", "solid", "liquid", "gas"), "粒子模型与物质状态"),
-        (("bond", "structure"), "结构与性质"),
-        (("acid", "alkali", "ph"), "酸碱与 pH"),
-        (("accounting", "ledger", "bookkeeping"), "会计记录"),
-        (("financial statement", "profit", "position"), "财务报表"),
-        (("ratio", "liquidity", "profitability"), "比率分析"),
-        (("demand", "supply", "market"), "市场供需"),
-        (("opportunity", "scarcity", "choice"), "选择与机会成本"),
-        (("set", "venn"), "集合与韦恩图"),
-        (("triangle", "pythagoras", "geometry"), "几何图形"),
-        (("statistics", "probability"), "统计与概率"),
-    ]
-    for keywords, label in keyword_titles:
-        if any(keyword in text if " " in keyword else keyword in tokens for keyword in keywords):
-            return label
+    label = zh_topic_keyword_label(topic_title)
+    if label:
+        return label
     if re.search(r"[\u4e00-\u9fff]", topic_title):
         return topic_title[:32]
     return None
@@ -751,6 +1327,68 @@ def issues_to_dict(issues: list[ValidationIssue]) -> list[dict[str, str]]:
     return [asdict(issue) for issue in issues]
 
 
+def concept_review_counts(plan: GuidePlan, output_dir: Path) -> tuple[int, int, int]:
+    concepts_dir = output_dir / "concepts"
+    concept_jobs_path = concepts_dir / "concept_jobs.json"
+    concept_jobs = 0
+    if concept_jobs_path.exists():
+        try:
+            concept_jobs_data = json.loads(concept_jobs_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            concept_jobs_data = []
+        if isinstance(concept_jobs_data, list):
+            concept_jobs = len(concept_jobs_data)
+
+    guide_titles = {guide.topic_title for guide in plan.topic_guides}
+    reviewed_titles = reviewed_concept_titles(output_dir)
+    reviewed_concept_explanations = len(guide_titles & reviewed_titles)
+    pending_concept_explanations = max(0, len(plan.topic_guides) - reviewed_concept_explanations)
+    return concept_jobs, reviewed_concept_explanations, pending_concept_explanations
+
+
+def delivery_status_from_issues(
+    issues: list[ValidationIssue],
+    summary: dict[str, object],
+) -> str:
+    if any(issue.severity == "error" for issue in issues):
+        return "blocked_errors"
+    if summary_int(summary, "pending_concept_explanations"):
+        return "draft_needs_concept_review"
+    if summary_int(summary, "pending_infographic_assets"):
+        return "draft_needs_image_review"
+    return "ready"
+
+
+def summary_int(summary: dict[str, object], key: str, default: int = 0) -> int:
+    value = summary.get(key, default)
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def summary_float(summary: dict[str, object], key: str, default: float = 0.0) -> float:
+    value = summary.get(key, default)
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+
+
 def review_summary(
     plan: GuidePlan,
     html_path: Path | None = None,
@@ -758,10 +1396,12 @@ def review_summary(
     output_dir: Path | None = None,
 ) -> dict[str, object]:
     qualification = plan.qualification
-    topic_titles = {topic.title for topic in qualification.topics}
+    teachable_topics = handbook_topics(plan)
+    topic_titles = {topic.title for topic in teachable_topics}
     practice_topics = {item.topic_title for item in plan.practice_items}
     guide_topics = {guide.topic_title for guide in plan.topic_guides}
     topics_with_source = sum(1 for topic in qualification.topics if topic.source_snippets)
+    teachable_topics_with_source = sum(1 for topic in teachable_topics if topic.source_snippets)
     svg_safe_visuals = sum(1 for brief in plan.visual_briefs if brief.complexity == "svg-basic")
     infographic_visuals = sum(1 for brief in plan.visual_briefs if brief.complexity == "infographic")
     html = ""
@@ -772,6 +1412,25 @@ def review_summary(
     generated_infographic_assets = 0
     svg_fallback_assets = 0
     pending_infographic_assets = 0
+    concept_jobs = 0
+    reviewed_concept_explanations = 0
+    pending_concept_explanations = 0
+    pdf_summary: dict[str, object] = {
+        "pdf_pages": 0,
+        "pdf_max_recommended_pages": pdf_recommended_max_pages(plan),
+        "pdf_size_mib": 0.0,
+        "pdf_max_recommended_mib": round(pdf_recommended_max_mib(plan), 2),
+        "pdf_blank_text_pages": 0,
+        "pdf_average_text_chars": 0,
+    }
+    svg_summary = {
+        "svg_files": 0,
+        "svg_unique_titles": 0,
+        "svg_max_title_repeats": 0,
+        "svg_most_common_title": "",
+        "svg_unique_structures": 0,
+        "svg_max_structure_repeats": 0,
+    }
     has_visual_manifest = False
     has_package_manifest = False
     if output_dir:
@@ -786,6 +1445,7 @@ def review_summary(
                     if path.suffix.lower() == ".svg" or is_raster_asset(path.name)
                 ]
             )
+            svg_summary = svg_repetition_summary(images_dir)
             manifest_entries = load_visual_manifest(images_dir)
             generated_infographic_assets = sum(
                 1
@@ -807,6 +1467,12 @@ def review_summary(
             )
         has_visual_manifest = (images_dir / "visual_manifest.json").exists()
         has_package_manifest = (output_dir / "handbook-package.json").exists()
+        concept_jobs, reviewed_concept_explanations, pending_concept_explanations = concept_review_counts(
+            plan,
+            output_dir,
+        )
+    if pdf_path and pdf_path.exists():
+        pdf_summary = {**pdf_summary, **pdf_quality_summary(plan, pdf_path)}
     return {
         "requested_subject": plan.run_options.requested_subject,
         "provider": qualification.provider or qualification.source.provider,
@@ -818,9 +1484,14 @@ def review_summary(
         "image_provider": plan.run_options.image_provider,
         "explanation_style": plan.run_options.explanation_style,
         "output_language": plan.run_options.output_language,
-        "topics": len(qualification.topics),
+        "topics": len(teachable_topics),
+        "source_topics": len(qualification.topics),
+        "scope_exclusion_topics": len(qualification.topics) - len(teachable_topics),
         "assessments": len(qualification.assessments),
         "topic_guides": len(plan.topic_guides),
+        "concept_jobs": concept_jobs,
+        "reviewed_concept_explanations": reviewed_concept_explanations,
+        "pending_concept_explanations": pending_concept_explanations,
         "visual_briefs": len(plan.visual_briefs),
         "svg_safe_visuals": svg_safe_visuals,
         "infographic_visuals": infographic_visuals,
@@ -830,13 +1501,16 @@ def review_summary(
         "practice_cards": len(plan.practice_items),
         "topics_with_practice": len(topic_titles & practice_topics),
         "topics_with_guides": len(topic_titles & guide_topics),
-        "topics_with_pdf_source_snippets": topics_with_source,
+        "topics_with_pdf_source_snippets": teachable_topics_with_source,
+        "source_topics_with_pdf_source_snippets": topics_with_source,
         "topic_diagrams_in_html": html.count('class="topic-diagram"') if html else 0,
         "visual_examples_in_html": html.count('<figure class="visual-example') if html else 0,
         "has_html": bool(html_path and html_path.exists()),
         "has_pdf": bool(pdf_path and pdf_path.exists()),
+        **pdf_summary,
         "section_files": section_files,
         "image_files": image_files,
+        **svg_summary,
         "has_visual_manifest": has_visual_manifest,
         "has_package_manifest": has_package_manifest,
         "has_listing_metadata": bool(

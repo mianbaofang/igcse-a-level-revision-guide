@@ -1,0 +1,62 @@
+[
+  {
+    "id": "oxfordaqa-igcse-chemistry-zh",
+    "provider": "oxfordaqa",
+    "level": "igcse",
+    "subject": "Chemistry",
+    "language": "zh-CN",
+    "claim_status": "candidate",
+    "expected": {
+      "min_topics": 20,
+      "min_practice_per_topic": 1,
+      "require_assessments": true,
+      "require_visual_manifest": true,
+      "allow_pending_infographics": true
+    }
+  },
+  {
+    "id": "pearson-igcse-accounting-en",
+    "provider": "pearson",
+    "level": "igcse",
+    "subject": "Accounting",
+    "language": "en",
+    "claim_status": "candidate",
+    "expected": {
+      "min_topics": 15,
+      "min_practice_per_topic": 1,
+      "require_assessments": true,
+      "require_visual_manifest": true,
+      "allow_pending_infographics": true
+    }
+  },
+  {
+    "id": "cambridge-igcse-economics-zh",
+    "provider": "cambridge",
+    "level": "igcse",
+    "subject": "Economics",
+    "language": "zh-CN",
+    "claim_status": "candidate",
+    "expected": {
+      "min_topics": 15,
+      "min_practice_per_topic": 1,
+      "require_assessments": true,
+      "require_visual_manifest": true,
+      "allow_pending_infographics": true
+    }
+  },
+  {
+    "id": "oxfordaqa-as-mathematics-zh",
+    "provider": "oxfordaqa",
+    "level": "international_as_a_level",
+    "subject": "Mathematics",
+    "language": "zh-CN",
+    "claim_status": "candidate",
+    "expected": {
+      "min_topics": 6,
+      "min_practice_per_topic": 1,
+      "require_assessments": true,
+      "require_visual_manifest": true,
+      "allow_pending_infographics": true
+    }
+  }
+]

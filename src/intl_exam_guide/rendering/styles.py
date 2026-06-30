@@ -114,6 +114,18 @@ h1 { max-width: 920px; font-size: 52px; line-height: 1.05; margin: 18px 0; lette
   font-weight: 900;
   letter-spacing: .02em;
 }
+.course-scope-note {
+  max-width: 760px;
+  margin: 0;
+  padding: 12px 14px;
+  color: #172033;
+  background: #ffffff;
+  border-left: 6px solid var(--gold);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.45;
+}
 .cover-identity-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -428,9 +440,76 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
   .topic-nav { position: static; }
 }
 @media print {
+  @page { size: A4; margin: 10mm; }
   body { background: white; }
-  .cover { min-height: 270mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .band, .topic { break-inside: avoid; padding: 22px 10mm; }
+  body { font-size: 10.5px; line-height: 1.38; }
+  .cover {
+    min-height: 220mm;
+    padding: 18mm 14mm;
+    break-after: page;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cover-title-lockup h1 { font-size: 42px; line-height: 1; }
+  .course-code { font-size: 18px; }
+  .course-scope-note { font-size: 11px; line-height: 1.35; }
+  .band, .topic {
+    break-inside: auto;
+    page-break-inside: auto;
+    padding: 7mm 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .band > *,
+  .topic > * {
+    max-width: none;
+  }
+  .topic-nav,
+  .story-modes,
+  .topic-diagram,
+  .source-snippets,
+  .visual-prompt {
+    display: none !important;
+  }
+  h1 { font-size: 30px; line-height: 1.05; margin: 0 0 5mm; }
+  h2 { font-size: 18px; line-height: 1.15; margin: 0 0 3mm; }
+  h3 { font-size: 11px; margin: 0 0 2mm; }
+  h4 { font-size: 10px; margin: 2mm 0 1mm; }
+  p { margin: 1.5mm 0; }
+  ul, ol { margin: 1.5mm 0; padding-left: 16px; }
+  li { margin: .5mm 0; }
+  th, td { padding: 4px 5px; }
+  .overview-grid,
+  .assessment-grid,
+  .topic-grid,
+  .guide-grid,
+  .practice-block,
+  .visual-grid,
+  .generated-infographic-grid {
+    gap: 3mm;
+  }
+  .guide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .guide-grid article,
+  .assessment,
+  .logic-card,
+  .practice,
+  .visual-example,
+  .visual-notes,
+  .infographic-card {
+    padding: 3mm;
+  }
+  .practice-block { grid-template-columns: 1fr; }
+  .practice-block .practice:nth-child(n+2) { display: none; }
+  .visual-example { margin: 3mm 0 0; break-inside: avoid-page; }
+  .visual-grid,
+  .generated-infographic-grid {
+    grid-template-columns: minmax(0, .58fr) minmax(0, .42fr);
+    align-items: start;
+  }
+  .visual-svg,
+  .infographic-image {
+    max-height: 68mm;
+    object-fit: contain;
+  }
   a { color: inherit; text-decoration: none; }
 }
 """

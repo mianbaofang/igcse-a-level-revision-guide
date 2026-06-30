@@ -1,4 +1,5 @@
 import json
+import io
 
 import intl_exam_guide.cli as cli_module
 from intl_exam_guide.cli import main
@@ -20,6 +21,17 @@ from intl_exam_guide.rendering.visual_assets import (
 )
 from intl_exam_guide.providers.base import Link
 from intl_exam_guide.validation.checks import review_summary, validate_plan
+
+
+def test_cli_json_output_survives_legacy_stdout_encoding(monkeypatch):
+    buffer = io.BytesIO()
+    legacy_stdout = io.TextIOWrapper(buffer, encoding="cp1252", errors="strict")
+    monkeypatch.setattr(cli_module.sys, "stdout", legacy_stdout)
+
+    cli_module.print_json_payload({"formula": "x − 1"})
+    legacy_stdout.flush()
+
+    assert b"\\u2212" in buffer.getvalue()
 
 
 def sample_qualification() -> Qualification:
@@ -177,7 +189,7 @@ def test_generate_cli_runs_provider_chain_offline(monkeypatch, tmp_path):
     ]
     validation = json.loads((output_dir / "validation.json").read_text(encoding="utf-8"))
     assert validation["review_summary"]["topics"] == 6
-    assert validation["review_summary"]["practice_cards"] == 12
+    assert validation["review_summary"]["practice_cards"] == 6
     assert validation["review_summary"]["topics_with_guides"] == 6
     assert validation["review_summary"]["topics_with_practice"] == 6
     assert not [issue for issue in validation["issues"] if issue["severity"] == "error"]
@@ -211,9 +223,9 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert (output_dir / "images" / "visual_manifest.json").exists()
     assert len(list((output_dir / "images").glob("*.svg"))) == 3
     html = (output_dir / "guide.html").read_text(encoding="utf-8")
-    assert html.count('class="topic-diagram"') == 3
+    assert html.count('class="topic-diagram"') == 0
     assert html.count('class="visual-example"') == 3
-    assert "Concept Map" in html
+    assert "Concept Map" not in html
     assert "Visual Worked Example" in html
     assert "How to Study" in html
     assert "Guide Setup" in html
@@ -234,7 +246,11 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert validation["review_summary"]["image_files"] == 3
     assert validation["review_summary"]["has_visual_manifest"] is True
     assert validation["review_summary"]["has_package_manifest"] is True
-    assert validation["issues"] == []
+    assert validation["review_summary"]["concept_jobs"] == 3
+    assert validation["review_summary"]["pending_concept_explanations"] == 3
+    assert validation["delivery_status"] == "draft_needs_concept_review"
+    assert not [issue for issue in validation["issues"] if issue["severity"] == "error"]
+    assert any("topic concept explanations still need LLM/Agent review" in issue["message"] for issue in validation["issues"])
 
 
 def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
@@ -286,7 +302,11 @@ def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
     assert "大纲点 1" not in html
     validation = json.loads((output_dir / "validation.json").read_text(encoding="utf-8"))
     assert validation["review_summary"]["output_language"] == "zh-CN"
-    assert validation["issues"] == []
+    assert validation["review_summary"]["concept_jobs"] == 3
+    assert validation["review_summary"]["pending_concept_explanations"] == 3
+    assert validation["delivery_status"] == "draft_needs_concept_review"
+    assert not [issue for issue in validation["issues"] if issue["severity"] == "error"]
+    assert any("topic concept explanations still need LLM/Agent review" in issue["message"] for issue in validation["issues"])
 
 
 def test_cover_is_course_identity_only():
@@ -401,18 +421,19 @@ def test_generated_infographic_assets_are_preserved_and_rendered(tmp_path):
     images_dir = output_dir / "images"
     manifest_path = images_dir / "visual_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert manifest[0]["asset_status"] == "svg-fallback-needs-review"
-    assert manifest[0]["file"].endswith("-svg-fallback.svg")
+    assert manifest[0]["asset_status"] == "external-generation-required"
+    assert manifest[0]["file"] is None
 
     render_html(plan, output_dir / "guide.html", manifest_path)
     fallback_html = (output_dir / "guide.html").read_text(encoding="utf-8")
-    assert "SVG Fallback - Review Needed" in fallback_html
+    assert "Infographic Queue" in fallback_html
+    assert "SVG Fallback - Review Needed" not in fallback_html
     fallback_summary = review_summary(plan, output_dir=output_dir)
     assert fallback_summary["generated_infographic_assets"] == 0
-    assert fallback_summary["svg_fallback_assets"] == 1
+    assert fallback_summary["svg_fallback_assets"] == 0
     assert fallback_summary["pending_infographic_assets"] == 1
     fallback_warnings = [issue.message for issue in validate_plan(plan, output_dir=output_dir)]
-    assert any("1 SVG fallback assets were written" in message for message in fallback_warnings)
+    assert any("1 infographic briefs are queued" in message for message in fallback_warnings)
 
     image_name = "visual_001_bonding-infographic.png"
     (images_dir / image_name).write_bytes(b"fake-png")
@@ -603,11 +624,14 @@ def test_chinese_mode_visual_prompts_follow_selected_language():
     )
 
     prompt = plan.visual_briefs[0].prompt
-    assert "制作一张适合学生复习" in prompt
+    assert "制作一张中文学习信息图" in prompt
+    assert "主题：经济与商业" in prompt
     assert "简短中文标签" in prompt
     assert "Factors which determine demand" not in prompt
     assert "Create a student-friendly" not in prompt
     assert "Use short English labels" not in prompt
+    assert "International" not in prompt
+    assert "GCSE" not in prompt
 
 
 def test_subject_specific_examples_do_not_cross_subjects():
@@ -951,8 +975,8 @@ def test_unknown_subject_uses_generic_fallback_instead_of_cross_subject_template
     assert "neutralisation" not in combined
     assert "demand" not in combined
     assert "supply" not in combined
-    assert "memorised phrase" in combined
-    assert "command word" in combined
+    assert "using only the syllabus point" in combined
+    assert "relationship or boundary" in combined
 
     visual_type, complexity, _ = choose_visual_type(
         Topic(
@@ -1110,7 +1134,7 @@ def test_visual_type_classifier_uses_subject_specific_infographics():
         ),
         ["use language and notation of sets including n(A), union and intersection"],
     )
-    assert set_complexity == "infographic"
+    assert set_complexity == "svg-basic"
     assert "set notation" in set_visual
     assert "statistics" not in set_visual
 
@@ -1121,7 +1145,7 @@ def test_visual_type_classifier_uses_subject_specific_infographics():
         ),
         ["A mixture consists of two or more substances not chemically combined."],
     )
-    assert chromatography_complexity == "infographic"
+    assert chromatography_complexity == "svg-basic"
     assert "chromatography" in chromatography_visual
     assert "geometry" not in chromatography_visual
 
@@ -1132,7 +1156,7 @@ def test_visual_type_classifier_uses_subject_specific_infographics():
         ),
         ["A glowing splint relights in a test tube of oxygen gas."],
     )
-    assert gas_complexity == "infographic"
+    assert gas_complexity == "svg-basic"
     assert "gas tests" in gas_visual
     assert zh_visual_type(gas_visual) == "气体检验观察信息图"
     assert zh_visual_type("accounting process infographic with records") == "会计记录流程图"
@@ -1144,5 +1168,5 @@ def test_visual_type_classifier_uses_subject_specific_infographics():
         ),
         ["The factors of production are land, labour, capital and enterprise."],
     )
-    assert economics_complexity == "infographic"
-    assert "factors of production" in economics_visual
+    assert economics_complexity == "text-ok"
+    assert "mini case" in economics_visual

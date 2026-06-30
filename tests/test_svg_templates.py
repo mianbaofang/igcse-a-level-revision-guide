@@ -1,3 +1,5 @@
+import re
+
 from intl_exam_guide.models import VisualBrief
 from intl_exam_guide.rendering.svg_templates import (
     html_escape,
@@ -95,7 +97,7 @@ def test_svg_topic_router_covers_chinese_subject_routes():
         ("粒子模型", "Particle model diagram"),
         ("酸碱 pH", "pH scale and salt preparation"),
         ("几何三角形", "Right triangle diagram"),
-        ("统计概率图", "Statistics chart and probability visual"),
+        ("统计概率图", "概率与分布图"),
     ]
 
     for index, (visual_type, expected_title) in enumerate(route_expectations, start=1):
@@ -103,8 +105,158 @@ def test_svg_topic_router_covers_chinese_subject_routes():
         assert_svg_contract(svg, expected_title, index)
 
     fallback = render_zh_visual_svg(visual("复杂自定义图文学习图"), 77)
-    assert_svg_contract(fallback, "中文图文学习图", 77)
+    assert_svg_contract(fallback, "复杂自定义图文学习图", 77)
     assert "复杂自定义图文学习图" in fallback
+
+
+def test_chinese_svg_router_uses_chemistry_source_points_before_generic_labels():
+    cases = [
+        (
+            "图文结合学习图",
+            "第 3.1.1 节",
+            ["solid liquid gas particles states of matter"],
+            "Particle model diagram",
+        ),
+        (
+            "图文结合学习图",
+            "第 3.4.1 节",
+            ["chromatography separates mixtures and checks purity"],
+            "Chromatography diagram",
+        ),
+        (
+            "图文结合学习图",
+            "第 3.8.1 节",
+            ["rate of reaction and equilibrium"],
+            "Rate of reaction graph",
+        ),
+        (
+            "图文结合学习图",
+            "第 3.9.1 节",
+            ["exothermic and endothermic energy changes"],
+            "Reaction energy profile",
+        ),
+        (
+            "图文结合学习图",
+            "第 3.10.1 节",
+            ["organic chemistry hydrocarbons crude oil polymers"],
+            "Hydrocarbon chain diagram",
+        ),
+    ]
+
+    for index, (visual_type, focus, source_points, expected_title) in enumerate(cases, start=1):
+        brief = visual(visual_type)
+        brief.focus_point = focus
+        brief.source_points = source_points
+        svg = render_topic_visual_svg(brief, index, "zh-CN")
+
+        assert_svg_contract(svg, expected_title, index)
+
+
+def test_chinese_generic_svg_fallback_uses_topic_specific_title():
+    brief = visual("图文结合学习图")
+    brief.focus_point = "第 9.9 节"
+
+    svg = render_topic_visual_svg(brief, 12, "zh-CN")
+
+    assert_svg_contract(svg, "第 9.9 节", 12)
+
+
+def test_chinese_math_svg_router_uses_distinct_subject_templates():
+    cases = [
+        ("二次函数图像", "二次函数图像图解", "x²"),
+        ("导数与曲线梯度", "导数与曲线梯度图解", "切线斜率"),
+        ("定积分与曲线下面积", "定积分与曲线下面积图解", "面积"),
+        ("等比数列求和", "等比数列求和图解", "r"),
+        ("正弦、余弦与正切", "正弦、余弦与正切图解", "sin"),
+        ("二项分布", "二项分布图解", "X ~ B(n,p)"),
+        ("牛顿三大运动定律", "牛顿三大运动定律图解", "ΣF = ma"),
+    ]
+    titles = set()
+
+    for index, (focus, expected_title, expected_label) in enumerate(cases, start=1):
+        brief = visual("图文结合学习图")
+        brief.focus_point = focus
+        brief.source_points = [focus]
+        svg = render_topic_visual_svg(brief, index, "zh-CN")
+
+        assert_svg_contract(svg, expected_title, index)
+        assert expected_label in svg
+        titles.add(expected_title)
+
+    assert len(titles) == len(cases)
+
+
+def test_chinese_math_svg_router_does_not_treat_graph_as_ph():
+    brief = visual("图文结合学习图")
+    brief.focus_point = "函数图像"
+    brief.source_points = ["Graphs of functions; sketching curves defined by simple equations."]
+
+    svg = render_topic_visual_svg(brief, 1, "zh-CN")
+
+    assert_svg_contract(svg, "函数图像图解", 1)
+    assert "pH scale" not in svg
+
+
+def test_chinese_math_svg_router_prefers_specific_routes_before_calculus_words():
+    cases = [
+        ("直线方程与梯度", "Equation of a straight line and gradient", "y=mx+c"),
+        ("不定积分是微分的反向过程", "Indefinite integration as the reverse of differentiation", "积分是求导的反向"),
+        ("圆的切线与法线方程", "Coordinate geometry of a circle tangent and normal", "(x-a)²+(y-b)²=r²"),
+    ]
+
+    for index, (focus, source, expected_label) in enumerate(cases, start=1):
+        brief = visual("图文结合学习图")
+        brief.focus_point = focus
+        brief.source_points = [source]
+        svg = render_topic_visual_svg(brief, index, "zh-CN")
+
+        assert expected_label in svg
+        assert "切线斜率" not in svg
+
+
+def test_chinese_kinematics_svg_avoids_bilingual_slash_label():
+    brief = visual("图文结合学习图")
+    brief.focus_point = "运动学图像绘制与解读"
+    brief.source_points = ["velocity-time and displacement-time graphs"]
+
+    svg = render_topic_visual_svg(brief, 1, "zh-CN")
+
+    assert "速度-时间图与位移-时间图" in svg
+    assert "v-t / s-t" not in svg
+
+
+def test_chinese_math_svg_router_uses_focus_specific_titles_at_scale():
+    focuses = [
+        "根式化简",
+        "指数运算",
+        "二次函数判别式",
+        "配方法",
+        "因式定理",
+        "线性与二次不等式",
+        "代数除法与余式定理",
+        "函数图像变换",
+        "联立方程交点",
+        "导数记号",
+        "第一原理求导",
+        "二阶导数判断",
+        "定积分面积",
+        "梯形法则",
+        "等比数列求和",
+        "二项分布",
+        "牛顿三大运动定律",
+    ]
+    titles = []
+
+    for index, focus in enumerate(focuses, start=1):
+        brief = visual("图文结合学习图")
+        brief.focus_point = focus
+        brief.source_points = [focus]
+        svg = render_topic_visual_svg(brief, index, "zh-CN")
+        titles.append(re.search(r"<title[^>]*>(.*?)</title>", svg).group(1))
+
+    assert len(set(titles)) >= 15
+    assert "代数关系图" not in titles
+    assert "微分与切线图" not in titles
 
 
 def test_direct_svg_helpers_escape_titles_and_keep_core_labels():

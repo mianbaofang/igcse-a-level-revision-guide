@@ -14,6 +14,7 @@ from intl_exam_guide.models import (
     TopicGuide,
     VisualBrief,
 )
+from intl_exam_guide.planning.localization import zh_teachable_topic_title, zh_topic_keyword_label
 from intl_exam_guide.rendering.cover import render_cover
 from intl_exam_guide.rendering.icons import render_icon
 from intl_exam_guide.rendering.infographics import render_infographic_required
@@ -51,7 +52,7 @@ def render_html(
         render_cover(qualification, plan.run_options),
         render_student_overview(qualification, plan.revision_stages, plan.run_options),
         render_topic_map(qualification.topics, language, plan.topic_guides),
-        render_topic_nav(qualification.topics, language),
+        render_topic_nav(qualification.topics, language, plan.topic_guides),
         render_topics(
             qualification.topics,
             plan.topic_guides,
@@ -59,6 +60,7 @@ def render_html(
             plan.visual_briefs,
             visual_assets,
             language,
+            plan.run_options.explanation_style,
         ),
         render_reference_appendix(qualification, len(plan.practice_items), language),
         "</body></html>",
@@ -170,9 +172,9 @@ def image_provider_display(options: GuideRunOptions, language: str = "en") -> st
         return f"custom illustration model: {model}" if language == "en" else f"自定义插图模型：{model}"
     if options.image_provider == "prompt-queue":
         return (
-            "infographic prompts prepared; final illustrations still need review"
+            "complex visuals are tracked in the manifest; unfinished items stay in the image job queue"
             if language == "en"
-            else "已整理复杂信息图提示词，插图需要生成或复核后使用"
+            else "复杂图按清单生成与复核；未完成项会列入配图任务"
         )
     if options.image_provider == "deterministic-svg":
         return (
@@ -290,7 +292,9 @@ def render_topic_map(
 ) -> str:
     rows = []
     guides = {guide.topic_title: guide for guide in topic_guides or []}
-    for index, topic in enumerate(topics, start=1):
+    display_topics = topics_with_guides(topics, topic_guides)
+    display_titles = display_topic_titles(display_topics, language, topic_guides)
+    for index, topic in enumerate(display_topics, start=1):
         guide = guides.get(topic.title)
         if language == "en":
             points = (
@@ -298,11 +302,11 @@ def render_topic_map(
                 if topic.points
                 else "Use the specification text for detailed statements."
             )
-            title = topic.title
+            title = display_titles[index - 1]
         else:
-            title = display_topic_title(topic, index, language)
+            title = display_titles[index - 1]
             if guide:
-                points = "；".join(guide.checklist[:3])
+                points = topic_map_mastery_text(guide, language)
             else:
                 points = "使用考试大纲抽取结果补全本节细分要求。"
         title_link = f'<a href="#{topic_anchor(index)}">{html_escape(title)}</a>'
@@ -326,11 +330,102 @@ def render_topic_map(
 """
 
 
-def render_topic_nav(topics: list[Topic], language: str) -> str:
+def topic_map_mastery_text(guide: TopicGuide, language: str) -> str:
+    """Keep the roadmap scan-friendly; full explanations stay in the topic body."""
+
+    if not guide.checklist:
+        return "Use the topic guide for the detailed mastery target." if language == "en" else "查看正文中的本节要掌握。"
+    return guide.checklist[0]
+
+
+def display_topic_titles(
+    topics: list[Topic],
+    language: str,
+    topic_guides: list[TopicGuide] | None = None,
+) -> list[str]:
+    titles = [display_topic_title(topic, index, language) for index, topic in enumerate(topics, start=1)]
+    duplicated = {title for title in titles if titles.count(title) > 1}
+    if not duplicated:
+        return titles
+
+    guides = {guide.topic_title: guide for guide in topic_guides or []}
+    used: set[str] = set()
+    resolved: list[str] = []
+    for index, (topic, title) in enumerate(zip(topics, titles, strict=True), start=1):
+        if title not in duplicated:
+            resolved_title = title
+        else:
+            suffix = unique_topic_title_suffix(topic, guides.get(topic.title), language)
+            if suffix:
+                if language == "zh-CN" and "：" in title:
+                    resolved_title = f"{title.split('：', 1)[0]}：{suffix}"
+                else:
+                    left, right = ("（", "）") if language == "zh-CN" else (" (", ")")
+                    resolved_title = f"{title}{left}{suffix}{right}"
+            else:
+                marker = f"第{index}项" if language == "zh-CN" else f"item {index}"
+                left, right = ("（", "）") if language == "zh-CN" else (" (", ")")
+                resolved_title = f"{title}{left}{marker}{right}"
+        while resolved_title in used:
+            marker = f"第{index}项" if language == "zh-CN" else f"item {index}"
+            left, right = ("（", "）") if language == "zh-CN" else (" (", ")")
+            resolved_title = f"{title}{left}{marker}{right}"
+        used.add(resolved_title)
+        resolved.append(resolved_title)
+    return resolved
+
+
+def unique_topic_title_suffix(topic: Topic, guide: TopicGuide | None, language: str) -> str:
+    candidates: list[str] = []
+    if guide:
+        candidates.extend(guide.checklist[:1])
+        candidates.append(guide.essence)
+    if ":" in topic.title:
+        candidates.append(topic.title.rsplit(":", 1)[-1])
+    candidates.extend(topic.points[:1])
+
+    for candidate in candidates:
+        suffix = compact_topic_suffix(candidate, language)
+        if suffix:
+            return suffix
+    return ""
+
+
+def compact_topic_suffix(value: str, language: str) -> str:
+    text = re.sub(r"\s+", " ", value).strip(" .。;；:：")
+    if not text:
+        return ""
+    if language == "zh-CN":
+        text = re.split(r"[。；;]", text, maxsplit=1)[0]
+        if len(text) > 18:
+            text = re.split(r"[，,]", text, maxsplit=1)[0]
+        return truncate_topic_suffix(text, 18)
+
+    text = re.split(r"[.;]", text, maxsplit=1)[0].strip()
+    words = text.split()
+    if len(words) > 7:
+        text = " ".join(words[:7])
+    return truncate_topic_suffix(text, 52)
+
+
+def truncate_topic_suffix(text: str, max_length: int) -> str:
+    if len(text) <= max_length:
+        return text
+    compact = text[:max_length].rstrip(" ，,：:;；。+-−*/=()（）")
+    return f"{compact}…"
+
+
+def render_topic_nav(
+    topics: list[Topic],
+    language: str,
+    topic_guides: list[TopicGuide] | None = None,
+) -> str:
     heading = "Quick Navigation" if language == "en" else "快速目录"
     links = []
-    for index, topic in enumerate(topics, start=1):
-        title = display_topic_title(topic, index, language)
+    display_topics = topics_with_guides(topics, topic_guides)
+    display_titles = display_topic_titles(display_topics, language, topic_guides)
+    for index, topic in enumerate(display_topics, start=1):
+        title = display_titles[index - 1]
         links.append(
             f'<a href="#{topic_anchor(index)}"><span>T{index}</span>{html_escape(title)}</a>'
         )
@@ -346,6 +441,17 @@ def topic_anchor(index: int) -> str:
     return f"topic-{index}"
 
 
+def topics_with_guides(
+    topics: list[Topic],
+    topic_guides: list[TopicGuide] | None = None,
+) -> list[Topic]:
+    if not topic_guides:
+        return topics
+    guide_titles = {guide.topic_title for guide in topic_guides}
+    matched_topics = [topic for topic in topics if topic.title in guide_titles]
+    return matched_topics or topics
+
+
 def render_revision_stages(stages: list[str], language: str = "en") -> str:
     items = "".join(f"<li>{html_escape(stage)}</li>" for stage in stages)
     heading = "Three-Stage Revision" if language == "en" else "三阶段复习法"
@@ -359,6 +465,7 @@ def render_topics(
     visual_briefs: list[VisualBrief],
     visual_assets: dict[str, dict[str, Any]] | None = None,
     language: str = "en",
+    explanation_style: str = "friendly",
 ) -> str:
     grouped: dict[str, list[PracticeItem]] = {}
     for item in practice_items:
@@ -367,9 +474,11 @@ def render_topics(
     visuals = {brief.topic_title: brief for brief in visual_briefs}
 
     sections = []
-    for index, topic in enumerate(topics, start=1):
+    display_topics = topics_with_guides(topics, topic_guides)
+    display_titles = display_topic_titles(display_topics, language, topic_guides)
+    for index, topic in enumerate(display_topics, start=1):
         guide = guides.get(topic.title)
-        title = display_topic_title(topic, index, language)
+        title = display_titles[index - 1]
         if language == "en":
             point_values = topic.points
         elif guide:
@@ -388,11 +497,16 @@ def render_topics(
             for item in grouped.get(topic.title, [])[:2]
         )
         guide_block = render_topic_guide(guide, language) if guide else ""
-        diagram_block = render_topic_diagram(topic, guide, index, language) if guide else ""
+        diagram_block = ""
         visual = visuals.get(topic.title)
         visual_block = (
             render_visual_example(topic, guide, visual, index, visual_assets, language)
             if guide and visual
+            else ""
+        )
+        story_block = (
+            render_story_modes(topic, guide, language, index)
+            if guide and explanation_style in {"story", "detective", "adventure"}
             else ""
         )
         source_block = render_source_snippets(topic.source_snippets, language=language)
@@ -426,7 +540,7 @@ def render_topics(
   {guide_block}
   {diagram_block}
   {visual_block}
-  {render_story_modes(topic, guide, language, index) if guide else ""}
+  {story_block}
   {source_block}
   <div class="practice-block">{examples}</div>
 </section>
@@ -741,36 +855,13 @@ def link_or_missing(value: str | None, language: str = "en") -> str:
 def display_topic_title(topic: Topic, index: int, language: str) -> str:
     if language == "en":
         return topic.title
-    match = re.match(r"^\s*([A-Z]\d+[A-Z]?|\d+(?:\.\d+)+)\b", topic.title)
-    if match:
-        return f"第 {match.group(1)} 节"
-    keyword_title = localized_topic_title(topic.title, index)
-    if keyword_title:
-        return keyword_title
-    return f"第 {index} 节"
+    return zh_teachable_topic_title(topic.title, index)
 
 
 def localized_topic_title(title: str, index: int) -> str | None:
-    text = title.lower()
-    keyword_titles = [
-        (("measurement", "data", "graph"), "测量与数据"),
-        (("force", "motion"), "力与运动"),
-        (("material", "change"), "材料与变化"),
-        (("particle", "state", "solid", "liquid", "gas"), "粒子模型与物质状态"),
-        (("bond", "structure"), "结构与性质"),
-        (("acid", "alkali", "ph"), "酸碱与 pH"),
-        (("accounting", "ledger", "bookkeeping"), "会计记录"),
-        (("financial statement", "profit", "position"), "财务报表"),
-        (("ratio", "liquidity", "profitability"), "比率分析"),
-        (("demand", "supply", "market"), "市场供需"),
-        (("opportunity", "scarcity", "choice"), "选择与机会成本"),
-        (("set", "venn"), "集合与韦恩图"),
-        (("triangle", "pythagoras", "geometry"), "几何图形"),
-        (("statistics", "probability"), "统计与概率"),
-    ]
-    for keywords, label in keyword_titles:
-        if any(keyword in text for keyword in keywords):
-            return label
+    keyword_title = zh_topic_keyword_label(title)
+    if keyword_title:
+        return keyword_title
     if re.search(r"[\u4e00-\u9fff]", title):
         return title[:32]
     return None

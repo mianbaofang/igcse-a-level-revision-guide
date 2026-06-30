@@ -14,6 +14,10 @@ def render_cover(qualification: Qualification, options: GuideRunOptions) -> str:
     code = qualification.code or ("Unknown" if language == "en" else "未知")
     version = cover_version_label(qualification, options, language)
     year = options.exam_year or qualification.selected_exam_year or qualification.source.selected_exam_year
+    scope_note = cover_scope_note(qualification, language)
+    scope_html = (
+        f'<p class="course-scope-note">{html_escape(scope_note)}</p>' if scope_note else ""
+    )
     if language == "en":
         return f"""
 <section class="cover">
@@ -28,6 +32,7 @@ def render_cover(qualification: Qualification, options: GuideRunOptions) -> str:
     <div class="qualification-pill">{html_escape(qtype)}</div>
     <h1>{html_escape(subject)}</h1>
     <div class="course-code">Course code · {html_escape(code)}</div>
+    {scope_html}
   </div>
   <div class="cover-identity-grid">
     <div><span>Specification / syllabus version</span><strong>{html_escape(version)}</strong></div>
@@ -48,6 +53,7 @@ def render_cover(qualification: Qualification, options: GuideRunOptions) -> str:
     <div class="qualification-pill">{html_escape(qtype)}</div>
     <h1>{html_escape(subject)}</h1>
     <div class="course-code">课程代码 · {html_escape(code)}</div>
+    {scope_html}
   </div>
   <div class="cover-identity-grid">
     <div><span>考试大纲版本</span><strong>{html_escape(version)}</strong></div>
@@ -55,6 +61,55 @@ def render_cover(qualification: Qualification, options: GuideRunOptions) -> str:
   </div>
 </section>
 """
+
+
+def cover_scope_note(qualification: Qualification, language: str) -> str:
+    if not is_oxfordaqa_as_math_9660_with_mechanics(qualification):
+        return ""
+    if language == "en":
+        return (
+            "Current AS route: Unit P1 + Unit PSM1. PSM1 includes Pure Maths, "
+            "Statistics and Mechanics, so M1 forces, Newton's laws, momentum and "
+            "collision topics are part of this mathematics specification."
+        )
+    return (
+        "当前 AS 路线：Unit P1 + Unit PSM1。PSM1 包含 Pure Maths、Statistics "
+        "和 Mechanics，所以 M1 的力、牛顿定律、动量与碰撞属于本数学大纲的应用力学部分。"
+    )
+
+
+def is_oxfordaqa_as_math_9660_with_mechanics(qualification: Qualification) -> bool:
+    source_blob = " ".join(
+        part
+        for part in [
+            qualification.title,
+            qualification.code or "",
+            qualification.subject_area or "",
+            qualification.qualification_type,
+            qualification.provider or "",
+            qualification.source.provider,
+            qualification.page_url,
+            qualification.source.specification_url or "",
+            *qualification.route_tags,
+        ]
+        if part
+    ).lower()
+    if "9660" not in source_blob:
+        return False
+    if "mathematics" not in source_blob:
+        return False
+    if not ("oxfordaqa" in source_blob or "oxford international aqa" in source_blob):
+        return False
+
+    content_blob = " ".join(
+        [
+            *(topic.title for topic in qualification.topics),
+            *(point for topic in qualification.topics for point in topic.points),
+            *(paper.title for paper in qualification.assessments),
+            *(detail for paper in qualification.assessments for detail in paper.details),
+        ]
+    ).lower()
+    return "psm1" in content_blob and ("mechanics" in content_blob or "m1." in content_blob)
 
 
 def exam_board_identity(qualification: Qualification) -> dict[str, str]:

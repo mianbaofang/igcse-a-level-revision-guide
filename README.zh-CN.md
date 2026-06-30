@@ -48,7 +48,7 @@
 
 说明：文档和用户提示里优先使用国内更常见的简称 AQA、Edexcel、CAIE；对应全称分别是 OxfordAQA / Oxford International AQA、Pearson Edexcel、Cambridge International / CAIE。
 
-这套流程面向三大考试局统一设计：先读取官方大纲，再生成知识点讲解、例题、图文学习单元、复习题和 PDF。
+这套流程面向三大考试局统一设计：先读取官方大纲，再围绕当前 topic/source points 写出已复查的概念解释，生成例题、图文学习单元、复习题和 PDF。
 
 ## 快速使用
 
@@ -93,22 +93,30 @@ outputs/chemistry-9202/
   guide.pdf                  PDF 文件
   sections/                  分章节手册内容，便于 Agent 复查
   images/                    SVG 草图、信息图资产和配图清单
+  concepts/                  概念解释任务和已复查概念解释
   run-options.json           本次确认的科目、语言和讲解风格
   guide-plan.json            知识点、例题和复习任务规划
   qualification.json         课程与来源信息
   validation.json            完整性检查结果
   handbook-package.json      最终交付清单
+  final-review-packet.json   Agent/LLM 最终自查证据
 ```
 
 手册内容包括：
 
 - 官方大纲整理出的知识点结构；
-- 学生能读懂的讲解；
+- 从每个 topic/source job 复查后的学生友好概念解释；
 - 原创例题、步骤和答案检查点；
 - 适合图文讲解的知识点与例题；
 - 简单 SVG 图和复杂信息图需求清单；
 - 最终备考复习题；
 - 可打印 HTML/PDF。
+
+在把输出当成最终成品交给学生前，必须运行
+`python -m intl_exam_guide review --out <output-dir>` 并阅读
+`final-review-packet.json`。Validation 不是充分条件；Agent 还要检查渲染摘录、
+topic/source 摘要、例题证据、概念解释任务和视觉任务状态，然后明确标记为 ready、draft 或 blocked。
+如果 `concepts/concept_jobs.json` 里还有未导入的概念解释，这份手册只能算 draft。
 
 ## 效果预览
 
@@ -129,6 +137,10 @@ outputs/chemistry-9202/
 
 项目当前聚焦国内常用的 AQA、Edexcel 和 CAIE。
 以后可以继续扩展，但不会把未支持的考试局写成已经支持。
+
+交付质量以 `tests/fixtures/delivery_matrix.json` 里的交付矩阵为准。每条路线都有明确的
+claim status；三大考试局共享同一套生成流程，但不等于所有科目、所有级别都已经验证。候选路线
+只有在新的输出同时通过 validation、最终 Agent 复查和视觉状态检查后，才能算可交付样例。
 
 ## 图文与讲解风格
 
@@ -175,6 +187,7 @@ outputs/chemistry-9202/
 
 README 只保留会影响 Skill 实际生成流程的变化；完整历史统一放在 [CHANGELOG.md](CHANGELOG.md)。
 
+- **v0.3：** 重置最终交付标准：概念解释必须先完成复核才能当最终版交付；复习路线每行只展示独立的“要掌握什么”；重复的路线标题或掌握目标会变成验证错误；SVG 只用于适合矢量表达的简单图；复杂信息图进入可复核的生图/导入流程；最终复查包会同时记录机器验证、概念状态、图片状态、PDF 检查和 Agent 自查结论。
 - **v0.2.0：** 从 AQA 单线升级为 AQA、Edexcel、CAIE 三大考试局框架；加入语言锁、先生成基础手册再处理复杂配图、SVG 兜底风险提示和跨学科回归样例。
 - **v0.2.1：** 修复 Accounting 和 Economics 实际生成时暴露的问题，包括中文术语、会计学科显示名、外部生成图片渲染、PDF 导出超时和验证覆盖。
 - **v0.2.2：** 评审后强化 Skill 流程门槛：先确认科目/年份/语言/讲解风格；Edexcel/CAIE 出现多个官方候选时返回给用户选择；候选检查生成的 scratch 手册不能当最终交付。

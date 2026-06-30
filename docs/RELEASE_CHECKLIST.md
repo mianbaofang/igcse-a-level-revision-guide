@@ -95,6 +95,17 @@ python -m intl_exam_guide generate --provider cambridge --query "Chemistry 9701"
 
 - [ ] `python -m pytest -q` passes.
 - [ ] `python -m compileall -q src tests scripts` passes.
+- [ ] Run or refresh the delivery matrix evidence for every
+  subject/board/level claim changed in this release.
+- [ ] Run `python -m intl_exam_guide review --out <sample-output>` for each
+  release sample and record whether it is `ready`,
+  `draft_needs_concept_review`, `draft_needs_image_review`, or
+  `blocked_errors`.
+- [ ] For every release-ready sample,
+  `validation.json.review_summary.pending_concept_explanations` is `0`. If it is
+  nonzero, write the missing items from `concepts/concept_jobs.json`, save
+  `concepts/concept_explanations.json`, import with
+  `scripts/import_concept_explanations.py`, and rerun review.
 - [ ] Skill smoke validation passes through at least one local demo/generate
   command and `validation.json` review.
 - [ ] Release notes or changelog include fresh end-to-end evidence from the
@@ -111,6 +122,9 @@ python scripts/scan_for_raw_keys.py . ./outputs
 
 - [ ] Pending complex infographics are marked as prompt-queue/external
   generation work, not as generated assets.
+- [ ] If complex infographics are pending, release notes must say which
+  visual IDs need generation/review and where `images/infographic_jobs.md` is
+  located.
 - [ ] After a callable image Skill/API/script or designer review workflow has
   produced the pending showcase images, import those reviewed assets into the
   sample guides. If the workflow is callable, the Agent should run it and import

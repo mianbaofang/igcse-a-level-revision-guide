@@ -50,8 +50,15 @@ China international-school usage:
 | CAIE | Searches official Cambridge International subject indexes for candidates; falls back to a supplied official subject page or direct syllabus PDF URL; asks for the exam year when several ranges are listed. |
 
 It uses one shared handbook workflow across the three boards: read the official
-syllabus, expand it into teachable topic units, create worked examples, decide
-which points need visuals, and deliver HTML/PDF output.
+syllabus, expand it into teachable topic units, write reviewed concept
+explanations from the current topic/source points, create worked examples,
+decide which points need visuals, and deliver HTML/PDF output.
+
+Delivery quality claims are tracked in the delivery matrix at
+`tests/fixtures/delivery_matrix.json`. Each route has an explicit claim status;
+candidate routes must not be described as release-ready until a fresh output
+passes validation, final review, and visual-status checks. The shared workflow
+is three-board, but the matrix evidence defines what is currently deliverable.
 
 ## Quick Start
 
@@ -90,7 +97,7 @@ base handbook is generated first. After that, the Agent reports how many complex
 infographics are needed. If the user has a callable image API, image-generation
 Skill, script, or generated asset directory, the Agent should run that route and
 then import or attach the reviewed images automatically. Otherwise, the package
-uses SVG fallback drafts and clearly marks complex visuals for review.
+writes pending visual jobs and clearly marks complex visuals as not yet reviewed.
 
 ## What It Produces
 
@@ -100,22 +107,32 @@ outputs/chemistry-9202/
   guide.pdf                  PDF export
   sections/                  modular guide sections for review
   images/                    SVG drafts, infographic assets, and visual manifest
+  concepts/                  concept-writing jobs and reviewed explanations
   run-options.json           confirmed subject, language, and explanation style
   guide-plan.json            topic, example, and revision-task plan
   qualification.json         qualification and source metadata
   validation.json            quality-check report
+  final-review-packet.json   Agent/LLM final self-review evidence
   handbook-package.json      final delivery manifest
 ```
 
 The handbook package includes:
 
 - syllabus-based topic structure;
-- student-friendly explanations;
+- student-friendly explanations reviewed from per-topic source jobs;
 - original worked examples with steps and answer checkpoints;
 - visual-learning decisions for topics and examples;
 - simple SVG diagrams and pending complex-infographic briefs;
 - final revision questions;
 - printable HTML/PDF output.
+
+Before presenting an output as final, run
+`python -m intl_exam_guide review --out <output-dir>` and read
+`final-review-packet.json`. Validation is not enough by itself: the Agent must
+inspect the rendered excerpt, topic/source summary, worked-example evidence, and
+concept/image job status, then label the output as ready, draft, or blocked.
+A base run with pending `concepts/concept_jobs.json` entries is a draft until
+reviewed concept explanations are imported.
 
 ## Preview
 
@@ -196,6 +213,12 @@ The output language is chosen before generation:
 README only summarizes changes that affect the Skill's actual generation flow.
 See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 
+- **v0.3:** resets the final-delivery contract: topic concepts must be reviewed
+  before final handoff, roadmap rows use independent mastery targets, repeated
+  roadmap titles/mastery cells become validation errors, SVG is limited to
+  SVG-safe diagrams, complex infographics stay in the reviewed image workflow,
+  and final review packets now combine machine validation, concept status,
+  image status, PDF inspection, and agent self-review.
 - **v0.2.0:** expanded the project from an AQA-focused flow to a three-board
   framework for AQA, Edexcel, and CAIE; added language lock, post-handbook image
   routing, SVG fallback warnings, and cross-subject regression samples.

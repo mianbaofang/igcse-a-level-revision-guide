@@ -5,6 +5,18 @@ import sys
 from pathlib import Path
 
 from intl_exam_guide import __version__
+from intl_exam_guide.models import (
+    AssessmentPaper,
+    GuidePlan,
+    GuideRunOptions,
+    Qualification,
+    SourceRecord,
+    SourceSnippet,
+    Topic,
+    TopicGuide,
+    VisualBrief,
+)
+from intl_exam_guide.rendering.handbook_package import write_visual_assets
 
 
 SAMPLES = {
@@ -90,6 +102,207 @@ def test_import_infographic_assets_updates_manifest(tmp_path):
     assert [entry["generated_by"] for entry in manifest] == ["test-provider", "test-provider"]
     assert (images_dir / "visual_001_custom.png").exists()
     assert (images_dir / "visual_002.png").exists()
+    assert "Imported 2 infographic asset(s)." in result.stdout
+    assert f"python -m intl_exam_guide review --out {output_dir}" in result.stdout
+
+
+def test_import_infographic_assets_replaces_svg_fallback_by_visual_id(tmp_path):
+    output_dir = tmp_path / "guide"
+    images_dir = output_dir / "images"
+    asset_dir = tmp_path / "generated"
+    images_dir.mkdir(parents=True)
+    asset_dir.mkdir()
+    (asset_dir / "visual_001.png").write_bytes(b"fake-png")
+    (images_dir / "visual_001_old.svg").write_text("<svg></svg>", encoding="utf-8")
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "visual_001",
+                    "complexity": "infographic",
+                    "asset_status": "svg-fallback-needs-review",
+                    "file": "visual_001_old.svg",
+                }
+            ],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_import(output_dir, asset_dir)
+
+    assert result.returncode == 0
+    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert manifest[0]["file"] == "visual_001.png"
+    assert manifest[0]["asset_status"] == "reviewed-generated"
+    assert (images_dir / "visual_001.png").exists()
+
+
+def test_import_infographic_assets_replaces_provider_selected_pending_asset(tmp_path):
+    output_dir = tmp_path / "guide"
+    images_dir = output_dir / "images"
+    asset_dir = tmp_path / "generated"
+    images_dir.mkdir(parents=True)
+    asset_dir.mkdir()
+    (asset_dir / "visual_001.png").write_bytes(b"fake-png")
+    (images_dir / "visual_001_pending.svg").write_text("<svg></svg>", encoding="utf-8")
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "visual_001",
+                    "complexity": "infographic",
+                    "asset_status": "provider-selected-pending-generation",
+                    "file": "visual_001_pending.svg",
+                }
+            ],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_import(output_dir, asset_dir)
+
+    assert result.returncode == 0
+    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert manifest[0]["file"] == "visual_001.png"
+    assert manifest[0]["asset_status"] == "reviewed-generated"
+
+
+def test_import_infographic_assets_matches_previous_manifest_key_after_id_shift(tmp_path):
+    output_dir = tmp_path / "guide"
+    images_dir = output_dir / "images"
+    asset_dir = tmp_path / "previous-images"
+    images_dir.mkdir(parents=True)
+    asset_dir.mkdir()
+    (asset_dir / "visual_021.png").write_bytes(b"fake-png")
+    key = "topic||focus||visual||infographic"
+    (asset_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "visual_021",
+                    "key": key,
+                    "complexity": "infographic",
+                    "asset_status": "reviewed-generated",
+                    "file": "visual_021.png",
+                }
+            ],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "visual_005",
+                    "key": key,
+                    "complexity": "infographic",
+                    "asset_status": "external-generation-required",
+                    "file": None,
+                }
+            ],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_import(output_dir, asset_dir)
+
+    assert result.returncode == 0
+    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert manifest[0]["file"] == "visual_005.png"
+    assert manifest[0]["source_asset_file"] == "visual_021.png"
+    assert manifest[0]["asset_status"] == "reviewed-generated"
+    assert (images_dir / "visual_005.png").exists()
+
+
+def test_import_infographic_assets_rerenders_html_with_imported_image(tmp_path):
+    output_dir = tmp_path / "guide"
+    images_dir = output_dir / "images"
+    asset_dir = tmp_path / "generated"
+    images_dir.mkdir(parents=True)
+    asset_dir.mkdir()
+    (asset_dir / "visual_001.png").write_bytes(b"fake-png")
+    snippet = SourceSnippet(page=12, text="Use tangent gradients.", matched_term="gradient")
+    topic = Topic(
+        title="P1.3 - Differentiation: Gradients and tangents",
+        points=["Applications of differentiation to gradients and tangents."],
+        source_snippets=[snippet],
+    )
+    qualification = Qualification(
+        title="International AS Mathematics",
+        code="9660",
+        qualification_type="international_as_a_level",
+        subject_area="Mathematics",
+        page_url="https://example.test/math",
+        summary=["AS mathematics."],
+        topics=[topic],
+        assessments=[AssessmentPaper(title="Paper P1", details=["1 hour 30 minutes"])],
+        source=SourceRecord(provider="oxfordaqa", page_url="https://example.test/math"),
+        audience_note="International AS students.",
+    )
+    plan = GuidePlan(
+        qualification=qualification,
+        run_options=GuideRunOptions(
+            requested_subject="9660",
+            image_provider="prompt-queue",
+            explanation_style="friendly",
+            output_language="en",
+        ),
+        topic_guides=[
+            TopicGuide(
+                topic_title=topic.title,
+                essence="Differentiation links a curve to a tangent gradient.",
+                analogy="A tangent reads the slope at one instant.",
+                mini_worked_example="Find the gradient, then write the tangent.",
+                worked_solution_steps=["Read", "Differentiate", "Substitute", "Check"],
+                pitfall="Do not use the normal gradient for the tangent.",
+                checklist=["Master gradients.", "Apply differentiation.", "Check signs."],
+                diagram_brief="Draw curve and tangent.",
+                source_snippets=[snippet],
+            )
+        ],
+        practice_items=[],
+        visual_briefs=[
+            VisualBrief(
+                topic_title=topic.title,
+                focus_point="gradient of the tangent",
+                trigger="calculus and gradient reasoning need carefully annotated graph features",
+                visual_type="calculus graph and area annotation infographic",
+                complexity="infographic",
+                image_provider="external-generation-required",
+                prompt="Create a tangent-gradient infographic.",
+                source_points=topic.points,
+                source_snippets=[snippet],
+            )
+        ],
+        diagram_briefs=[],
+        revision_stages=["Study", "Practise"],
+    )
+    output_dir.mkdir(exist_ok=True)
+    (output_dir / "guide-plan.json").write_text(
+        json.dumps(plan.to_dict(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    (output_dir / "qualification.json").write_text(
+        json.dumps(qualification.to_dict(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    write_visual_assets(plan, images_dir)
+    (output_dir / "guide.html").write_text(
+        '<img src="images/visual_001_old-svg-fallback.svg">',
+        encoding="utf-8",
+    )
+
+    result = run_import(output_dir, asset_dir)
+
+    assert result.returncode == 0
+    html = (output_dir / "guide.html").read_text(encoding="utf-8")
+    assert 'src="images/visual_001.png"' in html
+    assert "svg-fallback.svg" not in html
+    assert "Re-rendered handbook HTML" in result.stdout
 
 
 def test_import_infographic_assets_fails_when_required_asset_missing(tmp_path):
@@ -197,10 +410,35 @@ def test_skill_instructions_include_required_preflight_choices():
     assert "Explanation style" in text
     assert "Do not ask the user to choose an image model before the base guide is generated" in text
     assert "how many complex infographic" in text
-    assert "SVG fallback" in text
+    assert "pending visual jobs" in text
     assert "This is a required language lock, not a bilingual mode" in text
     assert "Do not offer a" in text
     assert "combined bilingual output" in text
+
+
+def test_public_docs_explain_delivery_matrix_and_final_review():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    chinese_readme = Path("README.zh-CN.md").read_text(encoding="utf-8")
+    operations = Path("docs/PROJECT_OPERATIONS.md").read_text(encoding="utf-8")
+
+    for text in [readme, operations]:
+        lowered = text.lower()
+        assert "delivery matrix" in lowered
+        assert "final-review-packet.json" in lowered
+        assert "candidate routes" in lowered
+
+    assert "交付矩阵" in chinese_readme
+    assert "final-review-packet.json" in chinese_readme
+    assert "候选路线" in chinese_readme
+
+
+def test_release_checklist_requires_matrix_review_and_visual_job_ids():
+    text = Path("docs/RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
+
+    assert "delivery matrix" in text.lower()
+    assert "python -m intl_exam_guide review --out <sample-output>" in text
+    assert "images/infographic_jobs.md" in text
+    assert "visual IDs need generation/review" in text
 
 
 def run_verify(outputs: Path, *args: str) -> subprocess.CompletedProcess[str]:
