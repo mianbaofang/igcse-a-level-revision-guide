@@ -1,6 +1,9 @@
 import json
 
+from pypdf import PdfWriter
+
 from intl_exam_guide import cli as cli_module
+import intl_exam_guide.auditing.final_review as final_review_module
 from intl_exam_guide.auditing.final_review import build_final_review_packet, write_final_review_packet
 from intl_exam_guide.models import (
     AssessmentPaper,
@@ -203,6 +206,8 @@ def test_final_review_packet_includes_user_visible_evidence(tmp_path):
     assert packet["agent_review_required"] is True
     assert packet["agent_self_review"]["status"] == "draft"
     assert packet["agent_self_review"]["must_not_present_as_final"] is True
+    assert packet["manual_review_contract"]["required"] is True
+    assert "fix the generation logic" in packet["manual_review_contract"]["instruction"]
     assert "Should this output be presented as final" in " ".join(packet["review_questions"])
 
 
@@ -259,6 +264,60 @@ def test_write_final_review_packet_refreshes_validation_json(tmp_path):
 
     validation = json.loads((tmp_path / "validation.json").read_text(encoding="utf-8"))
     packet = json.loads((tmp_path / "final-review-packet.json").read_text(encoding="utf-8"))
+    contract = json.loads((tmp_path / "delivery-contract.json").read_text(encoding="utf-8"))
     assert validation["validation_refreshed"] is True
     assert validation["review_summary"] == packet["review_summary"]
     assert validation["delivery_status"] == packet["machine_validation"]["delivery_status"]
+    assert contract["delivery_state"] == validation["delivery_state"]
+    assert contract["pedagogical_units"][0]["delivery_state"] == validation["delivery_state"]
+
+
+def test_write_final_review_packet_rerenders_pdf_after_html(monkeypatch, tmp_path):
+    write_recomputable_review_fixture(tmp_path)
+    calls = []
+
+    def fake_export_pdf(html_path, pdf_path):
+        calls.append((html_path, pdf_path, html_path.read_text(encoding="utf-8")))
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        with pdf_path.open("wb") as handle:
+            writer.write(handle)
+        return pdf_path
+
+    monkeypatch.setattr(final_review_module, "export_pdf", fake_export_pdf)
+
+    write_final_review_packet(tmp_path)
+
+    validation = json.loads((tmp_path / "validation.json").read_text(encoding="utf-8"))
+    assert calls
+    assert calls[-1][1] == tmp_path / "guide.pdf"
+    assert "Delivery Status" in calls[-1][2]
+    assert validation["pdf"] == str(tmp_path / "guide.pdf")
+    assert validation["pdf_error"] is None
+
+
+def test_write_final_review_packet_validates_the_rerendered_html(monkeypatch, tmp_path):
+    write_recomputable_review_fixture(tmp_path)
+
+    def fake_rerender_html(output_dir):
+        html = "How to Study Study Roadmap One-Sentence Essence Method Worked Example Solution Check Exam Pitfall "
+        html += "Source anchor Concept Map Visual Worked Example "
+        html += "".join(f'<section class="topic"><h2>Topic {index}</h2></section>' for index in range(12))
+        html += "<p>Students should be able to understand the nature of an economic resource.</p>"
+        (output_dir / "guide.html").write_text(html, encoding="utf-8")
+
+    def fake_export_pdf(_html_path, pdf_path):
+        writer = PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        with pdf_path.open("wb") as handle:
+            writer.write(handle)
+        return pdf_path
+
+    monkeypatch.setattr(final_review_module, "rerender_html", fake_rerender_html)
+    monkeypatch.setattr(final_review_module, "export_pdf", fake_export_pdf)
+
+    write_final_review_packet(tmp_path)
+
+    validation = json.loads((tmp_path / "validation.json").read_text(encoding="utf-8"))
+    messages = [issue["message"] for issue in validation["issues"]]
+    assert "HTML output contains syllabus shell text in student-facing content." in messages

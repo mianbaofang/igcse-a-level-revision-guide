@@ -4,7 +4,10 @@ import json
 import re
 from pathlib import Path
 
+from intl_exam_guide.core import DeliveryState, course_contract_payload
 from intl_exam_guide.models import GuidePlan
+from intl_exam_guide.rendering.pdf import PdfExportError, export_pdf
+from intl_exam_guide.rendering.visual_assets import load_visual_manifest
 from intl_exam_guide.validation.checks import (
     delivery_status_from_issues,
     issues_to_dict,
@@ -25,14 +28,13 @@ def build_final_review_packet(output_dir: Path) -> dict[str, object]:
     validation = read_json(output_dir / "validation.json")
     qualification = read_json(output_dir / "qualification.json")
     guide_plan = read_json(output_dir / "guide-plan.json")
-    manifest = read_json(output_dir / "images" / "visual_manifest.json", default=[])
+    manifest_entries = load_visual_manifest(output_dir / "images")
     infographic_jobs = read_json(output_dir / "images" / "infographic_jobs.json", default=[])
     html = read_text(output_dir / "guide.html")
     refreshed_validation = build_refreshed_validation(output_dir, validation, guide_plan)
     issues = refreshed_validation.get("issues", [])
     if not isinstance(issues, list):
         issues = []
-    manifest_entries = manifest if isinstance(manifest, list) else []
     pending = [
         entry.get("id")
         for entry in manifest_entries
@@ -45,6 +47,7 @@ def build_final_review_packet(output_dir: Path) -> dict[str, object]:
         "error_count": count_issues(issues, "error"),
         "warning_count": count_issues(issues, "warning"),
         "delivery_status": refreshed_validation.get("delivery_status"),
+        "delivery_state": refreshed_validation.get("delivery_state"),
         "validation_refreshed": refreshed_validation.get("validation_refreshed", False),
         "issues": issues,
     }
@@ -67,6 +70,23 @@ def build_final_review_packet(output_dir: Path) -> dict[str, object]:
             rendered_text,
             [item for item in pending if item],
         ),
+        "manual_review_contract": {
+            "required": True,
+            "instruction": (
+                "Before user handoff, the Agent/LLM must read this packet, inspect the rendered handbook, "
+                "classify any content, visual, PDF, or language problems, fix the generation logic or "
+                "reviewed assets when possible, rerun review, and only then present the output according "
+                "to agent_self_review.status."
+            ),
+            "must_fix_before_final": [
+                "blocking validation errors",
+                "duplicated mastery requirements across independent topics",
+                "worked examples that do not match the topic",
+                "pending complex infographic assets",
+                "near-blank PDF pages",
+                "language/style mismatch in student-facing sections",
+            ],
+        },
         "review_summary": summary,
         "qualification": qualification_summary(qualification),
         "guide_plan": {"available": isinstance(guide_plan, dict), "keys": sorted(guide_plan) if isinstance(guide_plan, dict) else []},
@@ -123,6 +143,7 @@ def build_agent_self_review(
         "status": status,
         "reasons": reasons,
         "must_not_present_as_final": status != "ready",
+        "agent_must_inspect_before_handoff": True,
     }
 
 
@@ -145,10 +166,12 @@ def build_refreshed_validation(
         pdf_path = output_dir / "guide.pdf"
     issues = validate_plan(plan, html_path=html_path, pdf_path=pdf_path, output_dir=output_dir)
     summary = review_summary(plan, html_path=html_path, pdf_path=pdf_path, output_dir=output_dir)
+    delivery_status = delivery_status_from_issues(issues, summary)
     return {
         "issues": issues_to_dict(issues),
         "review_summary": summary,
-        "delivery_status": delivery_status_from_issues(issues, summary),
+        "delivery_status": delivery_status,
+        "delivery_state": DeliveryState.from_delivery_status(delivery_status).value,
         "validation_refreshed": True,
     }
 
@@ -163,14 +186,82 @@ def stored_validation_with_flag(stored_validation: object, refreshed: bool) -> d
 
 
 def write_final_review_packet(output_dir: Path) -> Path:
+    rerender_html(output_dir)
+    rerender_pdf(output_dir)
     packet = build_final_review_packet(output_dir)
-    write_refreshed_validation(output_dir, packet)
     path = output_dir / "final-review-packet.json"
+    write_review_artifacts(output_dir, packet, path)
+    rerender_html(output_dir)
+    rerender_pdf(output_dir)
+    packet = build_final_review_packet(output_dir)
+    write_review_artifacts(output_dir, packet, path)
+    return path
+
+
+def write_review_artifacts(output_dir: Path, packet: dict[str, object], path: Path) -> None:
+    write_refreshed_validation(output_dir, packet)
+    rewrite_delivery_contract(output_dir, packet)
     path.write_text(
         json.dumps(packet, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    return path
+
+
+def rewrite_delivery_contract(output_dir: Path, packet: dict[str, object]) -> None:
+    plan_path = output_dir / "guide-plan.json"
+    if not plan_path.exists():
+        return
+    machine = packet.get("machine_validation")
+    delivery_status = machine.get("delivery_status") if isinstance(machine, dict) else None
+    agent_review = packet.get("agent_self_review")
+    agent_review_ready = isinstance(agent_review, dict) and agent_review.get("status") == "ready"
+    try:
+        plan = GuidePlan.from_dict(json.loads(plan_path.read_text(encoding="utf-8")))
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError, OSError):
+        return
+    (output_dir / "delivery-contract.json").write_text(
+        json.dumps(
+            course_contract_payload(
+                plan,
+                str(delivery_status),
+                agent_review_ready=agent_review_ready,
+            ),
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def rerender_html(output_dir: Path) -> None:
+    plan_path = output_dir / "guide-plan.json"
+    if not plan_path.exists():
+        return
+    try:
+        from intl_exam_guide.rendering.html import render_html
+
+        plan = GuidePlan.from_dict(json.loads(plan_path.read_text(encoding="utf-8")))
+        render_html(plan, output_dir / "guide.html", output_dir / "images" / "visual_manifest.json")
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError, OSError):
+        return
+
+
+def rerender_pdf(output_dir: Path) -> None:
+    html_path = output_dir / "guide.html"
+    if not html_path.exists():
+        return
+    validation_path = output_dir / "validation.json"
+    stored = read_json(validation_path)
+    payload = dict(stored) if isinstance(stored, dict) else {}
+    pdf_path = output_dir / "guide.pdf"
+    try:
+        export_pdf(html_path, pdf_path)
+    except PdfExportError as exc:
+        payload["pdf_error"] = str(exc)
+    else:
+        payload["pdf"] = str(pdf_path)
+        payload["pdf_error"] = None
+    validation_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def write_refreshed_validation(output_dir: Path, packet: dict[str, object]) -> None:
@@ -182,6 +273,13 @@ def write_refreshed_validation(output_dir: Path, packet: dict[str, object]) -> N
     payload["issues"] = machine.get("issues", [])
     payload["review_summary"] = packet.get("review_summary", {})
     payload["delivery_status"] = machine.get("delivery_status")
+    agent_review = packet.get("agent_self_review")
+    agent_review_ready = isinstance(agent_review, dict) and agent_review.get("status") == "ready"
+    delivery_status = machine.get("delivery_status")
+    payload["delivery_state"] = DeliveryState.from_delivery_status(
+        str(delivery_status) if delivery_status is not None else None,
+        agent_review_ready=agent_review_ready,
+    ).value
     payload["validation_refreshed"] = machine.get("validation_refreshed", False)
     (output_dir / "validation.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),

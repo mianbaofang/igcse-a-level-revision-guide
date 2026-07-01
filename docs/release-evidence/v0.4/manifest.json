@@ -1,0 +1,200 @@
+{
+  "release": "v0.4-core-mvp",
+  "generated_at": "2026-07-01",
+  "git_revision": "uncommitted working tree",
+  "overall_status": "draft",
+  "notes": [
+    "Real samples prove draft/final separation and catch syllabus-shell, cross-subject-practice, and repeated-SVG regressions.",
+    "No sample in this manifest is final-ready or certified.",
+    "Generated output directories, downloaded specifications, PDFs, and local assets are intentionally not committed."
+  ],
+  "entries": [
+    {
+      "id": "oxfordaqa-igcse-business-en-draft",
+      "status": "draft",
+      "provider": "oxfordaqa",
+      "level": "igcse",
+      "subject": "Business",
+      "language": "en",
+      "output_dir": "outputs/_audit10-oxfordaqa-business",
+      "commands": [
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide generate --provider oxfordaqa --query Business --level igcse --out outputs/_audit10-oxfordaqa-business --questions-per-topic 1 --image-provider prompt-queue --explanation-style friendly --language en --skip-pdf",
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide review --out outputs/_audit10-oxfordaqa-business"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_concept_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 1,
+        "topics": 29,
+        "practice_cards": 29,
+        "visual_briefs": 10,
+        "svg_files": 10,
+        "svg_max_title_repeats": 2,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 29
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    },
+    {
+      "id": "oxfordaqa-igcse-accounting-en-draft",
+      "status": "draft",
+      "provider": "oxfordaqa",
+      "level": "igcse",
+      "subject": "Accounting",
+      "language": "en",
+      "output_dir": "outputs/_audit10-oxfordaqa-accounting",
+      "commands": [
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide generate --provider oxfordaqa --query Accounting --level igcse --out outputs/_audit10-oxfordaqa-accounting --questions-per-topic 1 --image-provider prompt-queue --explanation-style friendly --language en --skip-pdf",
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide review --out outputs/_audit10-oxfordaqa-accounting"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_concept_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 2,
+        "topics": 68,
+        "practice_cards": 68,
+        "visual_briefs": 33,
+        "svg_files": 12,
+        "svg_max_title_repeats": 3,
+        "pending_infographic_assets": 21,
+        "pending_concept_explanations": 68
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    },
+    {
+      "id": "pearson-igcse-accounting-en-draft",
+      "status": "draft",
+      "provider": "pearson",
+      "level": "igcse",
+      "subject": "Accounting",
+      "language": "en",
+      "output_dir": "outputs/_audit11-pearson-accounting",
+      "commands": [
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide generate --query https://qualifications.pearson.com/en/qualifications/edexcel-international-gcses/international-gcse-accounting-2017.html --out outputs/_audit11-pearson-accounting --questions-per-topic 1 --image-provider prompt-queue --explanation-style friendly --language en --skip-pdf",
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide review --out outputs/_audit11-pearson-accounting"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_concept_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 2,
+        "topics": 22,
+        "practice_cards": 22,
+        "visual_briefs": 8,
+        "svg_files": 5,
+        "svg_max_title_repeats": 1,
+        "pending_infographic_assets": 3,
+        "pending_concept_explanations": 22
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    },
+    {
+      "id": "pearson-igcse-history-en-draft",
+      "status": "draft",
+      "provider": "pearson",
+      "level": "igcse",
+      "subject": "History",
+      "language": "en",
+      "output_dir": "outputs/_audit11-pearson-history",
+      "commands": [
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide generate --query https://qualifications.pearson.com/en/qualifications/edexcel-international-gcses/international-gcse-history-2017.html --out outputs/_audit11-pearson-history --questions-per-topic 1 --image-provider prompt-queue --explanation-style friendly --language en --skip-pdf",
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide review --out outputs/_audit11-pearson-history"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_concept_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 1,
+        "topics": 13,
+        "practice_cards": 13,
+        "visual_briefs": 2,
+        "svg_files": 2,
+        "svg_max_title_repeats": 2,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 13
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    },
+    {
+      "id": "cambridge-igcse-history-en-draft",
+      "status": "draft",
+      "provider": "cambridge",
+      "level": "igcse",
+      "subject": "History",
+      "language": "en",
+      "output_dir": "outputs/_audit10-cambridge-history",
+      "commands": [
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide generate --provider cambridge --query 'History 0470' --level igcse --exam-year 2027 --out outputs/_audit10-cambridge-history --questions-per-topic 1 --image-provider prompt-queue --explanation-style friendly --language en --skip-pdf",
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide review --out outputs/_audit10-cambridge-history"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_concept_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 1,
+        "topics": 30,
+        "practice_cards": 30,
+        "visual_briefs": 3,
+        "svg_files": 3,
+        "svg_max_title_repeats": 2,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 30
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    },
+    {
+      "id": "cambridge-igcse-accounting-en-draft",
+      "status": "draft",
+      "provider": "cambridge",
+      "level": "igcse",
+      "subject": "Accounting",
+      "language": "en",
+      "output_dir": "outputs/_audit10-cambridge-accounting",
+      "commands": [
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide generate --query https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-igcse-accounting-0452/ --exam-year 2027 --out outputs/_audit10-cambridge-accounting --questions-per-topic 1 --image-provider prompt-queue --explanation-style friendly --language en --skip-pdf",
+        "$env:PYTHONPATH='src'; python -m intl_exam_guide review --out outputs/_audit10-cambridge-accounting"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_concept_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 2,
+        "topics": 28,
+        "practice_cards": 28,
+        "visual_briefs": 14,
+        "svg_files": 5,
+        "svg_max_title_repeats": 1,
+        "pending_infographic_assets": 9,
+        "pending_concept_explanations": 28
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    }
+  ],
+  "manual_visible_text_scan": {
+    "terms": [
+      "Candidates should have an understanding of",
+      "Students will:",
+      "Students must study one breadth study",
+      "definition, one application, and one check",
+      "solve 3(",
+      "mean and range",
+      "right-angled triangle"
+    ],
+    "result": "0 visible-field occurrences across the six fresh samples"
+  },
+  "linked_report": "docs/release-evidence/v0.4/real-sample-audit.md"
+}

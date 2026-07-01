@@ -24,6 +24,22 @@ Each generated handbook must include:
 Downloaded specification PDFs and extracted text belong under `source/` and must
 not be committed to the repository.
 
+Release evidence is separate from the generated handbook package. For v0.4+
+maintenance or release work, use these status words:
+
+- `candidate`: route evidence exists, but it is not delivery-grade.
+- `draft`: a fresh output exists, but concepts, visuals, PDF/export,
+  validation, or Agent self-review still blocks final handoff.
+- `final-ready`: current evidence passes validation, final review, concept
+  status, visual status, and package checks.
+- `certified`: final-ready evidence has reviewer approval and a manifest entry
+  under `docs/release-evidence/`.
+
+Do not present candidate evidence as a final or certified handbook. A generated
+output directory is not itself release evidence unless the concise manifest
+records the command, git revision, validation summary, final review, asset
+status, and reviewer decision when applicable.
+
 ## Required Preflight
 
 Do not start syllabus download or handbook writing until the user has confirmed:
@@ -34,14 +50,24 @@ Do not start syllabus download or handbook writing until the user has confirmed:
    and wait for the user to choose one instead of guessing;
 2. exam year when the provider needs it, especially Cambridge pages with
    multiple syllabus year ranges;
-3. output language: `en` or `zh-CN`;
+3. term-support language: `en` for no glossary, or a support language such as
+   `zh-CN`, `zh-TW`, or `ja` for a 30-50 item professional term glossary;
 4. writing style: `formal`, `friendly`, `life`, `story`, `detective`, or
-   `adventure`.
+   `adventure`;
+5. infographic capability: ask whether the user has a callable infographic or
+   image-generation route available for this run. If yes, ask whether it is an
+   installed image-generation Skill, a custom API with model name + base
+   URL/endpoint + API-key environment variable name, an existing asset
+   directory, or a project script. If no, explain that built-in deterministic
+   SVG/scientific-vector visuals may be incomplete for complex infographics and
+   ask whether to continue with a draft that marks complex visuals as pending.
 
-Do not ask for an image model during preflight. The base handbook should run
-first, then the visual pass should count how many complex infographic briefs are
-needed. Tell the user that count after generation. The user may then provide an
-image model, API, Skill, script, designer workflow, or generated asset directory.
+Do not force the user to choose a specific image model during preflight. The
+preflight question is whether a callable route exists and whether the user wants
+to continue without one. The base handbook should run first, then the visual
+pass should count how many complex infographic briefs are needed. Tell the user
+that count after generation and use the confirmed route, if any. The user may
+then provide final parameters or generated assets for the chosen route.
 If a callable route exists, run it after the base handbook is generated and
 import or attach the reviewed outputs automatically. Do not make the user move
 files by hand. If they provide none, leave complex infographics as pending
@@ -102,14 +128,11 @@ Each topic or knowledge unit should include:
 
 ## Writing Style
 
-Use one selected output language for handbook labels, explanations, image
-prompts, topic framing, and worked-example framing. Do not render labels as
-bilingual `Chinese / English` pairs. In `en` mode, student-facing text should be
-English. In `zh-CN` mode, student-facing labels, explanations, examples, and
-image prompts should be Simplified Chinese. Official English source snippets may
-be retained in structured JSON or a clearly separated review appendix, but do
-not mix raw English source paragraphs, topic headings, or syllabus bullet points
-into the student-facing topic map/body.
+Use English for handbook labels, explanations, image prompts, topic framing,
+worked examples, and diagram text because the exam is in English. If the user
+selects a support language, add a professional term glossary with 30-50
+user-language-to-English entries. Do not translate the whole handbook body and
+do not render every label as a bilingual `Chinese / English` pair.
 
 The tone should help teenagers stay awake and oriented:
 
@@ -131,23 +154,26 @@ After the source-bound topic guide and examples are drafted, run a second pass
 to decide which items need visuals:
 
 - `text-ok`: no image needed;
-- `svg-basic`: deterministic SVG is enough;
+- `svg-basic`: exact local SVG/scientific-vector output is enough, or a
+  medium-complexity professional diagram can be rendered through built-in Kroki;
 - `infographic`: create a source-bound visual brief and prompt queue entry;
   render it only after a reviewed raster asset exists.
 
 Good SVG cases include number lines, simple graphs, pH scales, particle models,
-energy profiles, and basic geometry. Good infographic cases include lab
-apparatus, complex geometry, circuits, economics diagrams, business workflows,
-and text-heavy single-language charts.
+energy profiles, and basic geometry. Good Kroki cases include flows,
+hierarchies, timelines, relationship maps, concept maps, and source-to-ledger
+routes. Good infographic cases include lab apparatus, complex geometry,
+circuits, dense economics scenes, and high-design text+diagram charts.
 
 For SVG-safe chart, axis, curve, table, and simple geometry cases, use the
 scientific-vector fallback in `references/scientific_vector_fallback.md`. This
 adapts the `nature-figure` idea of a figure contract to revision guides: state
 the learning claim, evidence/label requirements, and review risk before drawing.
 Keep SVG text editable and record `fallback_route:
-scripted-scientific-vector` in `images/visual_manifest.json`. Do not use this
-route for dense educational posters or rich infographics that need a real image
-model or reviewed imported asset.
+scripted-scientific-vector` in `images/visual_manifest.json`. For Kroki output,
+record `fallback_route: kroki-professional-diagram`. Do not use either route for
+dense educational posters or rich infographics that need a real image model or
+reviewed imported asset.
 
 If a richer infographic is needed, keep a prompt queue with:
 
@@ -199,4 +225,6 @@ Then run `python -m intl_exam_guide review --out <output-dir>`, read
 excerpt, validation issues, source/topic summary, and visual status. Validation
 is not enough by itself. The packet must include an `agent_self_review` verdict;
 if `agent_self_review.must_not_present_as_final` is true, present the output as
-a draft or blocked run, not as final.
+a draft or blocked run, not as final. For release evidence, map a ready packet
+to `final-ready` only when concepts, visuals, package files, and PDF/export
+status are also current; map unresolved blockers to `draft`.

@@ -6,6 +6,12 @@ import shutil
 import sys
 from pathlib import Path
 
+SRC_PATH = Path(__file__).resolve().parents[1] / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
+
+from intl_exam_guide.visuals.manifest import build_asset_metadata  # noqa: E402
+
 
 RASTER_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 REPLACEABLE_STATUSES = {
@@ -59,9 +65,10 @@ def main() -> int:
         print(f"asset directory not found: {asset_dir}", file=sys.stderr)
         return 1
 
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(manifest, list):
-        print("visual_manifest.json must contain a list", file=sys.stderr)
+    manifest_payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest = manifest_entries_from_payload(manifest_payload)
+    if manifest is None:
+        print("visual_manifest.json must contain a list or schema_version 2 object", file=sys.stderr)
         return 1
 
     source_assets_by_key = load_source_assets_by_key(asset_dir)
@@ -94,6 +101,8 @@ def main() -> int:
             entry["source_asset_file"] = source.name
         entry["file"] = target_name
         entry["asset_status"] = args.status
+        entry["review_status"] = "reviewed" if "reviewed" in args.status else "generated"
+        entry["asset"] = build_asset_metadata(target)
         entry["generated_by"] = args.provider
         imported += 1
 
@@ -113,7 +122,7 @@ def main() -> int:
         )
         return 1
 
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_manifest_payload(manifest_path, manifest_payload, manifest)
     rerender_result = rerender_handbook(output_dir) if imported and args.rerender else {"rerendered": False}
     print(
         json.dumps(
@@ -144,9 +153,10 @@ def load_source_assets_by_key(asset_dir: Path) -> dict[str, Path]:
     if not manifest_path.exists():
         return {}
     try:
-        entries = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
+    entries = manifest_entries_from_payload(payload)
     if not isinstance(entries, list):
         return {}
     assets: dict[str, Path] = {}
@@ -161,6 +171,30 @@ def load_source_assets_by_key(asset_dir: Path) -> dict[str, Path]:
         if source.is_file() and source.suffix.lower() in RASTER_EXTENSIONS:
             assets.setdefault(key, source)
     return assets
+
+
+def manifest_entries_from_payload(payload: object) -> list[dict[str, object]] | None:
+    if isinstance(payload, dict) and payload.get("schema_version") == 2:
+        visuals = payload.get("visuals")
+        if isinstance(visuals, list):
+            return [entry for entry in visuals if isinstance(entry, dict)]
+        return None
+    if isinstance(payload, list):
+        return [entry for entry in payload if isinstance(entry, dict)]
+    return None
+
+
+def write_manifest_payload(
+    manifest_path: Path,
+    original_payload: object,
+    entries: list[dict[str, object]],
+) -> None:
+    if isinstance(original_payload, dict) and original_payload.get("schema_version") == 2:
+        payload = dict(original_payload)
+        payload["visuals"] = entries
+    else:
+        payload = entries
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def find_asset(

@@ -157,6 +157,40 @@ h1 { max-width: 920px; font-size: 52px; line-height: 1.05; margin: 18px 0; lette
   margin-right: auto;
 }
 .student-overview { background: #fffaf1; }
+.delivery-panel { background: #f7fbff; }
+.delivery-status-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, .28fr) minmax(0, .72fr);
+  gap: 16px;
+}
+.delivery-state-badge {
+  padding: 16px;
+  color: #ffffff;
+  background: var(--blue);
+}
+.delivery-state-badge span {
+  display: block;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.delivery-state-badge strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1.1;
+}
+.delivery-state-draft { background: var(--red); }
+.delivery-state-review-ready { background: var(--gold); }
+.delivery-state-final-ready,
+.delivery-state-certified { background: var(--green); }
+.delivery-state-detail {
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+.delivery-state-detail p { margin: 0 0 8px; font-weight: 750; }
 .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .overview-grid article {
   border: 1px solid var(--line);
@@ -433,7 +467,7 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
 .final { background: #f4fff9; }
 @media (max-width: 760px) {
   h1 { font-size: 38px; }
-  .cover-mast, .cover-identity-grid, .overview-grid, .assessment-grid, .topic-grid, .practice-block, .guide-grid, .visual-grid, .generated-infographic-grid, .story-modes, .concept-html-map, .concept-html-map ol { grid-template-columns: 1fr; }
+  .cover-mast, .cover-identity-grid, .delivery-status-grid, .overview-grid, .assessment-grid, .topic-grid, .practice-block, .guide-grid, .visual-grid, .generated-infographic-grid, .story-modes, .concept-html-map, .concept-html-map ol { grid-template-columns: 1fr; }
   .cover { padding: 36px 24px; }
   .cover-title-lockup h1 { font-size: 44px; }
   .course-code { font-size: 19px; }
@@ -479,6 +513,7 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
   li { margin: .5mm 0; }
   th, td { padding: 4px 5px; }
   .overview-grid,
+  .delivery-status-grid,
   .assessment-grid,
   .topic-grid,
   .guide-grid,

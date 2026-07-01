@@ -40,8 +40,8 @@ a likely route.
 ## Operational Gates
 
 - STOP: preflight incomplete. If subject/provider, required exam year, output
-  language, or explanation style is missing, ask only for the missing items and
-  do not download or write the handbook yet.
+  language, explanation style, or infographic capability choice is missing, ask
+  only for the missing items and do not download or write the handbook yet.
 - CHECKPOINT: official candidate selected. Continue only when discovery returns
   one official subject route or the user has chosen from the candidate list.
 - STOP: no official candidate. Ask for an official subject-page URL, direct
@@ -71,6 +71,18 @@ a likely route.
   `agent_self_review.must_not_present_as_final` flag. If the Agent cannot
   honestly answer the review questions, present the output as a draft or blocked
   run, not as final.
+- STOP: self-review found fixable problems. If the Agent/LLM review notices
+  duplicated mastery text, a worked example that answers a different topic,
+  repeated or unsuitable visuals, blank PDF pages, unresolved image jobs, or
+  student-facing language/style mismatch, fix the generation logic or imported
+  assets first, regenerate or rerender the handbook, and run the final review
+  again. Do not hand off a guide merely because validation or a delivery gate
+  says `ready`.
+- CHECKPOINT: release evidence classified. For project maintenance or release
+  tasks, classify claims as `candidate`, `draft`, `final-ready`, or
+  `certified`. Candidate routes are not delivery-grade. Do not call a route
+  certified unless a `docs/release-evidence/` manifest records current evidence
+  and reviewer approval.
 
 When Edexcel or CAIE discovery returns more than one official match, show the
 choices in this shape and wait:
@@ -118,8 +130,8 @@ After installation, plain-language requests are enough, for example:
 
 ```text
 帮我生成 AQA Chemistry International GCSE 复习手册，并导出 PDF。
-帮我生成 Edexcel Accounting International GCSE 中文复习手册。
-帮我生成 CAIE IGCSE Economics 2027 考试用中文学习手册。
+帮我生成 Edexcel Accounting International GCSE 复习手册，附中文专业词对照表。
+帮我生成 CAIE IGCSE Economics 2027 考试用复习手册，附日语专业词对照表。
 ```
 
 Do not start generation immediately after a broad request. Run the preflight
@@ -139,24 +151,30 @@ these choices if the user did not already provide them:
 2. **Exam year when needed**: Cambridge subject pages often expose multiple
    syllabus ranges. If more than one range is available, ask for the student's
    exam year before selecting a syllabus.
-3. **Output language**: ask whether the handbook should be `en` or `zh-CN`.
-   This is a required language lock, not a bilingual mode. Do not offer a
-   combined bilingual output. Do not render handbook labels
-   as bilingual `Chinese / English`, `English / Chinese`, `中文 / English`, or
-   similar mixed pairs. Template labels, explanations, topic framing, worked
-   examples, image prompts, and visible infographic text must follow the
-   selected language. If `zh-CN` is selected, keep official English snippets in
-   structured source files or a clearly separated source appendix for review;
-   do not mix English source paragraphs, raw English topic headings, or raw
-   English syllabus bullet points into the student-facing topic map/body. If the
-   user changes language, regenerate the guide in the new language instead of
-   merging old sections.
+3. **Term-support language**: the handbook body, worked examples, labels, and
+   diagram text stay in English because the exam is in English. If the user asks
+   for Chinese, Traditional Chinese, Japanese, or another support language, add
+   a 30-50 item professional glossary mapping that language to the official
+   English terms. Do not generate a fully translated handbook body, and do not
+   render mixed `Chinese / English` labels throughout the guide; the bilingual
+   content belongs in the glossary table.
 4. **Explanation style**: ask how the knowledge points and examples should read:
    `formal`, `friendly`, `life`, `story`, `detective`, or `adventure`.
+5. **Infographic capability**: ask whether the user has a callable infographic
+   or image-generation route available for this run. This is a required
+   yes/no preflight question, not an image-model menu. If the user says yes,
+   ask which route they want to use: installed image-generation Skill, custom
+   API with model name + base URL/endpoint + API-key environment variable name,
+   existing asset directory, or a project script. If the user says no, explain
+   that built-in deterministic SVG/scientific-vector visuals may be incomplete
+   for complex infographics, then ask whether to continue with a draft that
+   marks complex visuals as pending.
+Do not force the user to choose a specific image model before the base guide is
+generated. Do not show an image-model choice menu that mixes SVG, prompt queue,
+and recommended model names. The required preflight choices are
+subject/provider, required exam year, term-support language, explanation style, and
+infographic capability availability.
 Do not ask the user to choose an image model before the base guide is generated.
-Do not show an image-model choice menu that mixes SVG, prompt queue, and
-recommended model names. The only required preflight choices are
-subject/provider, required exam year, output language, and explanation style.
 
 The recommended complex-image models are GPT Image 2.0, Qwen Image 2.0 Pro, and
 SenseNova U1 Fast because they tend to handle text+diagram educational
@@ -164,7 +182,11 @@ infographics better than generic art models. These are recommendations only.
 Do not imply every user can call them by default.
 
 When no callable image model is available, do not treat every visual as a rough
-generic SVG. For chart-like or rule-driven visuals, use the internal
+generic SVG. The visual stack is automatic: exact simple diagrams use local
+SVG/scientific-vector output; medium-complexity professional diagrams such as
+flows, hierarchies, timelines, concept maps, and relationship diagrams use the
+built-in Kroki professional diagram renderer; high-density text+diagram
+infographics remain external-image jobs. For chart-like or rule-driven visuals, use the internal
 scientific-vector fallback described in
 `references/scientific_vector_fallback.md`: number lines, axes, probability
 trees, function graphs, statistics charts, rate curves, pH scales, energy
@@ -234,6 +256,7 @@ The end product is a study/revision handbook package. A valid run writes:
 - `guide-plan.json`;
 - `qualification.json`;
 - `validation.json`;
+- `final-review-packet.json` after the review command has run;
 - `handbook-package.json`.
 
 The required generation logic is:
@@ -262,7 +285,8 @@ The required generation logic is:
    like generic AI prose, keep it as a validation warning for review instead of
    hiding it.
 8. Run a second visual-needs pass over each knowledge unit and worked example.
-   Decide whether text is enough, a deterministic SVG is enough, or a richer
+   Decide whether text is enough, local deterministic SVG is enough, built-in
+   Kroki professional rendering is appropriate, or a richer external
    infographic/image model is needed. Do not create a visual merely because a
    topic could be illustrated; create one only when the concept, graph, flow, or
    worked example becomes materially clearer with that visual.
@@ -274,9 +298,10 @@ planning:
 
 - `prompt-queue` is the default route for complex visuals when no callable image
   capability exists;
-- `deterministic-svg` for exact editable diagrams such as axes, curves, flows,
-  charts, source-to-ledger diagrams, pH scales, particle layouts, motion graphs,
-  and force arrows;
+- `deterministic-svg` for exact editable diagrams such as axes, curves, charts,
+  pH scales, particle layouts, motion graphs, force arrows, and simple geometry;
+- built-in Kroki professional diagrams for medium-complexity flows, hierarchies,
+  timelines, source-to-ledger routes, relationship maps, and concept maps;
 - GPT Image 2.0, Qwen Image 2.0 Pro, and SenseNova U1 Fast are recommended
   external options for text+diagram educational infographics;
 - `custom` if the user has another provider, URL, model name, and key env var.
@@ -286,9 +311,10 @@ These recommended model names are not CLI providers. Do not pass them as
 guide, then run or import external images only after the callable gate above
 passes.
 
-If the user has not chosen the subject, required exam year, output language, and
-explanation style, stop and ask. Do not block the base handbook on image-model
-choice. Do not claim that complex infographics have been finalized until a
+If the user has not chosen the subject, required exam year, term-support
+language, and explanation style, stop and ask. Ask whether a callable external
+infographic route exists before generation, but do not ask the user to choose
+between local SVG and Kroki; that routing is automatic. Do not claim that complex infographics have been finalized until a
 callable image route has produced reviewed image assets; new outputs must not
 use generic SVG as a substitute for complex infographics.
 
@@ -354,12 +380,14 @@ Before release or handoff, also run the full project checks from
 --cov-report=term-missing -q`, `python -m ruff check .`, `python -m mypy`,
 `python -m compileall -q src tests scripts`, `python scripts/scan_for_raw_keys.py
 . ./outputs`, and `git diff --check`. For functional releases, record fresh demo
-evidence in `CHANGELOG.md` or the GitHub Release notes before publishing.
+evidence in `CHANGELOG.md` or the GitHub Release notes before publishing. For
+v0.4+ release claims above `candidate`, also record the concise manifest under
+`docs/release-evidence/`; do not commit generated output folders as evidence.
 
 ## Workflow
 
 1. Confirm the required preflight choices: subject/provider, required exam
-   year, output language, and explanation style. Do not ask for an image model
+   year, term-support language, and explanation style. Do not ask for an image model
    at this stage.
 2. Read `references/revision_guide_spec.md`.
 3. For AQA, read `references/oxfordaqa.md` because the implemented AQA route is
@@ -435,8 +463,9 @@ Use `--skip-pdf` only when no local browser or Playwright runtime is available.
   subject's output; fix the source-bound concept job and review flow instead.
 - Do not present generic SVG stand-ins for complex infographics as reviewed
   teaching diagrams.
-- Do not mix Chinese and English in student-facing handbook labels or topic
-  bodies after the language lock is chosen.
+- Do not generate a translated Chinese/Japanese/etc. handbook body. Keep the
+  handbook body English and put user-language support in the professional terms
+  glossary.
 - Do not leave obvious AI-template transitions in student-facing explanations
   or practice cards when a concrete sentence will do.
 

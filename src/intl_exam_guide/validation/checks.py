@@ -19,7 +19,14 @@ from intl_exam_guide.auditing.concept_jobs import CONCEPT_REVIEW_FILE, reviewed_
 from intl_exam_guide.models import GuidePlan, PracticeItem, Topic, VisualBrief
 from intl_exam_guide.planning.anti_ai_language import has_ai_language_smell
 from intl_exam_guide.planning.guide_plan import is_scope_exclusion_topic
+from intl_exam_guide.planning.language_policy import (
+    LANGUAGE_CHOICES,
+    glossary_language,
+    handbook_body_language,
+    language_mode_label,
+)
 from intl_exam_guide.planning.localization import zh_teachable_topic_title, zh_topic_keyword_label
+from intl_exam_guide.planning.visual_routing import is_professional_diagram_visual
 from intl_exam_guide.rendering.html import display_topic_titles
 from intl_exam_guide.rendering.visual_assets import (
     PENDING_ASSET_STATUSES,
@@ -48,10 +55,10 @@ BILINGUAL_SLASH_PATTERN = re.compile(
     r"|[A-Za-z][^<>\n/]{0,40}\s/\s[^<>\n/]{0,40}[\u4e00-\u9fff])"
 )
 ENCODING_ARTIFACT_PATTERN = re.compile(r"\ufffd|\?{3,}")
-SVG_REPETITION_MIN_FILES = 12
+SVG_REPETITION_MIN_FILES = 6
 SVG_REPETITION_MAX_UNIQUE_RATIO = 0.6
 SVG_REPETITION_MAX_REPEAT_RATIO = 0.25
-SVG_REPETITION_MIN_REPEAT = 10
+SVG_REPETITION_MIN_REPEAT = 4
 PDF_PAGE_HEADROOM = 24
 PDF_MAX_PAGES_PER_TOPIC = 2.0
 PDF_ABSOLUTE_MAX_PAGES = 260
@@ -82,10 +89,17 @@ IMAGE_PROMPT_PACKAGING_PATTERNS = [
 SVG_SAFE_VISUAL_TERMS = {
     "axis",
     "bar",
+    "break-even",
+    "business",
+    "cash-flow",
+    "cash",
     "chart",
     "circle",
     "accounting",
+    "club receipts",
     "coordinate",
+    "control",
+    "current account layout",
     "curve",
     "data",
     "demand",
@@ -97,22 +111,34 @@ SVG_SAFE_VISUAL_TERMS = {
     "function",
     "geometry",
     "graph",
+    "history",
+    "historical",
+    "influence",
+    "organisation",
+    "organization",
     "ledger",
+    "limited company financial statement",
     "line",
+    "marketing",
     "market",
+    "manufacturing account",
     "mechanics",
     "motion",
     "number",
     "particle",
+    "partnership appropriation",
     "ph",
     "probability",
+    "quality",
     "ratio",
     "reconciliation",
     "scatter",
     "statement",
+    "stakeholder",
     "statistics",
     "supply",
     "table",
+    "timeline",
     "tree",
     "triangle",
     "venn",
@@ -159,7 +185,7 @@ ZH_FORBIDDEN_TEMPLATE_PHRASES = [
     "Local SVG draft",
     "Why not SVG",
     "Prompt queue",
-    "Output language: English",
+    "Term support: English",
     "官方大纲要求",
 ]
 
@@ -198,8 +224,8 @@ def validate_preflight_and_source(plan: GuidePlan) -> list[ValidationIssue]:
         issues.append(ValidationIssue("error", "Missing preflight subject selection."))
     if options.explanation_style not in {"formal", "friendly", "life", "story", "detective", "adventure"}:
         issues.append(ValidationIssue("error", "Missing or unsupported explanation style selection."))
-    if options.output_language not in {"en", "zh-CN"}:
-        issues.append(ValidationIssue("error", "Missing or unsupported output language selection."))
+    if options.output_language not in LANGUAGE_CHOICES:
+        issues.append(ValidationIssue("error", "Missing or unsupported term-support language selection."))
     if options.image_provider not in {"prompt-queue", "deterministic-svg", "custom"}:
         issues.append(ValidationIssue("error", "Missing or unsupported image-provider selection."))
     if options.image_provider == "custom":
@@ -333,6 +359,7 @@ def validate_topic_coverage(plan: GuidePlan) -> list[ValidationIssue]:
 
 def validate_guides(plan: GuidePlan) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
+    body_language = handbook_body_language(plan.run_options.output_language)
     for guide in plan.topic_guides:
         required = [
             guide.essence,
@@ -340,6 +367,15 @@ def validate_guides(plan: GuidePlan) -> list[ValidationIssue]:
             guide.mini_worked_example,
             guide.pitfall,
             guide.diagram_brief,
+        ]
+        body_values = [
+            guide.essence,
+            guide.analogy,
+            guide.mini_worked_example,
+            guide.pitfall,
+            guide.diagram_brief,
+            *guide.worked_solution_steps,
+            *guide.checklist,
         ]
         if any(not value.strip() for value in required):
             issues.append(ValidationIssue("error", f"Incomplete topic guide block: {guide.topic_title}"))
@@ -353,16 +389,8 @@ def validate_guides(plan: GuidePlan) -> list[ValidationIssue]:
         if len(guide.checklist) < 3:
             issues.append(ValidationIssue("warning", f"Checklist is too short: {guide.topic_title}"))
         if has_ai_language_smell(
-            [
-                guide.essence,
-                guide.analogy,
-                guide.mini_worked_example,
-                guide.pitfall,
-                guide.diagram_brief,
-                *guide.worked_solution_steps,
-                *guide.checklist,
-            ],
-            plan.run_options.output_language,
+            body_values,
+            body_language,
         ):
             issues.append(
                 ValidationIssue(
@@ -370,34 +398,28 @@ def validate_guides(plan: GuidePlan) -> list[ValidationIssue]:
                     f"Topic guide contains formulaic AI-style wording: {guide.topic_title}",
                 )
             )
-        if plan.run_options.output_language == "zh-CN" and has_zh_placeholder_text(
-            [
-                guide.essence,
-                guide.analogy,
-                guide.mini_worked_example,
-                guide.pitfall,
-                guide.diagram_brief,
-                *guide.worked_solution_steps,
-                *guide.checklist,
-            ]
-        ):
+        if body_language == "zh-CN" and has_zh_placeholder_text(body_values):
             issues.append(
                 ValidationIssue(
                     "error",
                     f"Chinese topic guide contains generic syllabus placeholder text: {guide.topic_title}",
                 )
             )
-        if has_encoding_artifacts(
-            [
-                guide.essence,
-                guide.analogy,
-                guide.mini_worked_example,
-                guide.pitfall,
-                guide.diagram_brief,
-                *guide.worked_solution_steps,
-                *guide.checklist,
-            ]
-        ):
+        if body_language == "en" and has_cjk_text(body_values):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Topic guide contains non-English body text: {guide.topic_title}",
+                )
+            )
+        if has_syllabus_shell_text(body_values):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Topic guide contains syllabus shell text: {guide.topic_title}",
+                )
+            )
+        if has_encoding_artifacts(body_values):
             issues.append(
                 ValidationIssue(
                     "error",
@@ -470,7 +492,16 @@ def validate_practice(plan: GuidePlan) -> list[ValidationIssue]:
 
 def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
+    body_language = handbook_body_language(plan.run_options.output_language)
     topic_title = getattr(item, "topic_title", "")
+    body_values = [
+        item.question,
+        item.command_word,
+        item.focus_point,
+        *item.answer_frame,
+        *item.public_solution_steps,
+        *item.answer_checkpoints,
+    ]
     if not item.command_word.strip():
         issues.append(ValidationIssue("error", f"Practice item is missing a command word: {topic_title}"))
     if not item.difficulty.strip():
@@ -498,13 +529,8 @@ def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[Validati
             )
         )
     if has_ai_language_smell(
-        [
-            item.question,
-            *item.answer_frame,
-            *item.public_solution_steps,
-            *item.answer_checkpoints,
-        ],
-        plan.run_options.output_language,
+        body_values,
+        body_language,
     ):
         issues.append(
             ValidationIssue(
@@ -512,7 +538,14 @@ def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[Validati
                 f"Practice item contains formulaic AI-style wording: {topic_title}",
             )
         )
-    if plan.run_options.output_language == "zh-CN" and has_zh_placeholder_text(
+    if body_language == "en" and has_cjk_text(body_values):
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Practice item contains non-English body text: {topic_title}",
+            )
+        )
+    if body_language == "zh-CN" and has_zh_placeholder_text(
         [
             item.question,
             item.command_word,
@@ -526,6 +559,22 @@ def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[Validati
             ValidationIssue(
                 "error",
                 f"Chinese practice item contains generic syllabus placeholder text: {topic_title}",
+            )
+        )
+    if has_syllabus_shell_text(
+        [
+            item.question,
+            item.command_word,
+            item.focus_point,
+            *item.answer_frame,
+            *item.public_solution_steps,
+            *item.answer_checkpoints,
+        ]
+    ):
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Practice item contains syllabus shell text: {topic_title}",
             )
         )
     if has_encoding_artifacts(
@@ -550,7 +599,9 @@ def validate_practice_item(plan: GuidePlan, item: PracticeItem) -> list[Validati
 
 def validate_visual_briefs(plan: GuidePlan) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
+    body_language = handbook_body_language(plan.run_options.output_language)
     for brief in plan.visual_briefs:
+        body_values = [brief.focus_point, brief.visual_type, brief.trigger, brief.prompt]
         if not brief.focus_point.strip():
             issues.append(ValidationIssue("error", f"Visual brief is missing a focus point: {brief.topic_title}"))
         if not brief.visual_type.strip():
@@ -568,16 +619,28 @@ def validate_visual_briefs(plan: GuidePlan) -> list[ValidationIssue]:
                     f"Visual image prompt includes board or course packaging: {brief.topic_title}",
                 )
             )
-        if plan.run_options.output_language == "zh-CN" and has_zh_placeholder_text(
-            [brief.focus_point, brief.visual_type, brief.trigger, brief.prompt]
-        ):
+        if body_language == "zh-CN" and has_zh_placeholder_text(body_values):
             issues.append(
                 ValidationIssue(
                     "error",
                     f"Chinese visual brief contains generic syllabus placeholder text: {brief.topic_title}",
                 )
             )
-        if has_encoding_artifacts([brief.focus_point, brief.visual_type, brief.trigger, brief.prompt]):
+        if body_language == "en" and has_cjk_text(body_values):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Visual brief contains non-English body text: {brief.topic_title}",
+                )
+            )
+        if has_syllabus_shell_text(body_values):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Visual brief contains syllabus shell text: {brief.topic_title}",
+                )
+            )
+        if has_encoding_artifacts(body_values):
             issues.append(
                 ValidationIssue(
                     "error",
@@ -589,6 +652,28 @@ def validate_visual_briefs(plan: GuidePlan) -> list[ValidationIssue]:
                 ValidationIssue(
                     "error",
                     f"SVG visual brief is not in the SVG-safe scope: {brief.topic_title}",
+                )
+            )
+        if (
+            brief.complexity == "svg-basic"
+            and is_professional_diagram_visual(brief.visual_type)
+            and brief.image_provider != "kroki"
+        ):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Professional diagram visual must use Kroki renderer: {brief.topic_title}",
+                )
+            )
+        if (
+            brief.complexity == "svg-basic"
+            and not is_professional_diagram_visual(brief.visual_type)
+            and brief.image_provider == "kroki"
+        ):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Exact scientific/vector visual should stay local SVG, not Kroki: {brief.topic_title}",
                 )
             )
     return issues
@@ -676,15 +761,20 @@ def validate_html_output(plan: GuidePlan, html_path: Path) -> list[ValidationIss
 
     html = html_path.read_text(encoding="utf-8", errors="replace")
     options = plan.run_options
+    body_language = handbook_body_language(options.output_language)
+    html_body = strip_allowed_glossary_html(html)
     issues: list[ValidationIssue] = []
     if has_encoding_artifacts([html]):
         issues.append(ValidationIssue("error", "HTML output contains encoding replacement artifacts."))
-    for message in student_visible_text_issues(html, options.output_language):
+    for message in student_visible_text_issues(html_body, body_language):
         issues.append(ValidationIssue("error", message))
+    if has_syllabus_shell_text([html_body]):
+        issues.append(ValidationIssue("error", "HTML output contains syllabus shell text in student-facing content."))
+    issues.extend(validate_html_glossary_policy(html, options.output_language))
     rendered_titles = rendered_topic_titles(html)
-    for message in topic_title_quality_issues(rendered_titles, options.output_language):
+    for message in topic_title_quality_issues(rendered_titles, body_language):
         issues.append(ValidationIssue("error", message))
-    for label in mixed_language_label_matches(html):
+    for label in mixed_language_label_matches(html_body):
         issues.append(
             ValidationIssue(
                 "error",
@@ -693,15 +783,47 @@ def validate_html_output(plan: GuidePlan, html_path: Path) -> list[ValidationIss
         )
     expected_markers = display_topic_titles(
         handbook_topics(plan),
-        options.output_language,
+        body_language,
         plan.topic_guides,
     )
     for marker in expected_markers:
         if marker not in html and html_escape(marker) not in html:
             issues.append(ValidationIssue("error", f"Topic missing from HTML: {marker}"))
-    issues.extend(validate_html_language(options.output_language, html))
+    issues.extend(validate_html_language(body_language, html))
     issues.extend(validate_html_visual_and_diagram_blocks(plan, html))
-    issues.extend(validate_html_topic_map_mastery(html, options.output_language))
+    issues.extend(validate_html_topic_map_mastery(html, body_language))
+    return issues
+
+
+def validate_html_glossary_policy(html: str, selected_language: str) -> list[ValidationIssue]:
+    support_language = glossary_language(selected_language)
+    has_glossary = bool(re.search(r'\bclass="[^"]*\bprofessional-glossary\b', html))
+    row_count = html.count('class="glossary-term-row"')
+    issues: list[ValidationIssue] = []
+    if support_language is None:
+        if has_glossary or row_count:
+            issues.append(ValidationIssue("error", "English-only handbook must not include a professional term glossary."))
+        return issues
+    if not has_glossary:
+        issues.append(ValidationIssue("error", "Term-support handbook is missing the professional term glossary."))
+        return issues
+    if row_count < 30 or row_count > 50:
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Professional term glossary must contain 30-50 rows; found {row_count}.",
+            )
+        )
+    expected_label = language_mode_label(selected_language)
+    if expected_label not in html:
+        issues.append(
+            ValidationIssue(
+                "error",
+                f"Professional term glossary is missing support-language label: {expected_label}.",
+            )
+        )
+    if "English exam term" not in html:
+        issues.append(ValidationIssue("error", "Professional term glossary is missing English exam term column."))
     return issues
 
 
@@ -788,7 +910,8 @@ def rendered_topic_titles(html: str) -> list[str]:
 def validate_html_language(output_language: str, html: str) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     if output_language == "en":
-        if re.search(r"[\u4e00-\u9fff]", html):
+        checked_html = strip_allowed_glossary_html(html)
+        if re.search(r"[\u4e00-\u9fff]", checked_html):
             issues.append(
                 ValidationIssue(
                     "error",
@@ -835,6 +958,7 @@ def validate_html_language(output_language: str, html: str) -> list[ValidationIs
 def validate_html_visual_and_diagram_blocks(plan: GuidePlan, html: str) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     if plan.visual_briefs:
+        body_language = handbook_body_language(plan.run_options.output_language)
         visual_markers = (
             [
                 "Visual Worked Example",
@@ -842,7 +966,7 @@ def validate_html_visual_and_diagram_blocks(plan: GuidePlan, html: str) -> list[
                 "Generated Infographic",
                 "SVG Fallback - Review Needed",
             ]
-            if plan.run_options.output_language == "en"
+            if body_language == "en"
             else ["图形例题", "信息图生成队列", "已生成信息图", "SVG 兜底图 - 需要复核"]
         )
         if not any(marker in html for marker in visual_markers):
@@ -912,6 +1036,7 @@ def validate_pdf_output(plan: GuidePlan, pdf_path: Path) -> list[ValidationIssue
     size_mib = summary_float(summary, "pdf_size_mib")
     max_mib = summary_float(summary, "pdf_max_recommended_mib")
     blank_text_pages = summary_int(summary, "pdf_blank_text_pages")
+    file_uri_footer_pages = summary_int(summary, "pdf_file_uri_footer_pages")
     blank_limit = max(2, int(page_count * 0.03))
     issues: list[ValidationIssue] = []
     if page_count <= 0:
@@ -939,6 +1064,14 @@ def validate_pdf_output(plan: GuidePlan, pdf_path: Path) -> list[ValidationIssue
                 f"PDF output has {blank_text_pages} pages with almost no extractable text.",
             )
         )
+    if file_uri_footer_pages:
+        issues.append(
+            ValidationIssue(
+                "error",
+                "PDF output contains local file URL header/footer text on "
+                f"{file_uri_footer_pages} page(s). Re-export with headers and footers disabled.",
+            )
+        )
     return issues
 
 
@@ -946,12 +1079,15 @@ def pdf_quality_summary(plan: GuidePlan, pdf_path: Path) -> dict[str, object]:
     try:
         reader = PdfReader(str(pdf_path))
         page_text_lengths: list[int] = []
+        file_uri_footer_pages = 0
         for page in reader.pages:
             try:
                 text = page.extract_text() or ""
             except (KeyError, ValueError, TypeError):
                 text = ""
             page_text_lengths.append(len(text.strip()))
+            if "file:///" in text or "file:\\" in text:
+                file_uri_footer_pages += 1
     except (OSError, ValueError, KeyError) as exc:
         return {"read_error": str(exc)}
 
@@ -966,6 +1102,7 @@ def pdf_quality_summary(plan: GuidePlan, pdf_path: Path) -> dict[str, object]:
         "pdf_size_mib": round(size_mib, 2),
         "pdf_max_recommended_mib": round(max_mib, 2),
         "pdf_blank_text_pages": blank_text_pages,
+        "pdf_file_uri_footer_pages": file_uri_footer_pages,
         "pdf_average_text_chars": (
             int(sum(page_text_lengths) / page_count) if page_count else 0
         ),
@@ -1012,8 +1149,111 @@ def validate_image_assets(plan: GuidePlan, images_dir: Path) -> list[ValidationI
             )
     if infographic_briefs:
         issues.extend(validate_infographic_assets(infographic_briefs, manifest_entries, images_dir))
+    issues.extend(validate_pending_professional_diagram_jobs(manifest_entries))
+    issues.extend(validate_pairwise_svg_reuse(plan, manifest_entries, images_dir))
     issues.extend(validate_svg_repetition(images_dir))
+    issues.extend(validate_duplicate_raster_assets(manifest_entries))
     return issues
+
+
+def validate_pending_professional_diagram_jobs(
+    manifest_entries: list[dict[str, object]],
+) -> list[ValidationIssue]:
+    missing_job_ids = [
+        str(entry.get("id") or entry.get("file") or "unknown")
+        for entry in manifest_entries
+        if str(entry.get("asset_status", "")).lower() == "professional-diagram-required"
+    ]
+    if not missing_job_ids:
+        return []
+    return [
+        ValidationIssue(
+            "warning",
+            "Professional diagram rendering failed or is pending for: "
+            + ", ".join(missing_job_ids[:8])
+            + ("..." if len(missing_job_ids) > 8 else "")
+            + ". See images/infographic_jobs.md and rerender with Kroki or import reviewed diagram assets.",
+        )
+    ]
+
+
+def validate_pairwise_svg_reuse(
+    plan: GuidePlan,
+    manifest_entries: list[dict[str, object]],
+    images_dir: Path,
+) -> list[ValidationIssue]:
+    briefs_by_id = {
+        f"visual_{index:03d}": brief for index, brief in enumerate(plan.visual_briefs, start=1)
+    }
+    ids_by_structure: dict[str, list[str]] = {}
+    for entry in manifest_entries:
+        filename = str(entry.get("file") or "")
+        visual_id = str(entry.get("id") or "")
+        if not filename.lower().endswith(".svg") or not visual_id:
+            continue
+        path = images_dir / filename
+        if not path.exists():
+            continue
+        brief = briefs_by_id.get(visual_id)
+        if not brief or not is_pairwise_svg_reuse_risky(brief):
+            continue
+        fingerprint = svg_structure_fingerprint(path.read_text(encoding="utf-8", errors="replace"))
+        ids_by_structure.setdefault(fingerprint, []).append(visual_id)
+
+    for visual_ids in ids_by_structure.values():
+        if len(visual_ids) < 2:
+            continue
+        focus_values = {
+            normalize_reuse_text(getattr(briefs_by_id.get(visual_id), "focus_point", ""))
+            for visual_id in visual_ids
+        }
+        source_values = {
+            normalize_reuse_text(" ".join(getattr(briefs_by_id.get(visual_id), "source_points", []) or []))
+            for visual_id in visual_ids
+        }
+        if len(focus_values) > 1 or len(source_values) > 1:
+            return [
+                ValidationIssue(
+                    "error",
+                    "Different scientific SVG visuals reuse the same structure: "
+                    + ", ".join(visual_ids[:8])
+                    + ". Add topic-specific SVG templates or route one visual to a reviewed diagram asset.",
+                )
+            ]
+    return []
+
+
+def is_pairwise_svg_reuse_risky(brief: VisualBrief) -> bool:
+    text = f"{brief.visual_type} {brief.focus_point} {brief.trigger}".lower()
+    return any(
+        term in text
+        for term in [
+            "integral",
+            "area",
+            "quadratic",
+            "function",
+            "graph",
+            "curve",
+            "motion",
+            "momentum",
+            "impulse",
+            "collision",
+            "force",
+        ]
+    )
+
+
+def normalize_reuse_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value.lower()).strip()
+
+
+def strip_allowed_glossary_html(html: str) -> str:
+    return re.sub(
+        r'<section\b[^>]*class="[^"]*\bprofessional-glossary\b[^"]*"[^>]*>.*?</section>',
+        "",
+        html,
+        flags=re.S,
+    )
 
 
 def count_renderable_svg_safe_assets(
@@ -1091,7 +1331,7 @@ def validate_svg_repetition(images_dir: Path) -> list[ValidationIssue]:
     if is_svg_repetition_problem(total, unique_titles, max_title_repeats):
         issues.append(
             ValidationIssue(
-                "warning",
+                "error",
                 "SVG visual titles are too repetitive: "
                 f"{unique_titles}/{total} unique titles; {max_title_repeats} use "
                 f'"{summary["svg_most_common_title"]}". '
@@ -1104,7 +1344,7 @@ def validate_svg_repetition(images_dir: Path) -> list[ValidationIssue]:
     if is_svg_repetition_problem(total, unique_structures, max_structure_repeats):
         issues.append(
             ValidationIssue(
-                "warning",
+                "error",
                 "SVG visual structures are too repetitive: "
                 f"{unique_structures}/{total} unique shape layouts; {max_structure_repeats} share one layout. "
                 "Add subject/topic-specific vector templates or import reviewed infographic assets.",
@@ -1113,7 +1353,41 @@ def validate_svg_repetition(images_dir: Path) -> list[ValidationIssue]:
     return issues
 
 
+def validate_duplicate_raster_assets(
+    manifest_entries: list[dict[str, object]],
+) -> list[ValidationIssue]:
+    visual_ids_by_hash: dict[str, list[str]] = {}
+    for entry in manifest_entries:
+        filename = str(entry.get("file") or "")
+        if not is_raster_asset(filename):
+            continue
+        asset = entry.get("asset")
+        if not isinstance(asset, dict):
+            continue
+        digest = str(asset.get("sha256") or "")
+        if not digest:
+            continue
+        visual_id = str(entry.get("id") or entry.get("visual_id") or filename)
+        visual_ids_by_hash.setdefault(digest, []).append(visual_id)
+
+    repeated = [ids for ids in visual_ids_by_hash.values() if len(ids) > 1]
+    if not repeated:
+        return []
+    ids = max(repeated, key=len)
+    return [
+        ValidationIssue(
+            "error",
+            "Raster infographic assets are reused exactly across different visuals: "
+            + ", ".join(ids[:8])
+            + ("..." if len(ids) > 8 else "")
+            + ". Generate or import topic-specific assets before final delivery.",
+        )
+    ]
+
+
 def is_svg_repetition_problem(total: int, unique_count: int, max_repeats: int) -> bool:
+    if total < 12 and max_repeats < 3:
+        return False
     if max_repeats / total > SVG_REPETITION_MAX_REPEAT_RATIO:
         return True
     if max_repeats >= SVG_REPETITION_MIN_REPEAT:
@@ -1223,6 +1497,24 @@ def has_zh_placeholder_text(values: list[str]) -> bool:
         for value in values
         for pattern in placeholder_patterns
     )
+
+
+def has_cjk_text(values: Sequence[str]) -> bool:
+    return any(re.search(r"[\u3040-\u30ff\u3400-\u9fff]", value) for value in values)
+
+
+def has_syllabus_shell_text(values: list[str]) -> bool:
+    shell_patterns = [
+        r"candidates should have an understanding of:?",
+        r"students should be able to:?",
+        r"students must study one (?:breadth|depth) study",
+        r"students will:?",
+        r"\b[a-z]\)\s*explain the purpose of the:?",
+        r"\b[a-z]\)\s*explain the characteristics of:?",
+        r"\b[a-z]\)\s*understand the significance of the following accounting:?",
+    ]
+    text = "\n".join(values).lower()
+    return any(re.search(pattern, text) for pattern in shell_patterns)
 
 
 def duplicate_practice_question_topics(items: object) -> list[str]:
@@ -1421,6 +1713,7 @@ def review_summary(
         "pdf_size_mib": 0.0,
         "pdf_max_recommended_mib": round(pdf_recommended_max_mib(plan), 2),
         "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0,
         "pdf_average_text_chars": 0,
     }
     svg_summary = {

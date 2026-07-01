@@ -27,7 +27,7 @@ before reporting success.
 ```mermaid
 flowchart LR
   A["User asks for an International GCSE or International AS-A-level guide"] --> B["AI Agent loads skill/SKILL.md"]
-  B --> C["Confirm subject/provider, required exam year, output language, and explanation style"]
+  B --> C["Confirm subject/provider, required exam year, term-support language, and explanation style"]
   C --> D["Read handbook spec and provider reference"]
   D --> E["Run intl_exam_guide generate"]
   E --> F["Inspect run-options.json, handbook-package.json, and validation.json"]
@@ -48,7 +48,7 @@ The skill treats a guide as incomplete unless all of these are true:
 6. Every topic has practice cards with command words, solution steps, and answer checkpoints.
 7. HTML exists and contains required guide sections.
 8. `sections/` and `images/` exist.
-9. `run-options.json` records the confirmed subject, output language, optional
+9. `run-options.json` records the confirmed subject, term-support language, optional
    image-provider metadata, and explanation style. The user is not asked to
    choose an image model before the base handbook exists.
 10. PDF exists unless `--skip-pdf` was intentionally used.
@@ -81,7 +81,7 @@ python -m intl_exam_guide demo --out ./outputs/demo-science --language en --imag
 ```mermaid
 flowchart LR
   A["用户要求生成 International GCSE 或 International AS-A-level 指南"] --> B["AI Agent 加载 skill/SKILL.md"]
-  B --> C["确认考试局、科目、必要考试年份、输出语言和讲解风格"]
+  B --> C["确认考试局、科目、必要考试年份、术语辅助语言和讲解风格"]
   C --> D["读取手册规范和 provider reference"]
   D --> E["运行 intl_exam_guide generate"]
   E --> F["检查 run-options.json、handbook-package.json 与 validation.json"]
@@ -102,7 +102,7 @@ flowchart LR
 6. 每个 topic 都有练习卡片，并包含指令词、解题步骤和答案检查点。
 7. HTML 存在，并包含必要 sections。
 8. `sections/` 和 `images/` 存在。
-9. `run-options.json` 记录用户确认的科目、输出语言、讲解风格，以及可选的
+9. `run-options.json` 记录用户确认的科目、术语辅助语言、讲解风格，以及可选的
    生图 provider 元数据；基础手册生成前不要求用户选择生图模型。
 10. 除非明确使用 `--skip-pdf`，否则 PDF 必须存在。
 11. `validation.json.review_summary` 显示 topic、diagram、practice card 和

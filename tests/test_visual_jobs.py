@@ -63,6 +63,7 @@ def test_visual_jobs_explain_pending_generation_and_replacement():
 
     assert jobs[0]["replacement_target"] == "visual_001"
     assert jobs[0]["status"] == "needs_generation_or_review"
+    assert jobs[0]["complexity"] == "infographic"
     assert "visual_001" in markdown
     assert "Create bonding infographic." in markdown
     assert "Import with scripts/import_infographic_assets.py" in markdown
@@ -88,6 +89,26 @@ def test_visual_jobs_include_provider_selected_pending_generation():
 
     assert jobs[0]["replacement_target"] == "visual_002"
     assert jobs[0]["status"] == "needs_generation_or_review"
+
+
+def test_visual_jobs_include_pending_professional_diagrams():
+    jobs = build_visual_jobs(
+        [
+            {
+                "id": "visual_003",
+                "topic_title": "Organisation structure",
+                "complexity": "svg-basic",
+                "visual_type": "organisation structure hierarchy",
+                "asset_status": "professional-diagram-required",
+                "file": None,
+                "prompt": "Create organisation structure diagram.",
+            }
+        ]
+    )
+
+    assert jobs[0]["replacement_target"] == "visual_003"
+    assert jobs[0]["complexity"] == "svg-basic"
+    assert jobs[0]["visual_type"] == "organisation structure hierarchy"
 
 
 def test_write_visual_assets_writes_infographic_jobs_outputs(tmp_path):
@@ -135,6 +156,8 @@ def test_write_visual_assets_writes_infographic_jobs_outputs(tmp_path):
             "id": "visual_001",
             "topic_title": "Bonding",
             "status": "needs_generation_or_review",
+            "complexity": "infographic",
+            "visual_type": "bonding and structure infographic",
             "current_file": None,
             "replacement_target": "visual_001",
             "prompt": "Create bonding infographic.",

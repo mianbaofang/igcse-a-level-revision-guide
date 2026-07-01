@@ -319,6 +319,9 @@ def parse_generic_topics_from_pdf(pages: list[tuple[int, str]]) -> list[Topic]:
     pearson_topics = parse_pearson_topic_tables(pages)
     if len(pearson_topics) >= 6:
         return pearson_topics
+    humanities_topics = parse_humanities_topics(pages)
+    if len(humanities_topics) >= 6:
+        return humanities_topics
     content_pages = select_content_pages(pages)
     topics = parse_numbered_topics(content_pages)
     if len(topics) >= 6:
@@ -663,6 +666,176 @@ def parse_content_overview_topics(pages: list[tuple[int, str]]) -> list[Topic]:
     return dedupe_topics(topics)
 
 
+def parse_humanities_topics(pages: list[tuple[int, str]]) -> list[Topic]:
+    topics: list[Topic] = []
+    current_code: str | None = None
+    current_title: str | None = None
+    current_page: int | None = None
+    current_points: list[str] = []
+    in_relevant_section = False
+    in_detail_block = False
+
+    def flush() -> None:
+        nonlocal current_code, current_title, current_page, current_points
+        if not current_code or not current_title or current_page is None:
+            current_code = None
+            current_title = None
+            current_page = None
+            current_points = []
+            return
+        points = dedupe([point for point in current_points if is_humanities_topic_point(point)])
+        if not points:
+            points = [current_title]
+        snippet = clean_text(" ".join([current_code, current_title, *points[:6]]))
+        topics.append(
+            Topic(
+                title=f"{current_code} - {current_title}",
+                points=points[:10],
+                source_snippets=[
+                    SourceSnippet(
+                        page=current_page,
+                        text=snippet[:900],
+                        matched_term=current_code,
+                    )
+                ],
+            )
+        )
+        current_code = None
+        current_title = None
+        current_page = None
+        current_points = []
+
+    for page_number, page_text in pages:
+        page_lower = page_text.lower()
+        if any(
+            marker in page_lower
+            for marker in (
+                "depth studies",
+                "depth study",
+                "breadth study",
+                "historical investigation",
+                "core content",
+                "focus points",
+                "specified content",
+                "what students need to study",
+                "students must study",
+            )
+        ):
+            in_relevant_section = True
+        if not in_relevant_section:
+            continue
+        if topics and re.search(
+            r"\b(assessment information|details of assessment|appendix|appendices|command words|administration)\b",
+            page_lower,
+        ):
+            break
+        for raw_line in page_text.splitlines():
+            line = clean_topic_line(raw_line)
+            if not line or is_noise_line(line):
+                continue
+            lower = line.lower()
+            if lower in {
+                "focus points",
+                "specified content",
+                "what students need to study",
+                "content overview",
+            }:
+                in_detail_block = True
+                continue
+            if lower.startswith(("paper ", "assessment ", "appendix ", "administration ")):
+                flush()
+                in_detail_block = False
+                continue
+            heading = parse_humanities_heading(line)
+            if heading:
+                flush()
+                current_code, current_title = heading
+                current_page = page_number
+                current_points = []
+                in_detail_block = False
+                continue
+            if current_code and (in_detail_block or is_humanities_topic_point(line)):
+                current_points.append(line)
+    flush()
+    return dedupe_topics(topics)
+
+
+def parse_humanities_heading(line: str) -> tuple[str, str] | None:
+    cleaned = re.sub(r"\s+\.{2,}\s*\d+$", "", line).strip()
+    cleaned = re.sub(r"\s+\d{1,3}$", "", cleaned).strip()
+    option_match = re.match(r"^([A-Z]\d{1,2})\s+(.{6,150})$", cleaned)
+    if option_match and not option_match.group(1).upper().startswith("AO"):
+        title = clean_text(option_match.group(2)).strip(":- ")
+        if is_humanities_option_title(title):
+            return option_match.group(1), title
+    question_match = re.match(r"^(\d{1,2})\s+(.{10,150}\?)$", cleaned)
+    if question_match:
+        title = clean_text(question_match.group(2)).strip(":- ")
+        if is_humanities_question_title(title):
+            return question_match.group(1), title
+    return None
+
+
+def is_humanities_option_title(title: str) -> bool:
+    lower = title.lower()
+    if lower.startswith(("paper ", "assessment ", "content overview", "students must study")):
+        return False
+    return len(title.split()) >= 3
+
+
+def is_humanities_question_title(title: str) -> bool:
+    lower = title.lower()
+    if lower.startswith(("paper ", "assessment ", "content overview", "students must study", "why choose this syllabus")):
+        return False
+    if title.endswith("?") and re.match(r"^(?:why|how|what|were|was|did|to what extent|who)\b", lower):
+        return True
+    return any(
+        marker in lower
+        for marker in (
+            "war",
+            "revolution",
+            "reform",
+            "origins",
+            "relations",
+            "control",
+            "conflict",
+            "peace",
+            "depth",
+            "world",
+            "china",
+            "russia",
+            "germany",
+            "usa",
+            "britain",
+            "important",
+            "responsible",
+            "successful",
+            "cause",
+            "impact",
+            "diversity",
+        )
+    )
+
+
+def is_humanities_topic_point(line: str) -> bool:
+    if not is_topic_point(line):
+        return False
+    lower = line.lower()
+    if lower.startswith(("ao1", "ao2", "ao3", "paper ", "component ", "students must study", "students will")):
+        return False
+    return not any(
+        marker in lower
+        for marker in (
+            "assessment objective",
+            "candidates answer",
+            "externally assessed",
+            "marks",
+            "minutes",
+            "written paper",
+        )
+    )
+
+
 def chunk_informative_lines(pages: list[tuple[int, str]]) -> list[Topic]:
     lines: list[tuple[int, str]] = []
     for page_number, page_text in pages:
@@ -822,12 +995,17 @@ def is_topic_point(line: str) -> bool:
     if parse_topic_heading(line):
         return False
     lower = line.lower()
+    if re.match(r"^\d+\s+(details of the assessment|assessment information|appendix|appendices|command words)\b", lower):
+        return False
     bad_prefixes = (
         "back to contents",
         "content additional information",
         "content guidance",
+        "details of the assessment",
         "students should be able to",
+        "students will",
         "candidates should be able to",
+        "candidates should have an understanding of",
         "www.",
         "copyright",
         "pearson edexcel",

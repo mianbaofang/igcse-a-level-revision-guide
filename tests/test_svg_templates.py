@@ -4,6 +4,7 @@ from intl_exam_guide.models import VisualBrief
 from intl_exam_guide.rendering.svg_templates import (
     html_escape,
     render_accounting_flow_svg,
+    render_accounting_statement_variant_svg,
     render_algebra_svg,
     render_analysis_svg,
     render_bonding_svg,
@@ -24,10 +25,12 @@ from intl_exam_guide.rendering.svg_templates import (
     render_statistics_svg,
     render_topic_visual_svg,
     render_triangle_svg,
+    render_velocity_area_svg,
     render_zh_visual_svg,
     svg_multiline_text,
     wrap_words,
 )
+from intl_exam_guide.validation.checks import svg_structure_fingerprint
 
 
 def visual(visual_type: str) -> VisualBrief:
@@ -43,6 +46,19 @@ def visual(visual_type: str) -> VisualBrief:
     )
 
 
+def visual_with_focus(visual_type: str, focus: str) -> VisualBrief:
+    return VisualBrief(
+        topic_title="Topic",
+        focus_point=focus,
+        trigger="trigger",
+        visual_type=visual_type,
+        complexity="svg-basic",
+        image_provider="deterministic-svg",
+        prompt="prompt",
+        source_points=[focus],
+    )
+
+
 def assert_svg_contract(svg: str, title: str, index: int = 1) -> None:
     assert '<svg class="visual-svg"' in svg
     assert 'role="img"' in svg
@@ -50,12 +66,117 @@ def assert_svg_contract(svg: str, title: str, index: int = 1) -> None:
     assert f'<title id="visual-title-{index}">{title}</title>' in svg
 
 
+def test_function_graph_router_uses_topic_specific_math_motifs():
+    cases = [
+        visual_with_focus(
+            "function graph or coordinate visual",
+            "Quadratic functions and their graphs.",
+        ),
+        visual_with_focus(
+            "function graph or coordinate visual",
+            "Interpreting solutions as intersection points of graphs.",
+        ),
+        visual_with_focus(
+            "function graph or coordinate visual",
+            "Equation of a straight line using gradients and mid-points.",
+        ),
+        visual_with_focus(
+            "function graph or coordinate visual",
+            "Sketching and interpreting kinematics graphs with velocity and acceleration.",
+        ),
+    ]
+
+    svgs = [render_topic_visual_svg(case, index) for index, case in enumerate(cases, start=1)]
+
+    assert len({svg_structure_fingerprint(svg) for svg in svgs}) == len(cases)
+    assert "Quadratic functions and their graphs" in svgs[0]
+    assert "intersections = simultaneous solutions" in svgs[1]
+    assert "y=mx+c" in svgs[2]
+    assert "velocity-time and displacement-time graphs" in svgs[3]
+
+
+def test_trig_tangent_functions_do_not_route_to_circle_tangent_svg():
+    brief = visual_with_focus(
+        "trigonometry circle or graph visual",
+        "Sine, cosine and tangent functions.",
+    )
+
+    svg = render_topic_visual_svg(brief, 1, "en")
+
+    assert "sin, cos, tan" in svg
+    assert "radius ⟂ tangent" not in svg
+
+
+def test_motion_graph_gradient_area_uses_distinct_velocity_area_svg():
+    sketch = visual_with_focus(
+        "motion graph visual",
+        "Sketching and interpreting kinematics graphs.",
+    )
+    area = visual_with_focus(
+        "motion graph visual",
+        "Use of gradients and area under graphs to solve problems.",
+    )
+
+    sketch_svg = render_topic_visual_svg(sketch, 1, "en")
+    area_svg = render_topic_visual_svg(area, 2, "en")
+
+    assert "Distance-time graph" in sketch_svg
+    assert "Velocity-time graph: gradient and area" in area_svg
+    assert "area = displacement" in area_svg
+    assert "Velocity-time graph: gradient and area" in render_velocity_area_svg(3)
+    assert svg_structure_fingerprint(sketch_svg) != svg_structure_fingerprint(area_svg)
+
+
+def test_mechanics_routes_use_topic_specific_structures():
+    connected = visual_with_focus(
+        "mechanics force or collision diagram",
+        "Connected particle problems with a light inextensible string passing over a smooth pulley.",
+    )
+    momentum = visual_with_focus(
+        "mechanics before-after collision diagram",
+        "The principle of conservation of momentum applied to two particles.",
+    )
+    fixed_surface = visual_with_focus(
+        "mechanics before-after collision diagram",
+        "Direct impact with a fixed surface, perpendicular to a fixed smooth surface.",
+    )
+
+    svgs = [
+        render_topic_visual_svg(connected, 1, "en"),
+        render_topic_visual_svg(momentum, 2, "en"),
+        render_topic_visual_svg(fixed_surface, 3, "en"),
+    ]
+
+    assert "same acceleration" in svgs[0]
+    assert "total momentum conserved" in svgs[1]
+    assert "perpendicular impact" in svgs[2]
+    assert len({svg_structure_fingerprint(svg) for svg in svgs}) == 3
+
+
 def test_svg_topic_router_covers_english_subject_routes():
     route_expectations = [
         ("ledger flow diagram", "Accounting records flow"),
         ("bank reconciliation verification", "Verification and reconciliation"),
+        ("trial balance verification table", "Trial balance verification table"),
+        ("control account reconciliation diagram", "Control account reconciliation"),
+        ("error correction and suspense account flow", "Error correction and suspense flow"),
+        ("incomplete records reconstruction flow", "Incomplete records reconstruction"),
         ("financial statement ratio-analysis", "Financial statement layout"),
         ("demand-supply market scenario", "Demand and supply market diagram"),
+        ("stakeholder influence map", "Stakeholder influence map"),
+        ("business ownership comparison table", "Business ownership comparison"),
+        ("cash-flow timeline and balance table", "Cash-flow timeline"),
+        ("break-even chart with cost and revenue lines", "Break-even chart"),
+        ("marketing mix quadrant visual", "Marketing mix"),
+        ("customer segmentation map", "Customer segmentation map"),
+        ("organisation structure hierarchy diagram", "Organisation structure hierarchy"),
+        ("quality assurance checkpoint diagram", "Quality assurance checkpoint loop"),
+        ("operations flow and quality checkpoint diagram", "Operations flow and checkpoints"),
+        ("business decision flow diagram", "Business decision flow"),
+        ("historical timeline visual", "Historical timeline"),
+        ("cause and consequence chain", "Cause and consequence chain"),
+        ("source evidence comparison visual", "Source evidence comparison"),
+        ("change and continuity comparison visual", "Change and continuity comparison"),
         ("factors of production opportunity cost", "Economic choice flow"),
         ("set notation venn", "Set notation and Venn regions"),
         ("force and motion force arrows", "Force and motion diagram"),
@@ -214,6 +335,27 @@ def test_chinese_math_svg_router_prefers_specific_routes_before_calculus_words()
         assert "切线斜率" not in svg
 
 
+def test_integral_area_svgs_distinguish_definite_area_from_signed_x_axis_region():
+    definite = visual("calculus graph and area annotation")
+    definite.focus_point = "Interpretation of the definite integral as the area under a curve."
+    definite.source_points = [definite.focus_point]
+    signed_region = visual("calculus graph and area annotation")
+    signed_region.focus_point = (
+        "Integration to determine the area of a region between a curve and the x-axis. "
+        "To include regions wholly below the x-axis, ie knowledge that the integral will "
+        "give a negative value."
+    )
+    signed_region.source_points = [signed_region.focus_point]
+
+    definite_svg = render_topic_visual_svg(definite, 47, "en")
+    signed_svg = render_topic_visual_svg(signed_region, 49, "en")
+
+    assert "area from a to b" in definite_svg
+    assert "below x-axis" in signed_svg
+    assert "signed area" in signed_svg
+    assert svg_structure_fingerprint(definite_svg) != svg_structure_fingerprint(signed_svg)
+
+
 def test_chinese_kinematics_svg_avoids_bilingual_slash_label():
     brief = visual("图文结合学习图")
     brief.focus_point = "运动学图像绘制与解读"
@@ -290,6 +432,32 @@ def test_direct_svg_helpers_escape_titles_and_keep_core_labels():
     assert "A&amp;B &lt;topic&gt;" in escaped
     assert "Key idea" in escaped
     assert html_escape('"quoted" & <tag>') == "&quot;quoted&quot; &amp; &lt;tag&gt;"
+
+
+def test_market_demand_and_supply_shift_svgs_are_distinct():
+    demand_svg = render_market_svg(1, "en", "demand")
+    supply_svg = render_market_svg(2, "en", "supply")
+
+    assert "Demand increases" in demand_svg
+    assert "Supply increases" in supply_svg
+    assert svg_structure_fingerprint(demand_svg) != svg_structure_fingerprint(supply_svg)
+
+
+def test_accounting_statement_variant_svgs_use_distinct_professional_layouts():
+    variants = [
+        ("Partnership accounts", ("Profit share", "Current accounts", "Capital", "Drawings")),
+        ("Manufacturing account", ("Raw materials", "Prime cost", "Factory overheads", "Production cost")),
+        ("Club and non-profit accounts", ("Receipts", "Payments", "Subscriptions", "Accumulated fund")),
+        ("Limited company statements", ("Revenue", "Expenses", "Equity", "Retained earnings")),
+    ]
+
+    fingerprints = []
+    for index, (title, labels) in enumerate(variants, start=1):
+        svg = render_accounting_statement_variant_svg(index, title, labels)
+        assert_svg_contract(svg, title, index)
+        fingerprints.append(svg_structure_fingerprint(svg))
+
+    assert len(set(fingerprints)) == len(variants)
 
 
 def test_svg_text_wrapping_helpers_are_deterministic():

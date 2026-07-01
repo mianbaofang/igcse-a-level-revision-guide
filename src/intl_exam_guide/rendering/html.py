@@ -15,7 +15,17 @@ from intl_exam_guide.models import (
     VisualBrief,
 )
 from intl_exam_guide.planning.localization import zh_teachable_topic_title, zh_topic_keyword_label
+from intl_exam_guide.planning.language_policy import (
+    glossary_language,
+    handbook_body_language,
+    language_mode_label,
+    with_body_language_options,
+)
+from intl_exam_guide.planning.source_points import clean_source_point, merge_wrapped_source_points, visible_source_points
+from intl_exam_guide.planning.source_points import is_syllabus_shell
 from intl_exam_guide.rendering.cover import render_cover
+from intl_exam_guide.rendering.delivery_panel import render_delivery_panel
+from intl_exam_guide.rendering.glossary import render_professional_glossary
 from intl_exam_guide.rendering.icons import render_icon
 from intl_exam_guide.rendering.infographics import render_infographic_required
 from intl_exam_guide.rendering.styles import stylesheet
@@ -36,9 +46,12 @@ def render_html(
 ) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     qualification = plan.qualification
-    language = plan.run_options.output_language
+    selected_language = plan.run_options.output_language
+    language = handbook_body_language(selected_language)
+    body_options = with_body_language_options(plan.run_options)
     manifest_path = visual_manifest_path or output_path.parent / "images" / "visual_manifest.json"
-    visual_assets = build_visual_asset_lookup(load_visual_manifest(manifest_path))
+    manifest_entries = load_visual_manifest(manifest_path)
+    visual_assets = build_visual_asset_lookup(manifest_entries)
     html_lang = "zh-CN" if language == "zh-CN" else "en"
     page_title = (
         f"{qualification.title} Revision Guide"
@@ -49,8 +62,10 @@ def render_html(
         f"<!doctype html><html lang=\"{html_lang}\"><head><meta charset=\"utf-8\">",
         f"<title>{html_escape(page_title)}</title>",
         f"<style>{stylesheet()}</style></head><body>",
-        render_cover(qualification, plan.run_options),
+        render_cover(qualification, body_options),
+        render_delivery_panel(plan, manifest_entries, output_path.parent),
         render_student_overview(qualification, plan.revision_stages, plan.run_options),
+        render_professional_glossary(qualification, glossary_language(selected_language) or "en"),
         render_topic_map(qualification.topics, language, plan.topic_guides),
         render_topic_nav(qualification.topics, language, plan.topic_guides),
         render_topics(
@@ -74,19 +89,10 @@ def render_student_overview(
     stages: list[str],
     options: GuideRunOptions,
 ) -> str:
+    body_language = handbook_body_language(options.output_language)
     summary = "".join(f"<li>{html_escape(item)}</li>" for item in qualification.summary[:4])
-    if options.output_language == "zh-CN":
-        summary = "".join(
-            f"<li>{html_escape(item)}</li>"
-            for item in [
-                "本手册根据官方课程页面和考试大纲 PDF 整理。",
-                "知识单元按大纲抽取结果展开，便于逐节复习。",
-                "官方英文来源保留在结构化文件中，正文按中文学习手册排版。",
-            ]
-        )
     stage_items = "".join(f"<li>{html_escape(stage)}</li>" for stage in stages)
-    if options.output_language == "en":
-        return f"""
+    return f"""
 <section class="band student-overview">
   <h2>How to Study</h2>
   <div class="overview-grid">
@@ -102,40 +108,9 @@ def render_student_overview(
       <h3>Guide Setup</h3>
       <ul>
         <li>Subject request: {html_escape(options.requested_subject)}</li>
-        <li>Output language: English</li>
-        <li>Illustrations: {html_escape(image_provider_display(options, options.output_language))}</li>
-        <li>Writing style: {html_escape(style_display(options.explanation_style, options.output_language))}</li>
-      </ul>
-    </article>
-  </div>
-</section>
-"""
-    subject_request = subject_display_name(qualification)
-    if subject_request == "本课程":
-        subject_request = re.sub(r"\s*\([^)]*\)\s*$", "", qualification.title).strip()
-        for prefix in ("International GCSE", "International AS-A-level"):
-            if subject_request.lower().startswith(prefix.lower()):
-                subject_request = subject_request[len(prefix) :].strip(" -–—:")
-                break
-    return f"""
-<section class="band student-overview">
-  <h2>怎么用这本手册</h2>
-  <div class="overview-grid">
-    <article>
-      <h3>学习顺序</h3>
-      <ol>{stage_items}</ol>
-    </article>
-    <article>
-      <h3>课程重点</h3>
-      <ul>{summary}</ul>
-    </article>
-    <article>
-      <h3>手册设置</h3>
-      <ul>
-        <li>科目：{html_escape(subject_request)}</li>
-        <li>输出语言：中文</li>
-        <li>插图说明：{html_escape(image_provider_display(options, options.output_language))}</li>
-        <li>讲解语气：{html_escape(style_display(options.explanation_style, options.output_language))}</li>
+        <li>Term support: {html_escape(language_mode_label(options.output_language))}</li>
+        <li>Illustrations: {html_escape(image_provider_display(options, body_language))}</li>
+        <li>Writing style: {html_escape(style_display(options.explanation_style, body_language))}</li>
       </ul>
     </article>
   </div>
@@ -215,9 +190,9 @@ def render_language_policy() -> str:
 <section class="band language-policy">
   <h2>Language Policy</h2>
   <ul class="plain">
-    <li>The student-facing handbook follows one selected output language.</li>
-    <li>Template labels, explanations, worked examples, and image prompts are not rendered as bilingual pairs.</li>
-    <li>Official source text remains available for traceability in structured files or a separated review appendix.</li>
+    <li>The handbook body stays in English because the exam is in English.</li>
+    <li>A selected support language adds a 30-50 item glossary; it does not translate the whole handbook.</li>
+    <li>Template labels, explanations, worked examples, diagram text, and image prompts are not rendered as bilingual pairs.</li>
   </ul>
 </section>
 """
@@ -247,7 +222,7 @@ def render_summary(qualification: Qualification, language: str = "en") -> str:
         summary_items = [
             "课程定位来自官方课程页面和考试大纲。",
             "详细学习内容按 PDF 大纲抽取结果整理。",
-            "英文来源保留在结构化文件中，学生正文保持中文。",
+            "学生手册正文保持英文，术语对照表提供辅助语言支持。",
         ]
     items = "\n".join(f"<li>{html_escape(item)}</li>" for item in summary_items)
     heading = "Course Position" if language == "en" else "课程定位"
@@ -298,9 +273,13 @@ def render_topic_map(
         guide = guides.get(topic.title)
         if language == "en":
             points = (
-                ", ".join(topic.points[:4])
-                if topic.points
-                else "Use the specification text for detailed statements."
+                topic_map_mastery_text(guide, language)
+                if guide
+                else (
+                    ", ".join(topic.points[:4])
+                    if topic.points
+                    else "Use the specification text for detailed statements."
+                )
             )
             title = display_titles[index - 1]
         else:
@@ -480,7 +459,7 @@ def render_topics(
         guide = guides.get(topic.title)
         title = display_titles[index - 1]
         if language == "en":
-            point_values = topic.points
+            point_values = visible_source_points(topic, limit=5) if topic.points else []
         elif guide:
             point_values = guide.checklist[:4]
         else:
@@ -578,7 +557,7 @@ def render_topic_guide(guide: TopicGuide, language: str) -> str:
 
 
 def render_topic_diagram(topic: Topic, guide: TopicGuide, index: int, language: str) -> str:
-    points = topic.points[:4] if language == "en" else guide.checklist[:4]
+    points = visible_source_points(topic, limit=4) if language == "en" else guide.checklist[:4]
     points = points or guide.checklist[:4] or [display_topic_title(topic, index, language)]
     source = topic.source_snippets[0] if topic.source_snippets else None
     source_label = format_source_reference(source, language, include_prefix=True)
@@ -679,7 +658,8 @@ def render_visual_example(
 
 
 def render_story_modes(topic: Topic, guide: TopicGuide, language: str, index: int) -> str:
-    focus = topic.points[0] if topic.points else guide.topic_title
+    points = visible_source_points(topic, limit=1)
+    focus = points[0] if points else guide.topic_title
     if language == "en":
         life, detective, quest = english_story_lines(topic.title, focus, index)
         return f"""
@@ -777,7 +757,7 @@ def render_reference_appendix(qualification: Qualification, practice_count: int,
     audience_note = (
         qualification.audience_note
         if language == "en"
-        else "官方英文来源和考试结构已保存在结构化输出中，供复核；学生手册正文保持所选中文输出。"
+        else "官方英文来源和考试结构已保存在结构化输出中，供复核；学生手册正文保持英文，术语表提供辅助语言支持。"
     )
     return f"""
 <section class="band source appendix">
@@ -818,7 +798,7 @@ def render_source_snippets(snippets: list[SourceSnippet], compact: bool = False,
         return f"<details class=\"{css_class}\"><summary>{html_escape(summary)}</summary><ul>{''.join(items)}</ul></details>"
     items = []
     for snippet in snippets:
-        text = snippet.text
+        text = source_snippet_display_text(snippet.text)
         if compact and len(text) > 220:
             text = f"{text[:220].rstrip()}..."
         items.append(
@@ -829,6 +809,19 @@ def render_source_snippets(snippets: list[SourceSnippet], compact: bool = False,
             "</li>"
         )
     return f"<details class=\"{css_class}\"><summary>{html_escape(summary)}</summary><ul>{''.join(items)}</ul></details>"
+
+
+def source_snippet_display_text(text: str) -> str:
+    source = re.sub(r"\s*•\s*", "; ", text)
+    parts = re.split(r"\s+(?=[a-z]\)\s+)", source, flags=re.IGNORECASE)
+    if len(parts) > 1:
+        raw_parts = [clean_source_point(part).strip(" ;:") for part in parts]
+        cleaned_parts = merge_wrapped_source_points([part for part in raw_parts if part and not is_syllabus_shell(part)])
+        cleaned = "; ".join(part for part in cleaned_parts if part)
+    else:
+        cleaned = clean_source_point(source)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" ;")
+    return cleaned or "Source text recorded in the structured source files."
 
 
 def format_source_reference(

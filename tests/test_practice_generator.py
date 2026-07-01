@@ -5,6 +5,7 @@ from intl_exam_guide.planning.practice_generator import (
     choose_difficulty,
     concrete_example,
     concrete_example_zh,
+    contextualize_question,
 )
 
 
@@ -340,6 +341,100 @@ def test_economics_examples_cover_core_topic_branches():
         text = combined_text(concrete_example(Topic(title=title, points=[focus]), focus, number, "Economics"))
         for expected in expected_terms:
             assert expected.lower() in text
+
+
+def test_economics_competitive_market_process_uses_non_price_competition_context():
+    text = combined_text(
+        concrete_example(
+            Topic(
+                title="3.1.4.5 - The competitive market process",
+                points=[
+                    "Firms do not just compete on price but competition will also lead firms to strive to improve products, reduce costs and improve the quality of the service provided."
+                ],
+            ),
+            "Firms do not just compete on price but",
+            1,
+            "Economics",
+        )
+    ).lower()
+
+    assert "non-price competition" in text
+    assert "improve products" in text
+    assert "oranges" not in text
+    assert "supply curve shifts left" not in text
+
+
+def test_contextualize_question_does_not_expose_incomplete_syllabus_fragments():
+    question = "Two cafes compete through faster service and a loyalty app."
+
+    assert (
+        contextualize_question(question, "Firms do not just compete on price but", "en")
+        == question
+    )
+
+
+def test_economics_competition_dynamics_uses_short_run_long_run_context():
+    text = combined_text(
+        concrete_example(
+            Topic(
+                title="3.3.3.8 - The dynamics of competition and competitive market processes",
+                points=[
+                    "Short-run and long-run benefits which may result from competition and competitive market processes."
+                ],
+            ),
+            "Short-run and long-run benefits which may result",
+            1,
+            "Economics",
+        )
+    ).lower()
+
+    assert "short run" in text or "short-run" in text
+    assert "long run" in text or "long-run" in text
+    assert "consumer" in text
+    assert "oranges" not in text
+
+
+def test_history_option_codes_do_not_route_to_mathematics_templates():
+    topic = Topic(
+        title="A1 - The origins and course of the First World War, 1905-18",
+        points=["The origins and course of the First World War, 1905-18"],
+    )
+
+    question, frame, steps, checkpoints = concrete_example(topic, topic.points[0], 0, "History")
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "first world war" in combined
+    assert "cause" in combined or "change" in combined or "source" in combined
+    assert "solve 3(" not in combined
+    assert "x = 7" not in combined
+
+
+def test_history_question_topics_use_history_structure_not_generic_template():
+    topic = Topic(
+        title="6 - What caused the First World War?",
+        points=["What caused the First World War?"],
+    )
+
+    question, frame, steps, checkpoints = concrete_example(topic, topic.points[0], 0, "History")
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "first world war" in combined
+    assert "short-term cause" in combined or "longer-term cause" in combined or "two causes" in combined
+    assert "definition, one application, and one check" not in combined
+
+
+def test_business_examples_are_business_specific_not_generic_template():
+    topic = Topic(
+        title="3.1.4 - Stakeholders",
+        points=["Main stakeholders of businesses.", "Objectives of stakeholders."],
+    )
+
+    question, frame, steps, checkpoints = concrete_example(topic, topic.points[0], 0, "Business")
+    combined = " ".join([question, *frame, *steps, *checkpoints]).lower()
+
+    assert "stakeholder" in combined
+    assert "business" in combined
+    assert "definition, one application, and one check" not in combined
 
 
 def test_biology_examples_cover_molecule_and_genetics_branches():

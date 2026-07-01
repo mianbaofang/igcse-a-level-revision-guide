@@ -9,22 +9,128 @@ from intl_exam_guide.models import VisualBrief
 def render_topic_visual_svg(visual: VisualBrief, index: int, language: str = "en") -> str:
     if language == "zh-CN":
         return render_zh_visual_svg(visual, index)
-    text = visual.visual_type.lower()
+    text = " ".join([visual.visual_type, visual.focus_point, *visual.source_points]).lower()
     tokens = set(re.findall(r"[a-z0-9]+", text))
     if any(word in text for word in ["ledger", "book-of-prime-entry", "source-document", "accounting process"]):
         return render_accounting_flow_svg(index, "en")
-    if any(word in text for word in ["reconciliation", "verification", "trial balance"]):
+    if "trial balance" in text:
+        return render_trial_balance_svg(index, "en")
+    if "control account" in text:
+        return render_control_account_svg(index, "en")
+    if "error correction" in text or "suspense account" in text:
+        return render_error_correction_svg(index, "en")
+    if "incomplete records" in text:
+        return render_incomplete_records_svg(index, "en")
+    if "partnership appropriation" in text or "partnership accounts" in text:
+        return render_accounting_statement_variant_svg(index, "Partnership accounts", ("Profit share", "Current accounts", "Capital", "Drawings"))
+    if "manufacturing account" in text or "manufacturing accounts" in text:
+        return render_accounting_statement_variant_svg(index, "Manufacturing account", ("Raw materials", "Prime cost", "Factory overheads", "Production cost"))
+    if "club receipts" in text or "non-profit" in text or "clubs" in text:
+        return render_accounting_statement_variant_svg(index, "Club and non-profit accounts", ("Receipts", "Payments", "Subscriptions", "Accumulated fund"))
+    if "limited company" in text or "limited companies" in text:
+        return render_accounting_statement_variant_svg(index, "Limited company statements", ("Revenue", "Expenses", "Equity", "Retained earnings"))
+    if any(word in text for word in ["bank reconciliation", "reconciliation", "verification"]):
         return render_reconciliation_svg(index, "en")
     if any(word in text for word in ["financial-statement", "financial statement", "ratio-analysis", "ratio analysis"]):
         return render_financial_statement_svg(index, "en")
     if any(word in text for word in ["demand-supply", "demand supply", "market scenario"]):
-        return render_market_svg(index, "en")
+        return render_market_svg(index, "en", market_variant_from_text(text))
+    if any(word in text for word in ["stakeholder influence"]):
+        return render_stakeholder_svg(index, "en")
+    if any(word in text for word in ["business ownership"]):
+        return render_business_comparison_svg(index, "en")
+    if any(word in text for word in ["cash-flow", "cash flow"]):
+        return render_cash_flow_svg(index, "en")
+    if any(word in text for word in ["break-even", "break even"]):
+        return render_break_even_svg(index, "en")
+    if any(word in text for word in ["marketing mix"]):
+        return render_marketing_mix_svg(index, "en")
+    if "customer segmentation" in text:
+        return render_customer_segmentation_svg(index, "en")
+    if "organisation structure" in text:
+        return render_organisation_structure_svg(index, "en")
+    if "quality assurance" in text:
+        return render_quality_checkpoint_svg(index, "en")
+    if "operations flow" in text:
+        return render_operations_flow_svg(index, "en")
+    if any(word in text for word in ["business decision", "people and organisation"]):
+        return render_business_process_svg(index, "en")
+    if any(word in text for word in ["historical timeline"]):
+        return render_history_timeline_svg(index, "en")
+    if any(word in text for word in ["cause and consequence"]):
+        return render_history_cause_svg(index, "en")
+    if any(word in text for word in ["source evidence"]):
+        return render_history_source_svg(index, "en")
+    if any(word in text for word in ["change and continuity"]):
+        return render_history_comparison_svg(index, "en")
     if any(word in text for word in ["factors of production", "production-chain", "opportunity-cost", "opportunity cost"]):
         return render_economic_flow_svg(index, "en")
-    if any(word in text for word in ["set notation", "venn"]):
-        return render_venn_svg(index, "en")
     if any(word in text for word in ["force and motion", "force arrows"]):
         return render_force_svg(index, "en")
+    if any(word in text for word in ["distance-time", "motion graph"]):
+        if "area under" in text or "gradients and area" in text or "gradient and area" in text:
+            return render_velocity_area_svg(index)
+        return render_motion_svg(index)
+    if any(word in text for word in ["function graph", "equation-balance"]):
+        if any(word in text for word in ["kinematic", "motion graph", "velocity", "acceleration"]):
+            return render_math_topic_svg(index, "Kinematics visual", visual.focus_point, "mechanics:kinematics")
+        if any(word in text for word in ["straight line", "gradient", "mid-point", "midpoint", "distance between two points"]):
+            return render_math_topic_svg(index, "Coordinate geometry visual", visual.focus_point, "coordinate:line")
+        if any(word in text for word in ["intersection", "solution of equations", "simultaneous"]):
+            return render_math_topic_svg(index, "Intersection visual", visual.focus_point, "algebra:simultaneous")
+        return render_math_topic_svg(
+            index,
+            "Function graph and equation balance",
+            visual.focus_point,
+            zh_math_variant("algebra", text),
+        )
+    if "statistics chart" in text:
+        return render_statistics_svg(index)
+    if any(word in text for word in ["set notation", "venn"]):
+        return render_venn_svg(index, "en")
+    if (
+        "circle" in text
+        and "tangent function" not in text
+        and "tangent functions" not in text
+        and any(word in text for word in ["radius", "tangent", "normal", "coordinate geometry"])
+    ):
+        return render_math_topic_svg(index, "Circle and coordinate visual", visual.focus_point, zh_math_variant("coordinate", text))
+    if any(word in text for word in ["derivative", "differentiation", "gradient of the tangent", "stationary"]):
+        return render_math_topic_svg(index, "Differentiation visual", visual.focus_point, zh_math_variant("calculus", text))
+    if any(word in text for word in ["sine", "cosine", "trigonometry", "trigonometric", "radian"]):
+        focus_text = " ".join([visual.focus_point, *visual.source_points]).lower()
+        return render_math_topic_svg(index, "Trigonometry visual", visual.focus_point, zh_math_variant("trig", focus_text))
+    mechanics_text = " ".join([visual.focus_point, *visual.source_points]).lower()
+    if any(word in text for word in ["momentum", "impulse", "impact", "collision", "newton", "force", "tension", "connected particle"]):
+        if any(word in mechanics_text for word in ["fixed surface", "smooth surface", "perpendicular to a fixed"]):
+            return render_math_topic_svg(index, "Mechanics visual", visual.focus_point, "mechanics:fixed-impact")
+        if any(word in mechanics_text for word in ["connected particle", "pulley", "string", "trailer"]):
+            return render_math_topic_svg(index, "Mechanics visual", visual.focus_point, "mechanics:connected")
+        if any(word in mechanics_text for word in ["momentum", "impulse", "impact", "collision"]):
+            return render_math_topic_svg(index, "Mechanics visual", visual.focus_point, "mechanics:momentum")
+        return render_math_topic_svg(index, "Mechanics visual", visual.focus_point, "mechanics:newton")
+    if any(word in text for word in ["velocity", "acceleration", "kinematic", "motion graph", "distance-time"]):
+        return render_math_topic_svg(index, "Kinematics visual", visual.focus_point, "mechanics:kinematics")
+    if any(word in text for word in ["circle", "radius"]):
+        return render_math_topic_svg(index, "Circle and coordinate visual", visual.focus_point, zh_math_variant("coordinate", text))
+    if any(word in text for word in ["intersection", "equal roots", "distinct real roots", "no real roots"]):
+        return render_math_topic_svg(index, "Intersection visual", visual.focus_point, "coordinate:intersection")
+    if any(word in text for word in ["straight line", "gradient", "mid-point", "midpoint", "distance between two points"]):
+        return render_math_topic_svg(index, "Coordinate geometry visual", visual.focus_point, "coordinate:line")
+    if any(word in text for word in ["trapezium"]):
+        return render_math_topic_svg(index, "Trapezium-rule visual", visual.focus_point, "integral:trapezium")
+    if any(word in text for word in ["integral", "integration", "area under", "area of a region"]):
+        return render_math_topic_svg(index, "Integration visual", visual.focus_point, zh_math_variant("integral", text))
+    if any(word in text for word in ["derivative", "differentiation", "stationary", "gradient of the tangent"]):
+        return render_math_topic_svg(index, "Differentiation visual", visual.focus_point, zh_math_variant("calculus", text))
+    if any(word in text for word in ["binomial distribution", "bernoulli"]):
+        return render_math_topic_svg(index, "Binomial distribution visual", visual.focus_point, "probability:binomial")
+    if any(word in text for word in ["random variable", "variance", "standard deviation"]):
+        return render_math_topic_svg(index, "Discrete random variable visual", visual.focus_point, "probability:table")
+    if any(word in text for word in ["probability", "relative frequency", "equally likely"]):
+        return render_math_topic_svg(index, "Probability visual", visual.focus_point, "probability:bars")
+    if any(word in text for word in ["surd", "indices", "exponent", "quadratic", "factorisation", "completing the square", "discriminant", "polynomial", "inequality"]):
+        return render_math_topic_svg(index, "Algebra visual", visual.focus_point, zh_math_variant("algebra", text))
     if any(word in text for word in ["gas tests", "common gas"]):
         return render_gas_tests_svg(index, "en")
     if any(word in tokens for word in ["acid", "acids", "base", "bases", "salt", "salts", "ph"]):
@@ -40,18 +146,16 @@ def render_topic_visual_svg(visual: VisualBrief, index: int, language: str = "en
         for word in ["chemical analysis", "chromatography", "identification of common gases", "identification of ions"]
     ):
         return render_analysis_svg(index)
-    if any(word in text for word in ["distance-time", "motion graph"]):
-        return render_motion_svg(index)
     if any(word in text for word in ["rate", "equilibrium"]):
         return render_rate_svg(index)
     if any(word in text for word in ["energy", "exothermic", "endothermic"]):
         return render_energy_svg(index)
     if any(word in text for word in ["number line", "fraction", "ratio"]):
         return render_number_svg(index)
-    if any(word in text for word in ["function graph", "equation-balance", "algebra"]):
-        return render_algebra_svg(index)
-    if any(word in text for word in ["statistics chart", "probability"]):
-        return render_statistics_svg(index)
+    if "algebra" in text:
+        return render_math_topic_svg(index, "Algebra visual", visual.focus_point, zh_math_variant("algebra", text))
+    if "probability" in text:
+        return render_math_topic_svg(index, "Statistics visual", visual.focus_point, "probability:bars")
     if any(
         word in text
         for word in ["geometry diagram", "triangle", "trigonometry", "pythagoras", "transformation"]
@@ -242,6 +346,31 @@ def render_motion_svg(index: int) -> str:
 """
 
 
+def render_velocity_area_svg(index: int) -> str:
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">Velocity-time graph: gradient and area</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="54" y="70" fill="#1354a5" font-size="23" font-weight="800">Velocity-time graph</text>
+  <path d="M92 282V86M92 282h520" stroke="#172033" stroke-width="4"/>
+  <path d="M116 248L268 130L480 130L590 210" fill="none" stroke="#1354a5" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M116 248L268 130H480L590 210V282H116z" fill="#1354a5" opacity="0.12"/>
+  <path d="M146 224L246 146" stroke="#b83246" stroke-width="5" marker-end="url(#vel-grad-{index})"/>
+  <path d="M304 132v148M480 132v148" stroke="#d99a24" stroke-width="4" stroke-dasharray="8 7"/>
+  <text x="116" y="104" font-size="17" font-weight="800" fill="#b83246">velocity</text>
+  <text x="560" y="312" font-size="17" font-weight="800" fill="#1f7a5b">time</text>
+  <text x="262" y="116" font-size="16" font-weight="800" fill="#1354a5">constant velocity</text>
+  <text x="170" y="202" font-size="16" font-weight="800" fill="#b83246">gradient = acceleration</text>
+  <text x="284" y="258" font-size="16" font-weight="800" fill="#9b6a10">area = displacement</text>
+  <defs>
+    <marker id="vel-grad-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10z" fill="#b83246"/>
+    </marker>
+  </defs>
+</svg>
+"""
+
+
 def render_rate_svg(index: int) -> str:
     return f"""
 <svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
@@ -377,6 +506,64 @@ def render_reconciliation_svg(index: int, language: str) -> str:
     return render_flow_svg(index, title, labels, "#1f7a5b", "#d99a24")
 
 
+def render_trial_balance_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Trial balance verification table" if not zh else "试算平衡核对表"
+    headers = ("Debit", "Credit") if not zh else ("借方", "贷方")
+    rows = (("Cash", "1 200", ""), ("Sales", "", "1 200"), ("Totals", "1 200", "1 200"))
+    body = []
+    for row_index, row in enumerate(rows):
+        y = 132 + row_index * 50
+        body.append(f'<rect x="116" y="{y - 30}" width="488" height="46" fill="#fbfcff" stroke="#d7deea"/>')
+        body.append(f'<text x="142" y="{y}" font-size="17" font-weight="800" fill="#1354a5">{html_escape(row[0])}</text>')
+        body.append(f'<text x="344" y="{y}" font-size="17" font-weight="800" fill="#172033">{html_escape(row[1])}</text>')
+        body.append(f'<text x="502" y="{y}" font-size="17" font-weight="800" fill="#172033">{html_escape(row[2])}</text>')
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <text x="340" y="96" font-size="15" font-weight="800" fill="#b83246">{html_escape(headers[0])}</text>
+  <text x="494" y="96" font-size="15" font-weight="800" fill="#b83246">{html_escape(headers[1])}</text>
+  {''.join(body)}
+  <text x="142" y="304" font-size="16" fill="#5b677a">equal totals reveal arithmetical balance, not every error</text>
+</svg>
+"""
+
+
+def render_control_account_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = (
+        ("Subsidiary ledger", "Control account", "Compare totals", "Investigate difference")
+        if not zh
+        else ("明细账", "控制账户", "比较合计", "追查差异")
+    )
+    title = "Control account reconciliation" if not zh else "控制账户核对"
+    return render_flow_svg(index, title, labels, "#1354a5", "#b83246")
+
+
+def render_error_correction_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = (
+        ("Find error", "Classify type", "Journal correction", "Check suspense")
+        if not zh
+        else ("发现错误", "判断类型", "日记账更正", "检查暂记账")
+    )
+    title = "Error correction and suspense flow" if not zh else "错账更正流程"
+    return render_flow_svg(index, title, labels, "#b83246", "#1f7a5b")
+
+
+def render_incomplete_records_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = (
+        ("Known figures", "Missing account", "Reconstruct total", "Use in statements")
+        if not zh
+        else ("已知数据", "缺失账户", "重建合计", "填入报表")
+    )
+    title = "Incomplete records reconstruction" if not zh else "不完整记录重建"
+    return render_flow_svg(index, title, labels, "#d99a24", "#1354a5")
+
+
 def render_financial_statement_svg(index: int, language: str) -> str:
     zh = language == "zh-CN"
     title = "财务报表结构" if zh else "Financial statement layout"
@@ -404,7 +591,123 @@ def render_financial_statement_svg(index: int, language: str) -> str:
 """
 
 
-def render_market_svg(index: int, language: str) -> str:
+def render_accounting_statement_variant_svg(index: int, title: str, labels: tuple[str, str, str, str]) -> str:
+    lower = title.lower()
+    safe_title = html_escape(title)
+    safe_labels = tuple(html_escape(label) for label in labels)
+    if "partnership" in lower:
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{safe_title}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="70" fill="#1354a5" font-size="24" font-weight="800">{safe_title}</text>
+  <rect x="64" y="104" width="258" height="74" rx="12" fill="#fffaf1" stroke="#d99a24" stroke-width="3"/>
+  <text x="86" y="136" font-size="18" font-weight="800" fill="#172033">{safe_labels[0]}</text>
+  <path d="M92 154h202" stroke="#d99a24" stroke-width="4"/>
+  <text x="86" y="170" font-size="14" fill="#5b677a">appropriation before partner balances</text>
+  <rect x="392" y="104" width="104" height="172" rx="10" fill="#f7fbff" stroke="#1354a5" stroke-width="3"/>
+  <rect x="526" y="104" width="104" height="172" rx="10" fill="#f7fbff" stroke="#1354a5" stroke-width="3"/>
+  <path d="M444 116v148M578 116v148M402 152h84M536 152h84" stroke="#172033" stroke-width="3"/>
+  <text x="444" y="96" text-anchor="middle" font-size="15" font-weight="800" fill="#1354a5">Partner A</text>
+  <text x="578" y="96" text-anchor="middle" font-size="15" font-weight="800" fill="#1354a5">Partner B</text>
+  <text x="414" y="184" font-size="13" fill="#b83246">{safe_labels[3]}</text>
+  <text x="548" y="184" font-size="13" fill="#b83246">{safe_labels[3]}</text>
+  <path d="M322 142C356 142 358 188 392 188" fill="none" stroke="#1f7a5b" stroke-width="4" marker-end="url(#acct-partner-{index})"/>
+  <text x="82" y="236" font-size="16" font-weight="800" fill="#1f7a5b">{safe_labels[1]} connect profit share to capital/current balances</text>
+  <defs><marker id="acct-partner-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#1f7a5b"/></marker></defs>
+</svg>
+"""
+    if "manufacturing" in lower:
+        nodes = []
+        for pos, label in enumerate(safe_labels):
+            y = 92 + pos * 58
+            nodes.append(f'<rect x="230" y="{y}" width="260" height="40" rx="10" fill="#f7fbff" stroke="#1354a5" stroke-width="3"/>')
+            nodes.append(f'<text x="360" y="{y + 26}" text-anchor="middle" font-size="16" font-weight="800" fill="#172033">{label}</text>')
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{safe_title}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="70" fill="#1354a5" font-size="24" font-weight="800">{safe_title}</text>
+  {''.join(nodes)}
+  <path d="M360 132v18M360 190v18M360 248v18" stroke="#d99a24" stroke-width="5" marker-end="url(#acct-mfg-{index})"/>
+  <path d="M104 164h92v94h92" fill="none" stroke="#1f7a5b" stroke-width="4"/>
+  <text x="76" y="156" font-size="15" font-weight="800" fill="#1f7a5b">add overheads</text>
+  <text x="500" y="270" font-size="15" fill="#5b677a">cost flow, not final sales revenue</text>
+  <defs><marker id="acct-mfg-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#d99a24"/></marker></defs>
+</svg>
+"""
+    if "club" in lower or "non-profit" in lower:
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{safe_title}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="70" fill="#1354a5" font-size="24" font-weight="800">{safe_title}</text>
+  <rect x="62" y="104" width="260" height="188" rx="14" fill="#fffaf1" stroke="#d99a24" stroke-width="3"/>
+  <rect x="398" y="104" width="260" height="188" rx="14" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="3"/>
+  <text x="192" y="136" text-anchor="middle" font-size="18" font-weight="800" fill="#9b6a10">{safe_labels[0]} and {safe_labels[1]}</text>
+  <path d="M96 160h190M96 208h190M96 256h190" stroke="#d7deea" stroke-width="3"/>
+  <circle cx="112" cy="184" r="10" fill="#d99a24"/><circle cx="112" cy="232" r="10" fill="#b83246"/>
+  <text x="130" y="190" font-size="15" fill="#172033">cash book movement</text>
+  <text x="130" y="238" font-size="15" fill="#172033">not all income/expense</text>
+  <text x="528" y="136" text-anchor="middle" font-size="18" font-weight="800" fill="#1f7a5b">Income and expenditure</text>
+  <path d="M432 160h190M432 208h190M432 256h190" stroke="#d7deea" stroke-width="3"/>
+  <text x="448" y="188" font-size="15" font-weight="800" fill="#1354a5">{safe_labels[2]}</text>
+  <text x="448" y="236" font-size="15" font-weight="800" fill="#1354a5">{safe_labels[3]}</text>
+  <path d="M322 198h64" stroke="#1354a5" stroke-width="5" stroke-dasharray="8 6" marker-end="url(#acct-club-{index})"/>
+  <defs><marker id="acct-club-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#1354a5"/></marker></defs>
+</svg>
+"""
+    rows = []
+    for pos, label in enumerate(safe_labels):
+        y = 118 + pos * 48
+        fill = "#edf4ff" if pos % 2 == 0 else "#ecf8f3"
+        stroke = "#1354a5" if pos % 2 == 0 else "#1f7a5b"
+        rows.append(f'<rect x="92" y="{y}" width="254" height="36" rx="10" fill="{fill}" stroke="{stroke}" stroke-width="3"/>')
+        rows.append(f'<text x="116" y="{y + 24}" font-size="16" font-weight="800" fill="#172033">{label}</text>')
+        rows.append(f'<rect x="420" y="{y}" width="180" height="36" rx="10" fill="#ffffff" stroke="#d7deea" stroke-width="3"/>')
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{safe_title}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{safe_title}</text>
+  <text x="420" y="102" font-size="15" font-weight="800" fill="#b83246">amount / movement</text>
+  {''.join(rows)}
+  <path d="M346 136h58M346 184h58M346 232h58M346 280h58" stroke="#d99a24" stroke-width="4" marker-end="url(#acct-var-{index})"/>
+  <defs><marker id="acct-var-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#d99a24"/></marker></defs>
+</svg>
+"""
+
+
+def market_variant_from_text(text: str) -> str:
+    focus = text.lower()
+    supply_shift_clues = [
+        "changes in supply",
+        "change in supply",
+        "supply curve shifts",
+        "determine the supply",
+        "supply for goods",
+        "supply of goods",
+        "increase in supply",
+        "decrease in supply",
+    ]
+    demand_shift_clues = [
+        "changes in demand",
+        "change in demand",
+        "demand curve shifts",
+        "determine the demand",
+        "demand for goods",
+        "demand of goods",
+        "increase in demand",
+        "decrease in demand",
+    ]
+    if any(clue in focus for clue in supply_shift_clues):
+        return "supply"
+    if any(clue in focus for clue in demand_shift_clues):
+        return "demand"
+    return "equilibrium"
+
+
+def render_market_svg(index: int, language: str, variant: str = "equilibrium") -> str:
     zh = language == "zh-CN"
     title = "市场供需图" if zh else "Demand and supply market diagram"
     demand = "需求" if zh else "Demand"
@@ -412,6 +715,46 @@ def render_market_svg(index: int, language: str) -> str:
     price = "价格" if zh else "Price"
     qty = "数量" if zh else "Quantity"
     equilibrium = "均衡" if zh else "Equilibrium"
+    if variant == "demand":
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)} - {html_escape(demand)} shift</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="60" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(demand)} shift in a market</text>
+  <path d="M118 284V92M118 284h470" stroke="#172033" stroke-width="4"/>
+  <path d="M166 118L552 258" stroke="#1f7a5b" stroke-width="5"/>
+  <path d="M146 250L502 120" stroke="#b83246" stroke-width="5" stroke-dasharray="9 7"/>
+  <path d="M196 260L552 130" stroke="#b83246" stroke-width="7"/>
+  <path d="M328 176C370 160 408 152 446 146" fill="none" stroke="#d99a24" stroke-width="4" marker-end="url(#market-demand-{index})"/>
+  <circle cx="328" cy="184" r="8" fill="#d99a24"/>
+  <circle cx="392" cy="176" r="8" fill="#d99a24"/>
+  <text x="504" y="124" font-size="18" font-weight="800" fill="#b83246">{html_escape(demand)} increases</text>
+  <text x="552" y="264" font-size="18" font-weight="800" fill="#1f7a5b">{html_escape(supply)}</text>
+  <text x="132" y="96" font-size="17" font-weight="800">{html_escape(price)}</text>
+  <text x="520" y="314" font-size="17" font-weight="800">{html_escape(qty)}</text>
+  <defs><marker id="market-demand-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#d99a24"/></marker></defs>
+</svg>
+"""
+    if variant == "supply":
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)} - {html_escape(supply)} shift</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="60" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(supply)} shift in a market</text>
+  <path d="M118 284V92M118 284h470" stroke="#172033" stroke-width="4"/>
+  <path d="M154 122L546 260" stroke="#b83246" stroke-width="5"/>
+  <path d="M164 270L524 116" stroke="#1f7a5b" stroke-width="5" stroke-dasharray="9 7"/>
+  <path d="M214 270L574 116" stroke="#1f7a5b" stroke-width="7"/>
+  <path d="M342 190C382 204 420 218 456 232" fill="none" stroke="#d99a24" stroke-width="4" marker-end="url(#market-supply-{index})"/>
+  <circle cx="342" cy="190" r="8" fill="#d99a24"/>
+  <circle cx="410" cy="206" r="8" fill="#d99a24"/>
+  <text x="542" y="114" font-size="18" font-weight="800" fill="#1f7a5b">{html_escape(supply)} increases</text>
+  <text x="554" y="266" font-size="18" font-weight="800" fill="#b83246">{html_escape(demand)}</text>
+  <text x="132" y="96" font-size="17" font-weight="800">{html_escape(price)}</text>
+  <text x="520" y="314" font-size="17" font-weight="800">{html_escape(qty)}</text>
+  <defs><marker id="market-supply-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#d99a24"/></marker></defs>
+</svg>
+"""
     return f"""
 <svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
   <title id="visual-title-{index}">{html_escape(title)}</title>
@@ -427,6 +770,245 @@ def render_market_svg(index: int, language: str) -> str:
   <text x="132" y="96" font-size="17" font-weight="800">{html_escape(price)}</text>
   <text x="520" y="314" font-size="17" font-weight="800">{html_escape(qty)}</text>
   <text x="366" y="184" font-size="17" font-weight="800" fill="#9b6a10">{html_escape(equilibrium)}</text>
+</svg>
+"""
+
+
+def render_stakeholder_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Stakeholder influence map" if not zh else "利益相关者影响图"
+    center = "Business decision" if not zh else "企业决策"
+    labels = (
+        ("Owners", "Employees", "Customers", "Suppliers", "Community")
+        if not zh
+        else ("所有者", "员工", "顾客", "供应商", "社区")
+    )
+    positions = [(350, 102), (188, 166), (512, 166), (246, 266), (454, 266)]
+    nodes = []
+    for label, (x, y) in zip(labels, positions, strict=True):
+        nodes.append(f'<circle cx="{x}" cy="{y}" r="48" fill="#f7fbff" stroke="#1354a5" stroke-width="3"/>')
+        nodes.append(f'<text x="{x}" y="{y + 5}" font-size="15" font-weight="800" fill="#1354a5" text-anchor="middle">{html_escape(label)}</text>')
+        nodes.append(f'<path d="M{x} {y + (40 if y < 190 else -40)}L350 190" stroke="#d99a24" stroke-width="3" stroke-dasharray="6 6"/>')
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="70" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <rect x="270" y="156" width="160" height="70" rx="16" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="4"/>
+  <text x="350" y="198" font-size="18" font-weight="800" fill="#1f7a5b" text-anchor="middle">{html_escape(center)}</text>
+  {''.join(nodes)}
+</svg>
+"""
+
+
+def render_business_comparison_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Business ownership comparison" if not zh else "企业所有制比较"
+    headers = ("Control", "Risk", "Finance") if not zh else ("控制权", "风险", "资金")
+    rows = (
+        ("Sole trader", "High", "Unlimited", "Owner savings"),
+        ("Partnership", "Shared", "Unlimited", "Partners"),
+        ("Ltd company", "Directors", "Limited", "Shares"),
+    ) if not zh else (
+        ("个体经营", "高", "无限", "自有资金"),
+        ("合伙", "共享", "无限", "合伙人"),
+        ("有限公司", "董事", "有限", "股份"),
+    )
+    row_svg = []
+    for row_index, row in enumerate(rows):
+        y = 132 + row_index * 58
+        row_svg.append(f'<rect x="58" y="{y - 28}" width="604" height="50" fill="#fbfcff" stroke="#d7deea"/>')
+        for col, value in enumerate(row):
+            x = 76 + col * 150
+            fill = "#1354a5" if col == 0 else "#172033"
+            row_svg.append(f'<text x="{x}" y="{y}" font-size="16" font-weight="800" fill="{fill}">{html_escape(value)}</text>')
+    header_svg = "".join(
+        f'<text x="{226 + idx * 150}" y="96" font-size="14" font-weight="800" fill="#b83246">{html_escape(label)}</text>'
+        for idx, label in enumerate(headers)
+    )
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="70" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  {header_svg}
+  {''.join(row_svg)}
+</svg>
+"""
+
+
+def render_cash_flow_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Cash-flow timeline" if not zh else "现金流时间线"
+    labels = ("Opening", "Inflows", "Outflows", "Closing") if not zh else ("期初", "流入", "流出", "期末")
+    nodes = []
+    for pos, label in enumerate(labels):
+        x = 92 + pos * 158
+        nodes.append(f'<rect x="{x}" y="142" width="110" height="70" rx="14" fill="#ffffff" stroke="#1354a5" stroke-width="4"/>')
+        nodes.append(f'<text x="{x + 55}" y="183" font-size="16" font-weight="800" fill="#1354a5" text-anchor="middle">{html_escape(label)}</text>')
+        if pos < 3:
+            nodes.append(f'<path d="M{x + 118} 176h42" stroke="#172033" stroke-width="4" marker-end="url(#cash-arrow-{index})"/>')
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <defs><marker id="cash-arrow-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#172033"/></marker></defs>
+  {''.join(nodes)}
+  <text x="94" y="260" font-size="17" fill="#5b677a">{html_escape('closing balance = opening + inflows - outflows' if not zh else '期末余额 = 期初 + 流入 - 流出')}</text>
+</svg>
+"""
+
+
+def render_break_even_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Break-even chart" if not zh else "盈亏平衡图"
+    sales = "Revenue" if not zh else "收入"
+    costs = "Total cost" if not zh else "总成本"
+    output = "Output" if not zh else "产量"
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <path d="M96 280V92M96 280h510" stroke="#172033" stroke-width="4"/>
+  <path d="M112 250L580 96" stroke="#1f7a5b" stroke-width="6"/>
+  <path d="M112 210L580 128" stroke="#b83246" stroke-width="6"/>
+  <circle cx="362" cy="168" r="10" fill="#d99a24"/>
+  <path d="M362 168v112" stroke="#d99a24" stroke-width="3" stroke-dasharray="7 6"/>
+  <text x="498" y="98" font-size="17" font-weight="800" fill="#1f7a5b">{html_escape(sales)}</text>
+  <text x="486" y="150" font-size="17" font-weight="800" fill="#b83246">{html_escape(costs)}</text>
+  <text x="310" y="160" font-size="16" font-weight="800" fill="#9b6a10">{html_escape(title)}</text>
+  <text x="538" y="312" font-size="17" font-weight="800">{html_escape(output)}</text>
+</svg>
+"""
+
+
+def render_marketing_mix_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Marketing mix" if not zh else "营销组合"
+    labels = ("Product", "Price", "Place", "Promotion") if not zh else ("产品", "价格", "渠道", "促销")
+    colors = ("#1354a5", "#1f7a5b", "#d99a24", "#b83246")
+    cells = []
+    for i, label in enumerate(labels):
+        x = 136 + (i % 2) * 230
+        y = 112 + (i // 2) * 104
+        cells.append(f'<rect x="{x}" y="{y}" width="194" height="78" rx="16" fill="#ffffff" stroke="{colors[i]}" stroke-width="4"/>')
+        cells.append(f'<text x="{x + 97}" y="{y + 48}" font-size="21" font-weight="800" fill="{colors[i]}" text-anchor="middle">{html_escape(label)}</text>')
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  {''.join(cells)}
+</svg>
+"""
+
+
+def render_business_process_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = ("Context", "Options", "Decision", "Outcome") if not zh else ("情境", "选择", "决策", "结果")
+    title = "Business decision flow" if not zh else "商业决策流程"
+    return render_flow_svg(index, title, labels, "#1354a5", "#b83246")
+
+
+def render_operations_flow_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = ("Input", "Process", "Output", "Efficiency") if not zh else ("投入", "流程", "产出", "效率")
+    title = "Operations flow and checkpoints" if not zh else "运营流程与检查点"
+    return render_flow_svg(index, title, labels, "#1354a5", "#1f7a5b")
+
+
+def render_quality_checkpoint_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = ("Standard", "Inspect", "Feedback", "Improve") if not zh else ("标准", "检查", "反馈", "改进")
+    title = "Quality assurance checkpoint loop" if not zh else "质量保证循环"
+    return render_flow_svg(index, title, labels, "#1f7a5b", "#d99a24")
+
+
+def render_organisation_structure_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Organisation structure hierarchy" if not zh else "组织结构层级图"
+    labels = ("Director", "Manager A", "Manager B", "Team") if not zh else ("负责人", "经理A", "经理B", "团队")
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <rect x="280" y="96" width="160" height="58" rx="14" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <rect x="138" y="206" width="160" height="58" rx="14" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="4"/>
+  <rect x="422" y="206" width="160" height="58" rx="14" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="4"/>
+  <path d="M360 154v34M218 188h284M218 188v18M502 188v18" stroke="#172033" stroke-width="4"/>
+  <text x="360" y="132" font-size="18" font-weight="800" fill="#1354a5" text-anchor="middle">{html_escape(labels[0])}</text>
+  <text x="218" y="241" font-size="18" font-weight="800" fill="#1f7a5b" text-anchor="middle">{html_escape(labels[1])}</text>
+  <text x="502" y="241" font-size="18" font-weight="800" fill="#1f7a5b" text-anchor="middle">{html_escape(labels[2])}</text>
+  <text x="302" y="304" font-size="16" fill="#5b677a">{html_escape(labels[3])}: span of control and chain of command</text>
+</svg>
+"""
+
+
+def render_customer_segmentation_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Customer segmentation map" if not zh else "顾客细分图"
+    labels = ("Age", "Income", "Needs", "Location") if not zh else ("年龄", "收入", "需求", "地区")
+    return render_flow_svg(index, title, labels, "#b83246", "#1354a5")
+
+
+def render_history_timeline_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Historical timeline" if not zh else "历史时间线"
+    labels = ("Context", "Trigger", "Turning point", "Outcome") if not zh else ("背景", "导火索", "转折", "结果")
+    ticks = []
+    for pos, label in enumerate(labels):
+        x = 110 + pos * 160
+        ticks.append(f'<circle cx="{x}" cy="184" r="13" fill="#1354a5"/>')
+        ticks.append(f'<path d="M{x} 184v48" stroke="#1354a5" stroke-width="3"/>')
+        ticks.append(f'<text x="{x}" y="260" font-size="16" font-weight="800" fill="#172033" text-anchor="middle">{html_escape(label)}</text>')
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <path d="M88 184h548" stroke="#172033" stroke-width="5"/>
+  {''.join(ticks)}
+</svg>
+"""
+
+
+def render_history_cause_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    labels = ("Long-term cause", "Short-term trigger", "Event", "Consequence") if not zh else ("长期原因", "短期触发", "事件", "后果")
+    title = "Cause and consequence chain" if not zh else "原因与后果链"
+    return render_flow_svg(index, title, labels, "#b83246", "#1354a5")
+
+
+def render_history_source_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Source evidence comparison" if not zh else "史料证据比较"
+    labels = ("Provenance", "Content", "Inference", "Limit") if not zh else ("出处", "内容", "推论", "局限")
+    return render_flow_svg(index, title, labels, "#1f7a5b", "#d99a24")
+
+
+def render_history_comparison_svg(index: int, language: str) -> str:
+    zh = language == "zh-CN"
+    title = "Change and continuity comparison" if not zh else "变化与延续比较"
+    before = "Before" if not zh else "之前"
+    after = "After" if not zh else "之后"
+    change = "Change" if not zh else "变化"
+    continuity = "Continuity" if not zh else "延续"
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="58" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(title)}</text>
+  <rect x="86" y="116" width="220" height="122" rx="16" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <rect x="414" y="116" width="220" height="122" rx="16" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="4"/>
+  <path d="M314 176h92" stroke="#172033" stroke-width="5" marker-end="url(#hist-comp-{index})"/>
+  <defs><marker id="hist-comp-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#172033"/></marker></defs>
+  <text x="196" y="166" font-size="23" font-weight="800" fill="#1354a5" text-anchor="middle">{html_escape(before)}</text>
+  <text x="524" y="166" font-size="23" font-weight="800" fill="#1f7a5b" text-anchor="middle">{html_escape(after)}</text>
+  <text x="176" y="284" font-size="19" font-weight="800" fill="#b83246">{html_escape(change)}</text>
+  <text x="414" y="284" font-size="19" font-weight="800" fill="#9b6a10">{html_escape(continuity)}</text>
 </svg>
 """
 
@@ -616,6 +1198,87 @@ def render_zh_math_topic_svg(index: int, title: str, focus: str, variant: str) -
 """
 
 
+def render_math_topic_svg(index: int, title: str, focus: str, variant: str) -> str:
+    base_variant = variant.split(":", 1)[0]
+    display_title = math_specific_title(title, focus)
+    labels_by_variant = {
+        "algebra": ("spot structure", "transform", "check"),
+        "calculus": ("read curve", "take gradient", "interpret"),
+        "integral": ("set bounds", "find area", "check sign"),
+        "series": ("first term", "common rule", "sum"),
+        "trig": ("angle", "formula", "period"),
+        "probability": ("outcomes", "probability", "total"),
+        "mechanics": ("direction", "equation", "units"),
+        "coordinate": ("coordinates", "equation", "geometry"),
+    }
+    labels = labels_by_variant.get(base_variant, ("read", "model", "check"))
+    cards = []
+    for position, label in enumerate(labels):
+        x = 438
+        y = 106 + position * 64
+        cards.append(
+            f'<rect x="{x}" y="{y}" width="202" height="44" rx="10" fill="#ffffff" '
+            f'stroke="#d7deea" stroke-width="2"/>'
+            f'<text x="{x + 18}" y="{y + 29}" font-size="18" font-weight="800" '
+            f'fill="#172033">{html_escape(label)}</text>'
+        )
+    return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(display_title)}</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="52" y="68" fill="#1354a5" font-size="24" font-weight="800">{html_escape(display_title)}</text>
+  {svg_multiline_text(focus or title, 52, 100, 18, 24, 16, 800, "#5b677a")}
+  <g>{render_math_motif(index, variant, focus)}</g>
+  <rect x="418" y="82" width="244" height="216" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
+  {''.join(cards)}
+  <text x="438" y="282" font-size="15" fill="#5b677a">check formula, condition, and answer form</text>
+</svg>
+"""
+
+
+def math_specific_title(default_title: str, focus: str) -> str:
+    clean = re.sub(r"\s+", " ", (focus or "").strip(" .;:"))
+    if not clean or clean.lower() == "focus":
+        return default_title
+    clean = clean.replace("&lt;", "<").replace("&gt;", ">")
+    if len(clean) > 42:
+        clean = clean[:39].rstrip() + "..."
+    return clean
+
+
+def render_math_motif(index: int, variant: str, focus: str = "") -> str:
+    motif = render_zh_math_motif(index, variant, focus)
+    replacements = {
+        "化简 / 分母有理化": "simplify / rationalise",
+        "看根的个数": "count real roots",
+        "因式 / 余式定理": "factor / remainder theorem",
+        "解集写区间": "solution set",
+        "平移 / 反射 / 伸缩": "shift / reflect / stretch",
+        "交点 = 联立解": "intersections = simultaneous solutions",
+        "同一个导数意义": "same derivative idea",
+        "割线逼近切线": "secant tends to tangent",
+        "判断极大 / 极小": "classify maxima/minima",
+        "切线斜率": "tangent gradient",
+        "积分是求导的反向": "integration reverses differentiation",
+        "梯形近似": "trapezium approximation",
+        "a 到 b 的面积": "area from a to b",
+        "x 轴下方为负": "below x-axis is negative",
+        "带符号面积": "signed area",
+        "项、系数、幂次": "terms, coefficients, powers",
+        "公式或表格求概率": "use formula or table",
+        "速度-时间图与位移-时间图": "velocity-time and displacement-time graphs",
+        "斜率与面积": "gradient and area",
+        "方向先定正": "choose positive direction",
+        "冲量 = 动量变化": "impulse = change in momentum",
+        "联立找交点": "solve simultaneously",
+        "面积": "area",
+        "解后代回检查": "substitute back to check",
+    }
+    for zh, en in replacements.items():
+        motif = motif.replace(zh, en)
+    return motif
+
+
 def zh_math_specific_title(default_title: str, focus: str) -> str:
     clean = re.sub(r"\s+", " ", (focus or "").strip(" 。.；;:："))
     if not clean or clean.lower() == "focus":
@@ -668,6 +1331,8 @@ def zh_math_variant(base: str, text: str) -> str:
             return "integral:power-rule"
         if any(word in text for word in ["梯形", "trapezium"]):
             return "integral:trapezium"
+        if any(word in text for word in ["x-axis", "x axis", "below", "negative value", "signed", "region between"]):
+            return "integral:signed-area"
         if any(word in text for word in ["定积分", "definite"]):
             return "integral:definite"
         return "integral:area"
@@ -689,6 +1354,14 @@ def zh_math_variant(base: str, text: str) -> str:
         if any(word in text for word in ["条件", "乘法", "加法", "conditional", "multiplication", "addition"]):
             return "probability:tree"
         return "probability:bars"
+    if base == "trig":
+        if any(word in text for word in ["sine rule", "cosine rule", "area of a triangle", "triangle"]):
+            return "trig:triangle"
+        if any(word in text for word in ["graph", "graphs", "symmetries", "periodicity"]):
+            return "trig:graph"
+        if any(word in text for word in ["equation", "identity", "identities"]):
+            return "trig:identity"
+        return "trig:unit-circle"
     if base == "mechanics":
         if any(word in text for word in ["速度", "位移", "加速度", "运动学", "velocity", "acceleration"]):
             return "mechanics:kinematics"
@@ -698,6 +1371,10 @@ def zh_math_variant(base: str, text: str) -> str:
             return "mechanics:momentum"
         return "mechanics:forces"
     if base == "coordinate":
+        if any(word in text for word in ["tangent", "normal"]):
+            return "coordinate:tangent"
+        if any(word in text for word in ["translation", "transformed"]):
+            return "coordinate:translation"
         if any(word in text for word in ["圆", "circle"]):
             return "coordinate:circle"
         if any(word in text for word in ["交点", "intersection"]):
@@ -859,6 +1536,16 @@ def render_zh_math_motif(index: int, variant: str, focus: str = "") -> str:
   <text x="112" y="112" font-size="22" font-weight="800" fill="#b83246">a 到 b 的面积</text>
   <text x="124" y="310" font-size="20" font-weight="800" fill="#1354a5">∫ₐᵇ f(x) dx</text>
 """
+    if variant == "integral:signed-area":
+        return """
+  <path d="M80 206h282M80 286V106" stroke="#172033" stroke-width="4"/>
+  <path d="M104 172C148 120 204 126 238 194C268 254 312 262 346 222" fill="none" stroke="#1354a5" stroke-width="6"/>
+  <path d="M118 206C154 154 202 138 238 194L238 206Z" fill="#1f7a5b" fill-opacity=".25"/>
+  <path d="M238 206C268 254 312 262 342 222L342 206Z" fill="#b83246" fill-opacity=".25"/>
+  <path d="M238 116v170" stroke="#d99a24" stroke-width="3" stroke-dasharray="7 6"/>
+  <text x="106" y="108" font-size="21" font-weight="800" fill="#1f7a5b">带符号面积</text>
+  <text x="114" y="314" font-size="19" font-weight="800" fill="#b83246">x 轴下方为负</text>
+"""
     if variant == "series:arithmetic":
         return """
   <circle cx="106" cy="186" r="28" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
@@ -944,14 +1631,74 @@ def render_zh_math_motif(index: int, variant: str, focus: str = "") -> str:
     <marker id="newton-right-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#1f7a5b"/></marker>
   </defs>
 """
+    if variant == "mechanics:connected":
+        return f"""
+  <circle cx="214" cy="136" r="34" fill="#ffffff" stroke="#172033" stroke-width="5"/>
+  <path d="M214 170V230M214 136H110" stroke="#172033" stroke-width="5" fill="none"/>
+  <rect x="78" y="202" width="64" height="46" rx="8" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <rect x="184" y="230" width="62" height="52" rx="8" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
+  <path d="M110 226h-44" stroke="#b83246" stroke-width="6" marker-end="url(#conn-left-{index})"/>
+  <path d="M215 282v34" stroke="#1f7a5b" stroke-width="6" marker-end="url(#conn-down-{index})"/>
+  <text x="92" y="194" font-size="20" font-weight="800" fill="#1354a5">T</text>
+  <text x="226" y="314" font-size="20" font-weight="800" fill="#1f7a5b">mg</text>
+  <text x="90" y="106" font-size="22" font-weight="800" fill="#b83246">same acceleration</text>
+  <defs>
+    <marker id="conn-left-{index}" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 0 0 5 10 10z" fill="#b83246"/></marker>
+    <marker id="conn-down-{index}" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 5 10 10 0z" fill="#1f7a5b"/></marker>
+  </defs>
+"""
     if variant == "mechanics:momentum":
+        return f"""
+  <text x="86" y="104" font-size="22" font-weight="800" fill="#1354a5">before</text>
+  <text x="260" y="104" font-size="22" font-weight="800" fill="#1f7a5b">after</text>
+  <circle cx="116" cy="166" r="28" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <circle cx="246" cy="166" r="22" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
+  <path d="M148 166h62" stroke="#b83246" stroke-width="7" marker-end="url(#mom-in-{index})"/>
+  <path d="M92 252h92M222 252h92" stroke="#172033" stroke-width="4"/>
+  <circle cx="118" cy="252" r="24" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <circle cx="256" cy="252" r="24" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
+  <path d="M144 252h54M282 252h54" stroke="#1f7a5b" stroke-width="6" marker-end="url(#mom-out-{index})"/>
+  <text x="84" y="314" font-size="20" font-weight="800" fill="#b83246">total momentum conserved</text>
+  <defs>
+    <marker id="mom-in-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#b83246"/></marker>
+    <marker id="mom-out-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#1f7a5b"/></marker>
+  </defs>
+"""
+    if variant == "mechanics:fixed-impact":
+        return f"""
+  <rect x="296" y="96" width="28" height="206" fill="#172033"/>
+  <path d="M324 104l34-22M324 148l34-22M324 192l34-22M324 236l34-22M324 280l34-22" stroke="#5b677a" stroke-width="4"/>
+  <circle cx="118" cy="190" r="30" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <path d="M154 190h102" stroke="#b83246" stroke-width="7" marker-end="url(#impact-in-{index})"/>
+  <circle cx="252" cy="250" r="20" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
+  <path d="M248 250h-96" stroke="#1f7a5b" stroke-width="6" marker-end="url(#impact-out-{index})"/>
+  <path d="M296 96v206" stroke="#111827" stroke-width="4"/>
+  <text x="84" y="110" font-size="22" font-weight="800" fill="#1354a5">perpendicular impact</text>
+  <text x="86" y="314" font-size="20" font-weight="800" fill="#b83246">reverse velocity direction</text>
+  <defs>
+    <marker id="impact-in-{index}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#b83246"/></marker>
+    <marker id="impact-out-{index}" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10 0 0 5 10 10z" fill="#1f7a5b"/></marker>
+  </defs>
+"""
+    if variant == "coordinate:translation":
         return """
-  <circle cx="132" cy="196" r="30" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
-  <circle cx="286" cy="196" r="24" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
-  <path d="M166 196h86" stroke="#b83246" stroke-width="7" marker-end="url(#mom-arrow)"/>
-  <text x="94" y="126" font-size="24" font-weight="800" fill="#1354a5">mv</text>
-  <text x="118" y="282" font-size="20" font-weight="800" fill="#1f7a5b">冲量 = 动量变化</text>
-  <defs><marker id="mom-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#b83246"/></marker></defs>
+  <path d="M80 272V96M80 272h282" stroke="#172033" stroke-width="4"/>
+  <circle cx="172" cy="204" r="48" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="5"/>
+  <circle cx="264" cy="148" r="48" fill="#edf4ff" stroke="#1354a5" stroke-width="5" stroke-dasharray="8 6"/>
+  <path d="M172 204L264 148" stroke="#b83246" stroke-width="5" marker-end="url(#circle-trans)"/>
+  <text x="108" y="104" font-size="22" font-weight="800" fill="#1354a5">centre moves, radius stays</text>
+  <defs><marker id="circle-trans" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#b83246"/></marker></defs>
+"""
+    if variant == "coordinate:tangent":
+        return """
+  <path d="M80 272V96M80 272h282" stroke="#172033" stroke-width="4"/>
+  <circle cx="210" cy="184" r="72" fill="#ecf8f3" stroke="#1f7a5b" stroke-width="5"/>
+  <path d="M210 184L276 156" stroke="#1354a5" stroke-width="4"/>
+  <path d="M236 100L316 288" stroke="#b83246" stroke-width="5"/>
+  <path d="M188 238L320 136" stroke="#d99a24" stroke-width="4" stroke-dasharray="8 6"/>
+  <circle cx="276" cy="156" r="8" fill="#172033"/>
+  <text x="104" y="104" font-size="22" font-weight="800" fill="#b83246">radius ⟂ tangent</text>
+  <text x="104" y="306" font-size="20" font-weight="800" fill="#1354a5">(x-a)²+(y-b)²=r²</text>
 """
     if variant == "coordinate:circle":
         return """
@@ -999,7 +1746,35 @@ def render_zh_math_motif(index: int, variant: str, focus: str = "") -> str:
   <text x="92" y="120" font-size="22" font-weight="800" fill="#b83246">a, r</text>
   <text x="248" y="196" font-size="22" font-weight="800" fill="#1f7a5b">Sₙ</text>
 """
-    if variant == "trig":
+    if variant == "trig:triangle":
+        return """
+  <path d="M94 260L318 260L240 128Z" fill="#fffaf1" stroke="#d99a24" stroke-width="5"/>
+  <path d="M94 260L240 128M240 128L318 260" stroke="#172033" stroke-width="3"/>
+  <text x="110" y="250" font-size="18" font-weight="800" fill="#1354a5">A</text>
+  <text x="296" y="250" font-size="18" font-weight="800" fill="#1354a5">B</text>
+  <text x="238" y="120" font-size="18" font-weight="800" fill="#1354a5">C</text>
+  <text x="128" y="146" font-size="22" font-weight="800" fill="#b83246">sine / cosine rule</text>
+  <text x="126" y="304" font-size="20" font-weight="800" fill="#1f7a5b">match sides to angles</text>
+"""
+    if variant == "trig:graph":
+        return """
+  <path d="M72 196h294M94 286V104" stroke="#172033" stroke-width="4"/>
+  <path d="M84 196C116 116 158 116 190 196C222 276 264 276 296 196C328 116 354 132 368 164" fill="none" stroke="#1354a5" stroke-width="5"/>
+  <path d="M84 196C116 276 158 276 190 196C222 116 264 116 296 196C328 276 354 260 368 228" fill="none" stroke="#b83246" stroke-width="5" stroke-dasharray="8 6"/>
+  <text x="108" y="104" font-size="22" font-weight="800" fill="#1354a5">sin x</text>
+  <text x="254" y="104" font-size="22" font-weight="800" fill="#b83246">cos x</text>
+  <text x="112" y="318" font-size="20" font-weight="800" fill="#1f7a5b">period and symmetry</text>
+"""
+    if variant == "trig:identity":
+        return """
+  <rect x="78" y="122" width="268" height="72" rx="14" fill="#edf4ff" stroke="#1354a5" stroke-width="4"/>
+  <rect x="112" y="224" width="204" height="58" rx="12" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
+  <path d="M212 198v22" stroke="#172033" stroke-width="4" marker-end="url(#trig-id)"/>
+  <text x="104" y="168" font-size="25" font-weight="800" fill="#1354a5">tan x = sin x / cos x</text>
+  <text x="136" y="262" font-size="22" font-weight="800" fill="#b83246">solve in interval</text>
+  <defs><marker id="trig-id" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#172033"/></marker></defs>
+"""
+    if variant == "trig" or variant == "trig:unit-circle":
         return """
   <circle cx="204" cy="194" r="88" fill="#fffaf1" stroke="#d99a24" stroke-width="4"/>
   <path d="M204 194h118M204 194l74-65M278 129v65" stroke="#172033" stroke-width="4"/>
@@ -1062,7 +1837,7 @@ def render_zh_visual_svg(visual: VisualBrief, index: int) -> str:
     if any(word in text for word in ["会计调整", "影响"]):
         return render_accounting_flow_svg(index, "zh-CN")
     if any(word in text for word in ["市场", "供需", "需求", "供给", "demand", "supply"]):
-        return render_market_svg(index, "zh-CN")
+        return render_market_svg(index, "zh-CN", market_variant_from_text(text))
     if any(word in text for word in ["生产要素", "机会成本", "经济选择"]):
         return render_economic_flow_svg(index, "zh-CN")
     if any(word in text for word in ["集合", "韦恩"]):

@@ -14,13 +14,14 @@ For many subjects, richer illustrations are still useful:
 - chemistry particle or reaction sketches;
 - physics force, circuit, wave, and energy-transfer diagrams;
 - economics curves, flow diagrams, and scenario posters;
-- text-heavy infographics in the selected output language, with official
-  formulae and syllabus terms preserved when needed.
+- text-heavy infographics in English, with official formulae and syllabus terms
+  preserved when needed.
 
 Use image generation as a user-selected illustration adapter, not as the source
 of truth. The generator should first create source-bound knowledge points and
 practice examples, then analyze which items need visual explanation. Simple
-visuals can use SVG; complex infographics should become source-bound visual
+exact visuals can use local SVG; medium-complexity professional diagrams should
+use built-in Kroki; complex infographics should become source-bound visual
 briefs and prompt-queue entries unless the user has supplied a callable image
 route.
 
@@ -188,8 +189,8 @@ Topic: {topic_title}
 Source-bound learning point: {source_point}
 Visual type: {visual_type}
 Required labels: {required_labels}
-Language policy: use the selected output language for labels; preserve official
-formulae, symbols, and reviewed syllabus terms when needed.
+Language policy: use English labels for the handbook body and visual text;
+preserve official formulae, symbols, and reviewed syllabus terms when needed.
 
 Make it clear, printable, student-friendly, and suitable for a revision guide.
 Do not add new syllabus facts, named examples, equations, or exam claims beyond
@@ -208,11 +209,12 @@ the source point.
 - Chemistry 粒子模型、反应过程示意图；
 - Physics 力、电路、波、能量转移图；
 - Economics 曲线图、流程图、场景信息图；
-- 按用户选择的输出语言生成的文字信息图，必要时保留公式、符号和经复核的官方术语。
+- 英文文字信息图，必要时保留公式、符号和经复核的官方术语；用户语言支持放在专业词对照表中。
 
 生图应该是可选插图层，不是事实来源。生成器应先根据大纲生成基础知识点和
-例题，再分析哪些知识点或例题需要图文结合讲解。简单图用 SVG；复杂信息图默认
-进入 source-bound visual brief 和 prompt queue。
+例题，再分析哪些知识点或例题需要图文结合讲解。简单精确图用本地 SVG；流程、层级、
+时间线、关系图等中等复杂专业图自动走 Kroki；复杂信息图默认进入 source-bound
+visual brief 和 prompt queue。
 
 基础手册生成不要求用户先提供生图服务。不要把下面这些选项做成生成前的
 用户菜单；它们只是基础手册完成后、发现复杂信息图需求时可考虑的外部路线：
@@ -236,7 +238,7 @@ Agent 应该自动调用生成，并在需要时自动导入到手册目录。
 | Provider | 适合场景 | 备注 |
 |---|---|---|
 | GPT Image 2.0 | OpenAI-compatible 工作流里的高质量选项，适合复习手册插图、视觉解释和编辑。 | 只有用户有可调用路线时才使用；注意成本、内容审核和组织要求。 |
-| Qwen-Image-2.0 / Qwen Image 2.0 Pro | 中文或英文文字较多的信息图、海报式解释、PPT 风格知识图、国内场景实验。 | API、服务商、许可和部署限制应做成配置，不要写死。 |
+| Qwen-Image-2.0 / Qwen Image 2.0 Pro | 英文文字较多的信息图、海报式解释、PPT 风格知识图、国内场景实验。 | API、服务商、许可和部署限制应做成配置，不要写死。 |
 | SenseNova U1 Fast | 快速信息图草稿、本地或自定义 provider 实验、密集图文表达测试。 | 在本项目建立自己的视觉基准前，建议作为实验性 provider。 |
 
 不要把项目绑定到单一 provider。更好的做法是设计一个 provider interface，让学校、

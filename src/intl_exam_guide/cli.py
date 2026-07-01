@@ -7,6 +7,7 @@ import sys
 from importlib import resources
 from pathlib import Path
 
+from intl_exam_guide.core import course_contract_payload
 from intl_exam_guide.models import Qualification
 from intl_exam_guide.planning.guide_plan import (
     IMAGE_PROVIDERS,
@@ -182,7 +183,10 @@ def add_generation_choice_args(command: argparse.ArgumentParser) -> None:
         "--language",
         required=True,
         choices=sorted(LANGUAGE_CHOICES),
-        help="User-selected guide language. Template labels and generated explanations should not be bilingual.",
+        help=(
+            "Term-support language. The handbook body stays English; non-en "
+            "values add a 30-50 item professional glossary."
+        ),
     )
     command.add_argument("--image-model", help="Model name when --image-provider custom.")
     command.add_argument("--image-endpoint-url", help="Custom image API endpoint URL.")
@@ -263,6 +267,7 @@ def write_guide_outputs(
     html_path = out_dir / "guide.html"
     pdf_path = out_dir / "guide.pdf"
     validation_path = out_dir / "validation.json"
+    delivery_contract_path = out_dir / "delivery-contract.json"
     run_options_path = out_dir / "run-options.json"
     if pdf_path.exists():
         pdf_path.unlink()
@@ -298,14 +303,22 @@ def write_guide_outputs(
         pdf_path=None if skip_pdf else pdf_path,
         output_dir=out_dir,
     )
+    delivery_status = delivery_status_from_issues(issues, summary)
+    delivery_contract = course_contract_payload(plan, delivery_status)
+    delivery_contract_path.write_text(
+        json.dumps(delivery_contract, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     payload = {
         "qualification": qualification.title,
         "html": str(html_path),
         "pdf": str(pdf_path) if pdf_path.exists() else None,
         "pdf_error": pdf_error,
         "package": package_manifest,
+        "delivery_contract": str(delivery_contract_path),
         "review_summary": summary,
-        "delivery_status": delivery_status_from_issues(issues, summary),
+        "delivery_status": delivery_status,
+        "delivery_state": delivery_contract["delivery_state"],
         "issues": issues_to_dict(issues),
     }
     validation_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

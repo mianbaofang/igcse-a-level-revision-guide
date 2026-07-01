@@ -62,7 +62,11 @@ def test_concept_jobs_are_bound_to_current_topic_source():
     assert len(jobs) == 1
     assert jobs[0]["topic_title"] == "2.3 - Market failure: External costs and benefits"
     assert jobs[0]["source_points"] == ["External costs and benefits affect third parties."]
-    assert "只围绕 topic_title 和 source_points" in str(jobs[0]["task"])
+    assert jobs[0]["contract_version"] == "v0.4-pedagogy-mvp"
+    assert jobs[0]["subject_pack"] == "economics"
+    assert jobs[0]["writing_contract"]["subject_pack"] == "economics"
+    assert jobs[0]["review_contract"]["id"] == "concept_001_review"
+    assert "Stay inside topic_title and source_points" in str(jobs[0]["task"])
 
 
 def test_concept_jobs_write_review_files_and_read_reviewed_titles(tmp_path):

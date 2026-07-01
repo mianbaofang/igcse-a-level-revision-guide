@@ -8,6 +8,7 @@ from intl_exam_guide.planning.guide_plan import (
     build_run_options,
     normalize_image_provider,
 )
+from intl_exam_guide.planning.source_points import clean_source_point
 
 
 def sample_accounting_qualification() -> Qualification:
@@ -59,12 +60,248 @@ def test_build_guide_plan_creates_guides_practice_and_visual_briefs():
     assert len(plan.topic_guides) == 1
     assert len(plan.practice_items) == 2
     assert len(plan.visual_briefs) == 1
-    assert plan.visual_briefs[0].image_provider == "deterministic-svg"
+    assert plan.visual_briefs[0].image_provider == "kroki"
     question = plan.practice_items[0].question.lower()
     assert "invoice" in question
     assert "source document" in question
     assert "accounting record" in question
     assert len({item.question for item in plan.practice_items}) == 2
+
+
+def test_term_support_language_keeps_generated_plan_body_english():
+    plan = build_guide_plan(
+        sample_accounting_qualification(),
+        questions_per_topic=1,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="zh-CN",
+        requested_subject="accounting",
+    )
+
+    assert plan.run_options.output_language == "zh-CN"
+    assert plan.revision_stages[0].startswith("Stage 1")
+    assert plan.topic_guides[0].worked_solution_steps[0].startswith("Read")
+    assert plan.practice_items[0].command_word in {"Calculate", "Describe", "Explain", "Identify", "state"}
+    assert plan.visual_briefs[0].prompt.startswith("Create ")
+
+
+def test_checklist_mastery_includes_topic_context_for_repeated_source_points():
+    qualification = sample_accounting_qualification()
+    repeated_points = [
+        "a) Explain the causes of depreciation.",
+        "b) Distinguish between straight line and reducing balance methods.",
+    ]
+    qualification.topics = [
+        Topic(
+            title="2.5 - Depreciation",
+            points=list(repeated_points),
+            source_snippets=[SourceSnippet(page=20, text="Depreciation in bookkeeping", matched_term="2.5")],
+        ),
+        Topic(
+            title="5.2 - Depreciation",
+            points=list(repeated_points),
+            source_snippets=[SourceSnippet(page=35, text="Depreciation in final accounts", matched_term="5.2")],
+        ),
+    ]
+
+    plan = build_guide_plan(
+        qualification,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="accounting",
+    )
+
+    checklist_first_lines = [guide.checklist[0] for guide in plan.topic_guides]
+
+    assert checklist_first_lines[0] != checklist_first_lines[1]
+    assert "2.5 - Depreciation" in checklist_first_lines[0]
+    assert "5.2 - Depreciation" in checklist_first_lines[1]
+
+
+def test_clean_source_point_removes_embedded_syllabus_shell():
+    assert clean_source_point("The factors of production Students should be able to") == "The factors of production"
+    assert (
+        clean_source_point("Identifying market structures Students should be able to understand:")
+        == "Identifying market structures"
+    )
+    assert (
+        clean_source_point("Students should be able to understand the nature of an economic resource")
+        == "understand the nature of an economic resource"
+    )
+    assert (
+        clean_source_point("Using algebraic methods. Students will be expected to interpret the result")
+        == "Using algebraic methods. interpret the result"
+    )
+    assert (
+        clean_source_point("Students should be familiar with the notation |r|<1")
+        == "the notation |r|<1"
+    )
+    assert clean_source_point("Candidates should have an understanding of: demand") == "demand"
+    assert clean_source_point("a) Explain the purpose of the:") == ""
+    assert clean_source_point("a) Apply the following accounting concepts:") == ""
+    assert clean_source_point("a) Explain the causes of depreciation.") == "causes of depreciation"
+    assert (
+        clean_source_point("b) Distinguish between straight line and reducing balance methods of depreciation.")
+        == "straight line and reducing balance methods of depreciation"
+    )
+
+
+def test_student_facing_points_skip_syllabus_shell_phrases():
+    qualification = sample_accounting_qualification()
+    qualification.topics = [
+        Topic(
+            title="3.2 - Corrections of errors",
+            points=[
+                "Candidates should have an understanding of:",
+                "how to correct errors using journal entries",
+                "how to prepare suspense accounts",
+            ],
+        ),
+        Topic(
+            title="2.3 - Ledger accounting",
+            points=[
+                "a) Explain the purpose of the:",
+                "nominal ledger",
+                "sales ledger",
+            ],
+        ),
+    ]
+
+    plan = build_guide_plan(
+        qualification,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="accounting",
+    )
+    combined = " ".join(
+        [
+            *[guide.checklist[0] for guide in plan.topic_guides],
+            *[item.focus_point for item in plan.practice_items],
+            *[brief.focus_point for brief in plan.visual_briefs],
+        ]
+    ).lower()
+
+    assert "candidates should have an understanding" not in combined
+    assert "explain the purpose of the:" not in combined
+    assert "how to correct errors using journal entries" in combined
+    assert "nominal ledger" in combined
+
+
+def test_student_facing_points_skip_split_pearson_accounting_shells():
+    qualification = sample_accounting_qualification()
+    qualification.topics = [
+        Topic(
+            title="1.2 - Accounting concepts",
+            points=[
+                "a) Understand the significance of the following accounting",
+                "concepts:",
+                "consistency",
+                "prudence",
+            ],
+        )
+    ]
+
+    plan = build_guide_plan(
+        qualification,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="accounting",
+    )
+    combined = " ".join(
+        [
+            plan.topic_guides[0].checklist[0],
+            plan.practice_items[0].focus_point,
+            plan.practice_items[0].question,
+        ]
+    ).lower()
+    practice_text = " ".join(
+        [plan.practice_items[0].focus_point, plan.practice_items[0].question]
+    ).lower()
+
+    assert "understand the significance of the following accounting" not in combined
+    assert "concepts:" not in practice_text
+    assert "consistency" in combined
+
+
+def test_student_facing_points_skip_pearson_business_organisation_shells():
+    qualification = sample_accounting_qualification()
+    qualification.topics = [
+        Topic(
+            title="1.1 - Types of business organisation",
+            points=[
+                "a) Explain the characteristics of:",
+                "public sector organisations",
+                "private sector organisations",
+                "sole traders",
+                "partnerships.",
+            ],
+        )
+    ]
+
+    plan = build_guide_plan(
+        qualification,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="accounting",
+    )
+    combined = " ".join(
+        [
+            plan.topic_guides[0].checklist[0],
+            plan.practice_items[0].focus_point,
+            plan.practice_items[0].question,
+        ]
+    ).lower()
+
+    assert "explain the characteristics of" not in combined
+    assert "public sector organisations" in combined
+
+
+def test_student_facing_points_merge_wrapped_pearson_accounting_lines():
+    qualification = sample_accounting_qualification()
+    qualification.topics = [
+        Topic(
+            title="5.3 - Irrecoverable debts",
+            points=[
+                "a) Explain why it is necessary to provide a provision for",
+                "irrecoverable debts.",
+                "b) Distinguish between an irrecoverable debt and a provision for",
+                "an irrecoverable debt.",
+            ],
+        ),
+        Topic(
+            title="2.4 - Capital expenditure and revenue expenditure",
+            points=[
+                "a) Explain the terms:",
+                "capital expenditure",
+                "revenue expenditure.",
+                "b) Explain the importance of the correct treatment of capital",
+                "expenditure and revenue expenditure.",
+            ],
+        ),
+    ]
+
+    plan = build_guide_plan(
+        qualification,
+        image_provider="prompt-queue",
+        explanation_style="friendly",
+        output_language="en",
+        requested_subject="accounting",
+    )
+    combined = " ".join(
+        [
+            *[guide.checklist[0] for guide in plan.topic_guides],
+            *[item.focus_point for item in plan.practice_items],
+        ]
+    ).lower()
+
+    assert "provide a provision for irrecoverable debts" in combined
+    assert "provide a provision for," not in combined
+    assert "the terms:" not in combined
+    assert "capital expenditure" in combined
 
 
 def test_build_run_options_normalizes_invalid_choices_without_bilingual_mode():

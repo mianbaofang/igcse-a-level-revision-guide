@@ -9,6 +9,7 @@ from intl_exam_guide.auditing.visual_jobs import build_visual_jobs, visual_jobs_
 from intl_exam_guide.models import GuidePlan
 from intl_exam_guide.rendering.html import (
     render_cover,
+    render_professional_glossary,
     render_reference_appendix,
     render_student_overview,
     subject_display_name,
@@ -26,6 +27,10 @@ from intl_exam_guide.rendering.visual_assets import (
     scientific_vector_route,
     visual_asset_key_from_brief,
 )
+from intl_exam_guide.planning.language_policy import glossary_language, handbook_body_language, with_body_language_options
+from intl_exam_guide.rendering.kroki import KrokiRenderError, render_kroki_svg_asset
+from intl_exam_guide.visuals import VisualSpec
+from intl_exam_guide.visuals.manifest import build_asset_metadata, build_visual_manifest_entry_v2
 
 PRINT_RASTER_MAX_WIDTH = 1600
 PRINT_RASTER_JPEG_QUALITY = 88
@@ -66,12 +71,17 @@ def write_sections(
     visual_assets: dict[str, dict[str, object]] | None = None,
 ) -> list[Path]:
     qualification = plan.qualification
-    language = plan.run_options.output_language
+    language = handbook_body_language(plan.run_options.output_language)
+    body_options = with_body_language_options(plan.run_options)
     html_lang = "zh-CN" if language == "zh-CN" else "en"
     page_title = (
         f"{qualification.title} Revision Guide"
         if language == "en"
         else f"{subject_display_name(qualification)}学习复习手册"
+    )
+    glossary_content = render_professional_glossary(
+        qualification,
+        glossary_language(plan.run_options.output_language) or "en",
     )
     sections: list[tuple[str, str]] = [
         (
@@ -84,7 +94,7 @@ def write_sections(
                 ]
             ),
         ),
-        ("01_cover.txt", render_cover(qualification, plan.run_options)),
+        ("01_cover.txt", render_cover(qualification, body_options)),
         (
             "02_study_overview.txt",
             render_student_overview(qualification, plan.revision_stages, plan.run_options),
@@ -108,6 +118,8 @@ def write_sections(
             render_reference_appendix(qualification, len(plan.practice_items), language) + "\n</body></html>",
         ),
     ]
+    if glossary_content:
+        sections.insert(3, ("02_professional_glossary.txt", glossary_content))
 
     written: list[Path] = []
     for name, content in sections:
@@ -125,51 +137,73 @@ def write_visual_assets(plan: GuidePlan, images_dir: Path) -> list[Path]:
     manifest = []
     written: list[Path] = []
     for index, brief in enumerate(plan.visual_briefs, start=1):
+        visual_id = f"visual_{index:03d}"
+        spec = VisualSpec.from_brief(brief, visual_id)
         key = visual_asset_key_from_brief(brief)
         previous = existing_by_key.get(key, {})
         filename = None
         asset_status = "external-generation-required"
+        review_status = "pending"
         if has_renderable_infographic(previous, images_dir):
             filename = str(previous.get("file"))
             asset_status = str(previous.get("asset_status") or "generated")
             written.append(images_dir / filename)
+            review_status = str(previous.get("review_status") or "reviewed")
         elif brief.complexity == "svg-basic":
             filename = f"visual_{index:03d}_{slugify(brief.topic_title)}.svg"
             path = images_dir / filename
-            path.write_text(
-                render_topic_visual_svg(brief, index, plan.run_options.output_language).strip(),
-                encoding="utf-8",
-            )
-            written.append(path)
-            asset_status = "svg-draft"
+            if brief.image_provider == "kroki":
+                try:
+                    render_kroki_svg_asset(brief, path)
+                    written.append(path)
+                    asset_status = "kroki-generated"
+                    review_status = "draft"
+                except KrokiRenderError as exc:
+                    filename = None
+                    asset_status = "professional-diagram-required"
+                    review_status = "pending"
+                    previous = {**previous, "kroki_error": str(exc)}
+            else:
+                path.write_text(
+                    render_topic_visual_svg(brief, index, handbook_body_language(plan.run_options.output_language)).strip(),
+                    encoding="utf-8",
+                )
+                written.append(path)
+                asset_status = "svg-draft"
+                review_status = "draft"
         else:
             filename = None
             asset_status = "external-generation-required"
+        asset_path = images_dir / filename if filename else None
         entry = {
             **previous,
-            **{
-                "id": f"visual_{index:03d}",
-                "key": key,
-                "file": filename,
-                "asset_status": asset_status,
-                "topic_title": brief.topic_title,
-                "focus_point": brief.focus_point,
-                "visual_type": brief.visual_type,
-                "complexity": brief.complexity,
-                "image_provider": brief.image_provider,
-                "fallback_route": (
-                    scientific_vector_route(brief.visual_type)
-                    if brief.complexity == "svg-basic"
-                    else "no-svg-complex-infographic"
-                ),
-                "prompt": brief.prompt,
-                "source_points": brief.source_points,
-                "source_pages": [snippet.page for snippet in brief.source_snippets],
-            },
+            **build_visual_manifest_entry_v2(
+                spec,
+                asset_path=asset_path,
+                review_status=review_status,
+            ),
         }
+        entry["id"] = visual_id
+        entry["key"] = key
+        entry["file"] = filename
+        entry["asset_status"] = asset_status
+        entry["fallback_route"] = (
+            "kroki-professional-diagram"
+            if brief.image_provider == "kroki"
+            else (
+                scientific_vector_route(brief.visual_type)
+                if brief.complexity == "svg-basic"
+                else "no-svg-complex-infographic"
+            )
+        )
+        if previous.get("generated_by"):
+            entry["generated_by"] = previous["generated_by"]
+        if previous.get("source_asset_file"):
+            entry["source_asset_file"] = previous["source_asset_file"]
         manifest.append(entry)
 
     optimize_raster_assets_for_pdf(manifest, images_dir)
+    refresh_manifest_asset_metadata(manifest, images_dir)
     final_written = [
         images_dir / str(entry["file"])
         for entry in manifest
@@ -181,7 +215,7 @@ def write_visual_assets(plan: GuidePlan, images_dir: Path) -> list[Path]:
     )
 
     (images_dir / "visual_manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2),
+        json.dumps({"schema_version": 2, "visuals": manifest}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     jobs = build_visual_jobs(manifest)
@@ -194,6 +228,18 @@ def write_visual_assets(plan: GuidePlan, images_dir: Path) -> list[Path]:
         encoding="utf-8",
     )
     return final_written
+
+
+def refresh_manifest_asset_metadata(
+    manifest: list[dict[str, object]],
+    images_dir: Path,
+) -> None:
+    for entry in manifest:
+        filename = str(entry.get("file") or "")
+        asset_path = images_dir / filename if filename else None
+        asset = build_asset_metadata(asset_path)
+        entry["asset"] = asset
+        entry["file"] = asset["file"]
 
 
 def cleanup_unreferenced_visual_assets(

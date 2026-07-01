@@ -10,10 +10,12 @@ from intl_exam_guide.models import Topic
 ExampleDomain = Literal[
     "mathematics",
     "biology",
+    "business",
     "chemistry",
     "physics",
     "economics",
     "accounting",
+    "history",
     "generic",
 ]
 
@@ -68,11 +70,23 @@ ECONOMICS = SubjectProfile(
     example_domain="economics",
     description="Economics and business concepts such as markets, production, finance, and policy.",
 )
+BUSINESS = SubjectProfile(
+    name="business",
+    family="business",
+    example_domain="business",
+    description="Business ownership, stakeholders, marketing, operations, people, finance, and strategy.",
+)
 ACCOUNTING = SubjectProfile(
     name="accounting-finance",
     family="business-finance",
     example_domain="accounting",
     description="Accounting records, double entry, statements, reconciliation, ratios, and analysis.",
+)
+HISTORY = SubjectProfile(
+    name="history",
+    family="humanities",
+    example_domain="history",
+    description="Historical chronology, causes, consequences, source evidence, change, and continuity.",
 )
 GENERIC = SubjectProfile(
     name="generic",
@@ -92,10 +106,17 @@ def resolve_subject_profile(
     declared = (subject_area or "").lower()
     if has_terms(declared, ["math", "mathematics", "further mathematics"]):
         return MATHEMATICS
-    if has_terms(declared, ["economics", "business"]):
+    if has_terms(declared, ["business", "business studies", "enterprise"]) and not has_terms(
+        declared,
+        ["economics"],
+    ):
+        return BUSINESS
+    if has_terms(declared, ["economics"]):
         return ECONOMICS
     if has_terms(declared, ["accounting", "bookkeeping", "book keeping", "finance", "financial"]):
         return ACCOUNTING
+    if has_terms(declared, ["history"]):
+        return HISTORY
     if has_terms(declared, ["chemistry"]):
         return CHEMISTRY
     if has_terms(declared, ["biology"]):
@@ -112,8 +133,12 @@ def resolve_subject_profile(
 
     if looks_like_accounting(text):
         return ACCOUNTING
+    if looks_like_business(text):
+        return BUSINESS
     if looks_like_economics(text):
         return ECONOMICS
+    if looks_like_history(text):
+        return HISTORY
     if looks_like_chemistry(text):
         return CHEMISTRY
     if looks_like_biology(text):
@@ -315,6 +340,48 @@ def looks_like_economics(text: str) -> bool:
     )
 
 
+def looks_like_business(text: str) -> bool:
+    return has_terms(
+        text,
+        [
+            "aim",
+            "aims",
+            "business",
+            "business plan",
+            "business planning",
+            "cash flow",
+            "cash-flow",
+            "customer",
+            "e-commerce",
+            "employee",
+            "entrepreneur",
+            "expansion",
+            "franchise",
+            "human resources",
+            "limited company",
+            "location",
+            "market research",
+            "marketing",
+            "marketing mix",
+            "motivation",
+            "operations",
+            "organisation",
+            "ownership",
+            "partnership",
+            "pricing",
+            "product",
+            "promotion",
+            "quality",
+            "recruitment",
+            "retailer",
+            "sole trader",
+            "stakeholder",
+            "stakeholders",
+            "stock control",
+        ],
+    )
+
+
 def looks_like_accounting(text: str) -> bool:
     return has_terms(
         text,
@@ -342,6 +409,43 @@ def looks_like_accounting(text: str) -> bool:
             "ratio analysis",
             "trade receivable days",
             "trade payable days",
+        ],
+    )
+
+
+def looks_like_history(text: str) -> bool:
+    return has_terms(
+        text,
+        [
+            "chronology",
+            "chronological",
+            "consequence",
+            "consequences",
+            "continuity",
+            "evidence",
+            "historical",
+            "history",
+            "interpretation",
+            "appeasement",
+            "civil war",
+            "dictatorship",
+            "empire",
+            "empires",
+            "first world war",
+            "league of nations",
+            "nations",
+            "peacemakers",
+            "reform",
+            "revolution",
+            "second world war",
+            "significance",
+            "source",
+            "treaty",
+            "versailles",
+            "timeline",
+            "unified",
+            "unification",
+            "war",
         ],
     )
 

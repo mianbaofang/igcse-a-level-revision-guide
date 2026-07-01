@@ -49,6 +49,7 @@ from intl_exam_guide.rendering.html import (
     render_topic_nav,
     render_topics,
     render_visual_example,
+    source_snippet_display_text,
     style_display,
     topic_anchor,
 )
@@ -318,7 +319,7 @@ def test_render_cover_keeps_first_page_to_course_identity():
     assert "Assessment Structure" not in html
 
 
-def test_render_cover_clarifies_oxfordaqa_9660_as_math_mechanics_scope():
+def test_render_cover_keeps_term_support_routes_in_english_body():
     qualification = sample_oxfordaqa_as_math_9660()
     options = GuideRunOptions(
         requested_subject="9660",
@@ -329,14 +330,14 @@ def test_render_cover_clarifies_oxfordaqa_9660_as_math_mechanics_scope():
 
     english = render_cover(qualification, options)
     options.output_language = "zh-CN"
-    chinese = render_cover(qualification, options)
+    term_supported = render_cover(qualification, options)
 
     assert "Unit P1 + Unit PSM1" in english
     assert "Mechanics" in english
     assert "part of this mathematics specification" in english
-    assert "Unit P1 + Unit PSM1" in chinese
-    assert "应用力学" in chinese
-    assert "属于本数学大纲" in chinese
+    assert term_supported == english
+    assert "Official exam board" in term_supported
+    assert "Specification / syllabus version" in term_supported
     assert "course-scope-note" in stylesheet()
 
 
@@ -390,6 +391,99 @@ def test_render_html_writes_full_handbook_from_manifest_assets(tmp_path):
     assert "Source Appendix" in html
 
 
+def test_render_html_uses_english_body_with_selected_language_glossary(tmp_path):
+    qualification = sample_oxfordaqa_as_math_9660()
+    topic_title = qualification.topics[0].title
+    plan = GuidePlan(
+        qualification=qualification,
+        run_options=GuideRunOptions(
+            requested_subject="AQA AS Mathematics",
+            image_provider="prompt-queue",
+            explanation_style="friendly",
+            output_language="zh-CN",
+        ),
+        topic_guides=[
+            TopicGuide(
+                topic_title=topic_title,
+                essence="Forces connect the motion of a body to the resultant force acting on it.",
+                analogy="Think of a trolley: a larger push changes its motion more quickly.",
+                mini_worked_example="Resolve the forces, write F = ma, then solve for the unknown.",
+                worked_solution_steps=["Choose a positive direction.", "Find the resultant force.", "Use F = ma."],
+                pitfall="Do not mix velocity, acceleration, and force units.",
+                checklist=["Use resultant force to model acceleration.", "State units clearly."],
+                diagram_brief="Show force arrows acting on a body.",
+            )
+        ],
+        practice_items=[
+            PracticeItem(
+                topic_title=topic_title,
+                command_word="Calculate",
+                difficulty="standard",
+                focus_point="Newton's second law",
+                question="A 2 kg particle has a resultant force of 6 N. Find its acceleration.",
+                answer_frame=["Identify mass.", "Identify resultant force.", "Use F = ma."],
+                public_solution_steps=["6 = 2a.", "a = 3.", "Acceleration is 3 m s^-2."],
+                answer_checkpoints=["Force in newtons.", "Mass in kg.", "Acceleration in m s^-2."],
+                source_points=["Newton's three laws of motion."],
+            )
+        ],
+        visual_briefs=[],
+        diagram_briefs=[],
+        revision_stages=["Read the source", "Practise examples"],
+    )
+
+    html = render_html(plan, tmp_path / "guide.html").read_text(encoding="utf-8")
+
+    assert '<html lang="en">' in html
+    assert "How to Study" in html
+    assert "Term support: English with zh-CN glossary" in html
+    assert "Professional Term Glossary" in html
+    assert html.count('class="glossary-term-row"') >= 30
+    assert "Force" in html
+    assert "力" in html
+
+
+def test_supported_languages_only_add_professional_term_glossary(tmp_path):
+    expected = [
+        ("zh-CN", "Simplified Chinese", "\u5b9a\u4e49"),
+        ("zh-TW", "Traditional Chinese", "\u5b9a\u7fa9"),
+        ("ja", "Japanese", "\u5b9a\u7fa9"),
+    ]
+
+    for language, label, translated_definition in expected:
+        plan = build_guide_plan(
+            sample_rendering_qualification(),
+            output_language=language,
+            explanation_style="friendly",
+            requested_subject="Accounting",
+        )
+
+        html = render_html(plan, tmp_path / f"guide-{language}.html").read_text(encoding="utf-8")
+
+        assert '<html lang="en">' in html
+        assert "How to Study" in html
+        assert "Study Roadmap" in html
+        assert f"Term support: English with {language} glossary" in html
+        assert "Professional Term Glossary" in html
+        assert label in html
+        assert "English exam term" in html
+        assert "Trial balance" in html
+        assert translated_definition in html
+        row_count = html.count('class="glossary-term-row"')
+        assert 30 <= row_count <= 50
+
+    english_plan = build_guide_plan(
+        sample_rendering_qualification(),
+        output_language="en",
+        explanation_style="friendly",
+        requested_subject="Accounting",
+    )
+    english_html = render_html(english_plan, tmp_path / "guide-en.html").read_text(encoding="utf-8")
+
+    assert "Term support: English" in english_html
+    assert "Professional Term Glossary" not in english_html
+
+
 def test_html_helpers_keep_source_policy_and_setup_copy_readable():
     qualification = sample_rendering_qualification()
     qualification.source.listing_subject = "Business and Accounting"
@@ -415,7 +509,7 @@ def test_html_helpers_keep_source_policy_and_setup_copy_readable():
     assert "Business and Accounting" in source_note
     assert "blue International GCSE subject listing" in source_note
     assert "PDF SHA-256" in source_note
-    assert "one selected output language" in policy
+    assert "handbook body stays in English" in policy
     assert style_display("life", "en") == "Life Scene"
     assert image_provider_display(options, "en") == "custom illustration model: SenseNova U1 Fast"
     assert "warning" in link_or_missing(None, "en")
@@ -477,7 +571,7 @@ def test_chinese_html_helpers_have_direct_contracts():
     assert "warning" in link_or_missing(None, "zh-CN")
 
 
-def test_render_html_writes_chinese_handbook_directly(tmp_path):
+def test_render_html_writes_english_handbook_with_selected_language_glossary(tmp_path):
     qualification = sample_rendering_qualification()
     guide = sample_topic_guide()
     practice = sample_practice_item()
@@ -502,11 +596,14 @@ def test_render_html_writes_chinese_handbook_directly(tmp_path):
     html = output_path.read_text(encoding="utf-8")
 
     assert output_path.exists()
-    assert '<html lang="zh-CN">' in html
-    assert "How to Study" not in html
-    assert "Study Roadmap" not in html
-    assert "Quick Navigation" not in html
-    assert "Source Appendix" not in html
+    assert '<html lang="en">' in html
+    assert "How to Study" in html
+    assert "Study Roadmap" in html
+    assert "Quick Navigation" in html
+    assert "Source Appendix" in html
+    assert "Professional Term Glossary" in html
+    assert "Simplified Chinese" in html
+    assert "定义" in html
     assert "guide.html" not in html
     assert "deterministic-svg" not in html
 
@@ -561,6 +658,23 @@ def test_topic_renderers_cover_guides_practice_story_and_visual_blocks():
     )
     assert "Narrative explanation styles" in render_story_modes(topic, guide, "en", 1)
     assert "Source documents - Worked Example" in render_practice(practice, "en")
+
+
+def test_render_topics_cleans_syllabus_shell_text_from_key_ideas():
+    topic = Topic(
+        title="3.1.1.2 - The factors of production",
+        points=[
+            "The factors of production Students should be able to",
+            "understand the nature of an economic resource",
+        ],
+    )
+    guide = sample_topic_guide(topic.title)
+
+    html = render_topics([topic], [guide], [], [], {}, "en")
+
+    assert "Students should be able to" not in html
+    assert "The factors of production" in html
+    assert "nature of an economic resource" in html
 
 
 def test_topic_renderers_cover_missing_guides_and_empty_topic_fallbacks():
@@ -623,7 +737,10 @@ def test_secondary_html_sections_and_chinese_rendering_paths():
 
     assert "Course Position" in render_summary(qualification, "en")
     assert "warning" in render_assessments(qualification, "en")
-    assert "Study Roadmap" in render_topic_map([topic], "en", [guide])
+    english_map = render_topic_map([topic], "en", [guide])
+    assert "Study Roadmap" in english_map
+    assert guide.checklist[0] in english_map
+    assert "Market demand shifts" not in english_map
     assert "Use the specification text" in render_topic_map([Topic(title="No points", points=[])], "en")
     assert "Quick Navigation" in render_topic_nav([topic], "en")
     assert "Three-Stage Revision" in render_revision_stages(["Plan", "Practise"], "en")
@@ -661,7 +778,7 @@ def test_secondary_html_sections_and_chinese_rendering_paths():
     )
 
 
-def test_chinese_html_rendering_paths_have_direct_contracts():
+def test_legacy_chinese_rendering_helpers_keep_contracts_while_overview_uses_new_policy():
     qualification = sample_rendering_qualification()
     topic = qualification.topics[0]
     guide = sample_topic_guide()
@@ -689,8 +806,8 @@ def test_chinese_html_rendering_paths_have_direct_contracts():
     practice_html = render_practice(practice, "zh-CN", "会计记录")
     appendix = render_reference_appendix(qualification, 1, "zh-CN")
 
-    assert "怎么用这本手册" in overview
-    assert "科目：会计学" in overview
+    assert "How to Study" in overview
+    assert "English with zh-CN glossary" in overview
     assert "课程定位" in summary
     assert "考试结构" in assessments
     assert "T1." in topics
@@ -721,6 +838,61 @@ def test_source_snippets_and_topic_titles_have_direct_rendering_guards():
         "long-topic-source-documents-ledger-entries"
     )
     assert slugify("!!!") == "topic"
+
+
+def test_source_snippet_display_text_removes_student_instruction_shell():
+    text = (
+        "3.1.1.2 The factors of production Students should be able to: "
+        "• understand the nature of an economic resource"
+    )
+
+    cleaned = source_snippet_display_text(text)
+
+    assert "Students should be able to" not in cleaned
+    assert "The factors of production" in cleaned
+    assert "understand the nature of an economic resource" in cleaned
+
+
+def test_source_snippet_display_text_cleans_split_pearson_bullets():
+    text = (
+        "1.1 Types of business organisation a) Explain the characteristics of: "
+        "public sector organisations private sector organisations sole traders partnerships. "
+        "b) Explain the connection between stakeholders and a business."
+    )
+
+    cleaned = source_snippet_display_text(text)
+
+    assert "a) Explain" not in cleaned
+    assert "b) Explain" not in cleaned
+    assert "public sector organisations" in cleaned
+    assert "connection between stakeholders" in cleaned
+
+
+def test_source_snippet_display_text_merges_wrapped_pearson_bullets():
+    text = (
+        "5.3 Irrecoverable debts a) Explain why it is necessary to provide a provision for "
+        "irrecoverable debts. b) Distinguish between an irrecoverable debt and a provision for "
+        "an irrecoverable debt."
+    )
+
+    cleaned = source_snippet_display_text(text)
+
+    assert "provide a provision for irrecoverable debts" in cleaned
+    assert "provision for; irrecoverable" not in cleaned
+
+
+def test_source_snippet_display_text_removes_accounting_shell_prefixes_with_content():
+    concepts = source_snippet_display_text(
+        "1.2 Accounting concepts a) Understand the significance of the following accounting concepts: consistency prudence accruals"
+    )
+    terms = source_snippet_display_text(
+        "2.4 Capital expenditure and revenue expenditure a) Explain the terms: capital expenditure revenue expenditure"
+    )
+
+    assert "the following accounting concepts:" not in concepts
+    assert "consistency prudence accruals" in concepts
+    assert "the terms:" not in terms
+    assert "capital expenditure revenue expenditure" in terms
 
 
 def test_chinese_math_module_titles_keep_code_and_teachable_concept():
@@ -889,7 +1061,9 @@ def test_write_visual_assets_preserves_generated_raster_and_rebuilds_svg_manifes
     )
 
     written = write_visual_assets(plan, images_dir)
-    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    manifest_payload = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert manifest_payload["schema_version"] == 2
+    manifest = manifest_payload["visuals"]
 
     assert not (images_dir / "old.svg").exists()
     assert not (images_dir / "stale.png").exists()
@@ -950,7 +1124,9 @@ def test_write_visual_assets_preserves_reviewed_raster_for_svg_basic(tmp_path):
     )
 
     written = write_visual_assets(plan, images_dir)
-    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    manifest_payload = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert manifest_payload["schema_version"] == 2
+    manifest = manifest_payload["visuals"]
 
     assert written == [images_dir / "quadratic-reviewed.png"]
     assert manifest[0]["file"] == "quadratic-reviewed.png"
@@ -967,6 +1143,7 @@ def test_write_handbook_package_writes_modular_sections_manifest_and_images(tmp_
         output_language="en",
         requested_subject="Accounting",
     )
+    plan.visual_briefs[0].image_provider = "deterministic-svg"
 
     manifest = write_handbook_package(plan, tmp_path)
 
@@ -994,6 +1171,10 @@ def test_write_handbook_package_writes_modular_sections_manifest_and_images(tmp_
         encoding="utf-8"
     )
     assert (tmp_path / "images" / "visual_manifest.json").exists()
-    visual_manifest = json.loads((tmp_path / "images" / "visual_manifest.json").read_text(encoding="utf-8"))
+    visual_manifest_payload = json.loads(
+        (tmp_path / "images" / "visual_manifest.json").read_text(encoding="utf-8")
+    )
+    assert visual_manifest_payload["schema_version"] == 2
+    visual_manifest = visual_manifest_payload["visuals"]
     assert visual_manifest[0]["asset_status"] == "svg-draft"
     assert visual_manifest[0]["file"] == manifest["image_files"][0]

@@ -4,7 +4,13 @@ import json
 from pathlib import Path
 
 from intl_exam_guide.models import GuidePlan, Topic
+from intl_exam_guide.planning.language_policy import handbook_body_language
 from intl_exam_guide.planning.localization import zh_teachable_topic_title
+from intl_exam_guide.subjects import (
+    build_subject_review_job,
+    build_subject_writing_job,
+    resolve_subject_pack,
+)
 
 
 CONCEPT_REVIEW_FILE = "concept_explanations.json"
@@ -12,19 +18,42 @@ CONCEPT_REVIEW_FILE = "concept_explanations.json"
 
 def build_concept_jobs(plan: GuidePlan) -> list[dict[str, object]]:
     topics = {topic.title: topic for topic in plan.qualification.topics}
+    language = handbook_body_language(plan.run_options.output_language)
     jobs: list[dict[str, object]] = []
     for index, guide in enumerate(plan.topic_guides, start=1):
         topic = topics.get(guide.topic_title)
+        source_points = topic.points if topic else []
+        source_text = " ".join([guide.topic_title, *source_points])
+        pack = resolve_subject_pack(plan.qualification.subject_area, topic, source_text)
+        job_id = f"concept_{index:03d}"
+        student_title = student_topic_title(topic, index, language)
         jobs.append(
             {
-                "id": f"concept_{index:03d}",
+                "id": job_id,
+                "contract_version": "v0.4-pedagogy-mvp",
                 "topic_title": guide.topic_title,
-                "student_title": student_topic_title(topic, index, plan.run_options.output_language),
-                "output_language": plan.run_options.output_language,
+                "student_title": student_title,
+                "output_language": language,
+                "subject_pack": pack.name,
+                "priority_subject": pack.priority,
                 "current_draft": guide.checklist[:3],
-                "source_points": (topic.points if topic else []),
+                "source_points": source_points,
                 "source_pages": [snippet.page for snippet in (topic.source_snippets if topic else [])],
-                "task": concept_task_text(plan.run_options.output_language),
+                "task": concept_task_text(language),
+                "writing_contract": build_subject_writing_job(
+                    job_id=job_id,
+                    topic_title=guide.topic_title,
+                    student_title=student_title,
+                    source_points=source_points,
+                    output_language=language,
+                    pack=pack,
+                ),
+                "review_contract": build_subject_review_job(
+                    writing_job_id=job_id,
+                    topic_title=guide.topic_title,
+                    output_language=language,
+                    pack=pack,
+                ),
             }
         )
     return jobs
@@ -66,6 +95,7 @@ def concept_jobs_markdown(jobs: list[dict[str, object]]) -> str:
                 f"## {job['id']} - {job['student_title']}",
                 "",
                 f"- Topic: {job['topic_title']}",
+                f"- Subject pack: {job.get('subject_pack', 'generic')}",
                 f"- Task: {job['task']}",
                 "- Source points:",
             ]

@@ -1,8 +1,8 @@
 [
   {
     "id": "aqa-accounting-zh",
-    "prompt": "帮我生成 AQA IGCSE 会计中文复习手册。",
-    "expected": "The agent treats AQA as the OxfordAQA international route, confirms output language and explanation style, does not ask for an image model before generation, then validates that detailed syllabus units, concept jobs/review status, worked examples, visual briefs, HTML, and PDF exist."
+    "prompt": "帮我生成 AQA IGCSE 会计复习手册，附中文专业词对照表。",
+    "expected": "The agent treats AQA as the OxfordAQA international route, confirms term-support language and explanation style, does not ask for an image model before generation, then validates that detailed syllabus units, concept jobs/review status, worked examples, visual briefs, HTML, and PDF exist."
   },
   {
     "id": "edexcel-ambiguous-subject",
@@ -11,8 +11,8 @@
   },
   {
     "id": "caie-exam-year",
-    "prompt": "帮我生成 CAIE IGCSE Economics 中文学习手册。",
-    "expected": "The agent checks whether the CAIE page exposes multiple syllabus year ranges. If so, it asks for exam year before selecting the syllabus, then keeps the handbook language locked to Chinese."
+    "prompt": "帮我生成 CAIE IGCSE Economics 复习手册，附中文专业词对照表。",
+    "expected": "The agent checks whether the CAIE page exposes multiple syllabus year ranges. If so, it asks for exam year before selecting the syllabus, then keeps the handbook body English and adds the requested term glossary."
   },
   {
     "id": "image-model-not-callable",

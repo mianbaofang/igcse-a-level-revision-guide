@@ -70,23 +70,29 @@ def sample_qualification() -> Qualification:
 
 
 def sample_downloaded_qualification() -> Qualification:
-    topics = [
-        Topic(
-            title=f"3.{index} - Accounting topic {index}",
-            points=[
-                f"Students should explain accounting source document {index}.",
-                f"Students should prepare ledger entries for scenario {index}.",
-            ],
-            source_snippets=[
-                SourceSnippet(
-                    page=10 + index,
-                    text=f"Students should explain accounting source document {index} and prepare ledger entries.",
-                    matched_term=f"Accounting topic {index}",
-                )
-            ],
-        )
-        for index in range(1, 7)
+    topic_specs = [
+        ("3.1 - Source documents", ["source documents and books of prime entry"]),
+        ("3.2 - Trial balance", ["prepare and explain the purpose of a trial balance"]),
+        ("3.3 - Control accounts", ["prepare trade receivables and trade payables control accounts"]),
+        ("3.4 - Correction of errors", ["correct errors using journal entries and suspense accounts"]),
+        ("3.5 - Bank reconciliation", ["prepare a bank reconciliation statement"]),
+        ("3.6 - Accounting ratios", ["calculate liquidity and profitability ratios"]),
     ]
+    topics = []
+    for index, (title, points) in enumerate(topic_specs, start=1):
+        topics.append(
+            Topic(
+                title=title,
+                points=points,
+                source_snippets=[
+                    SourceSnippet(
+                        page=10 + index,
+                        text=f"{title} {' '.join(points)}",
+                        matched_term=title,
+                    )
+                ],
+            )
+        )
     return Qualification(
         title="International GCSE Accounting Example (9999)",
         code="9999",
@@ -216,6 +222,7 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert (output_dir / "guide-plan.json").exists()
     assert (output_dir / "qualification.json").exists()
     assert (output_dir / "run-options.json").exists()
+    assert (output_dir / "delivery-contract.json").exists()
     assert (output_dir / "handbook-package.json").exists()
     assert (output_dir / "sections" / "00_css.txt").exists()
     assert (output_dir / "sections" / "03_topic_navigation.txt").exists()
@@ -227,6 +234,8 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert html.count('class="visual-example"') == 3
     assert "Concept Map" not in html
     assert "Visual Worked Example" in html
+    assert "Delivery Status" in html
+    assert 'data-delivery-state="draft"' in html
     assert "How to Study" in html
     assert "Guide Setup" in html
     assert "Study route" not in html
@@ -249,11 +258,15 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert validation["review_summary"]["concept_jobs"] == 3
     assert validation["review_summary"]["pending_concept_explanations"] == 3
     assert validation["delivery_status"] == "draft_needs_concept_review"
+    assert validation["delivery_state"] == "draft"
+    delivery_contract = json.loads((output_dir / "delivery-contract.json").read_text(encoding="utf-8"))
+    assert delivery_contract["delivery_state"] == "draft"
+    assert delivery_contract["course_spec"]["title"] == validation["qualification"]
     assert not [issue for issue in validation["issues"] if issue["severity"] == "error"]
     assert any("topic concept explanations still need LLM/Agent review" in issue["message"] for issue in validation["issues"])
 
 
-def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
+def test_demo_cli_generates_english_guide_with_chinese_term_glossary(tmp_path):
     output_dir = tmp_path / "demo-zh"
     result = main(
         [
@@ -271,33 +284,25 @@ def test_demo_cli_generates_single_language_chinese_guide(tmp_path):
     )
     assert result == 0
     html = (output_dir / "guide.html").read_text(encoding="utf-8")
-    assert 'lang="zh-CN"' in html
-    assert "怎么用这本手册" in html
-    assert "复习路线" in html
+    assert 'lang="en"' in html
+    assert "How to Study" in html
+    assert "Study Roadmap" in html
+    assert "Professional Term Glossary" in html
+    assert "Simplified Chinese" in html
+    assert "定义" in html
     assert "学习路径" not in html
     assert "核心概念 -> 例题 -> 错题回看" not in html
-    assert "快速目录" in html
+    assert "Quick Navigation" in html
     assert 'href="#topic-1"' in html
     assert 'id="topic-1"' in html
-    assert "图形例题" in html
-    assert "例题" in html
-    assert "解题步骤" in html
-    assert "检查答案" in html
-    assert "指令词" in html
-    assert "command word" not in html
-    assert "syllabus point" not in html
+    assert "Visual Worked Example" in html
+    assert "Worked Example" in html
+    assert "Solution" in html
+    assert "Check" in html
+    assert "Command:" in html
     assert "Can explain" not in html
-    assert "International GCSE Study and Revision Guide" not in html
-    assert "Worked Example" not in html
-    assert "How to Study" not in html
-    assert "Local SVG draft" not in html
-    assert "Why not SVG" not in html
-    assert "Revision Guide" not in html
-    assert "Measurement and data" not in html
-    assert "Use SI units and standard prefixes" not in html
-    assert "Demo specification page" not in html
-    assert "Paper 1" not in html
-    assert "测量与数据" in html
+    assert "Delivery Status" in html
+    assert 'data-delivery-state="draft"' in html
     assert "知识单元 1" not in html
     assert "大纲点 1" not in html
     validation = json.loads((output_dir / "validation.json").read_text(encoding="utf-8"))
@@ -420,7 +425,9 @@ def test_generated_infographic_assets_are_preserved_and_rendered(tmp_path):
     write_handbook_package(plan, output_dir)
     images_dir = output_dir / "images"
     manifest_path = images_dir / "visual_manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest_payload["schema_version"] == 2
+    manifest = manifest_payload["visuals"]
     assert manifest[0]["asset_status"] == "external-generation-required"
     assert manifest[0]["file"] is None
 
@@ -439,7 +446,11 @@ def test_generated_infographic_assets_are_preserved_and_rendered(tmp_path):
     (images_dir / image_name).write_bytes(b"fake-png")
     manifest[0]["file"] = image_name
     manifest[0]["asset_status"] = "generated"
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    manifest_payload["visuals"] = manifest
+    manifest_path.write_text(
+        json.dumps(manifest_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
     write_handbook_package(plan, output_dir)
     render_html(plan, output_dir / "guide.html", manifest_path)
@@ -525,7 +536,7 @@ def test_custom_image_provider_requires_set_environment_variable(monkeypatch):
     assert not [issue for issue in validate_plan(plan) if issue.severity == "error"]
 
 
-def test_chinese_mode_keeps_raw_english_source_snippets_out_of_topic_body(tmp_path):
+def test_term_support_mode_keeps_english_body_and_traceable_source_snippets(tmp_path):
     output_dir = tmp_path / "zh-guide"
     raw_source = "Students should describe ionic, covalent and metallic bonding and explain how bonding affects properties."
     qualification = Qualification(
@@ -578,11 +589,13 @@ def test_chinese_mode_keeps_raw_english_source_snippets_out_of_topic_body(tmp_pa
 
     html = (output_dir / "guide.html").read_text(encoding="utf-8")
     assert raw_source not in html
-    assert "官方英文来源片段已保存在结构化输出中" in html
+    assert "describe ionic, covalent and metallic bonding" in html
+    assert '<html lang="en">' in html
+    assert "Professional Term Glossary" in html
     assert "中文 / English" not in html
 
 
-def test_chinese_mode_visual_prompts_follow_selected_language():
+def test_term_support_language_visual_prompts_stay_english():
     qualification = Qualification(
         title="International GCSE Economics Example (9214)",
         code="9214",
@@ -624,12 +637,11 @@ def test_chinese_mode_visual_prompts_follow_selected_language():
     )
 
     prompt = plan.visual_briefs[0].prompt
-    assert "制作一张中文学习信息图" in prompt
-    assert "主题：经济与商业" in prompt
-    assert "简短中文标签" in prompt
-    assert "Factors which determine demand" not in prompt
-    assert "Create a student-friendly" not in prompt
-    assert "Use short English labels" not in prompt
+    assert "Create a concise educational visual" in prompt
+    assert "Topic: economics and business" in prompt
+    assert "Short labels may include" in prompt
+    assert "Factors which determine demand" in prompt
+    assert "制作一张中文学习信息图" not in prompt
     assert "International" not in prompt
     assert "GCSE" not in prompt
 
@@ -833,7 +845,7 @@ def test_validation_rejects_chinese_syllabus_placeholder_text():
     issues = validate_plan(plan)
 
     assert any(
-        issue.severity == "error" and "generic syllabus placeholder" in issue.message
+        issue.severity == "error" and "non-English body text" in issue.message
         for issue in issues
     )
 

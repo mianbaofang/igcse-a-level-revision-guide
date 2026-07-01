@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from intl_exam_guide.models import GuideRunOptions, Topic, TopicGuide, VisualBrief
+from intl_exam_guide.planning.language_policy import handbook_body_language
 from intl_exam_guide.planning.localization import (
     is_generic_zh_label,
     zh_point_label,
@@ -10,15 +11,18 @@ from intl_exam_guide.planning.localization import (
     zh_visual_trigger,
     zh_visual_type,
 )
+from intl_exam_guide.planning.source_points import visible_source_points
 from intl_exam_guide.planning.subject_profiles import resolve_subject_profile
 
 
 SUBJECT_PROMPT_LABELS = {
     "accounting": ("accounting", "会计"),
     "biology": ("biology", "生物"),
+    "business": ("business", "商业"),
     "chemistry": ("chemistry", "化学"),
     "economics": ("economics and business", "经济与商业"),
     "generic": ("this subject", "本学科"),
+    "history": ("history", "历史"),
     "mathematics": ("mathematics", "数学"),
     "physics": ("physics", "物理"),
 }
@@ -54,13 +58,14 @@ def build_visual_brief(
     run_options: GuideRunOptions,
     subject_area: str | None = None,
 ) -> VisualBrief | None:
-    points = topic.points[:4] or [topic.title]
+    points = visible_source_points(topic, limit=4)
     focus = points[0]
     visual_type, complexity, trigger = choose_visual_type(topic, points, subject_area)
     if complexity == "text-ok":
         return None
-    provider = choose_provider_for_visual(complexity, run_options)
-    if run_options.output_language == "en":
+    provider = choose_provider_for_visual(complexity, run_options, visual_type)
+    body_language = handbook_body_language(run_options.output_language)
+    if body_language == "en":
         visible_focus = focus
         visible_points = points
         visible_visual_type = visual_type
@@ -80,7 +85,7 @@ def build_visual_brief(
         topic=topic,
         points=points,
         subject_area=subject_area,
-        language=run_options.output_language,
+        language=body_language,
         focus=visible_focus,
         visual_type=visible_visual_type,
         visible_points=visible_points,
@@ -110,26 +115,18 @@ def build_content_only_image_prompt(
 ) -> str:
     """Build the prompt submitted to image models without board/source packaging."""
 
+    language = handbook_body_language(language)
     subject = subject_prompt_label(subject_area, topic, points, language)
     clean_focus = clean_prompt_phrase(focus)
     clean_type = clean_prompt_phrase(visual_type)
     label_clause = prompt_label_clause(visible_points, language)
-    if language == "en":
-        return (
-            "Create a concise educational visual. "
-            f"Topic: {subject}: {clean_focus}. "
-            f"Visual task: {clean_type}. "
-            "Show only the diagrams, formulas, and short labels needed for this topic. "
-            "Do not add institutional logos, course-cover headers, badges, footers, "
-            f"or watermarks.{label_clause} Leave a small practice frame."
-        )
     return (
-        "制作一张中文学习信息图。"
-        f"主题：{subject}：{clean_focus}。"
-        f"图形任务：{clean_type}。"
-        "只呈现该主题需要的图形、公式和简短中文标签；"
-        "不要添加机构标识、课程封面、页眉页脚、徽章或水印。"
-        f"{label_clause}留出一个简短练习框。"
+        "Create a concise educational visual. "
+        f"Topic: {subject}: {clean_focus}. "
+        f"Visual task: {clean_type}. "
+        "Show only the diagrams, formulas, and short labels needed for this topic. "
+        "Do not add institutional logos, course-cover headers, badges, footers, "
+        f"or watermarks.{label_clause} Leave a small practice frame."
     )
 
 
@@ -201,35 +198,140 @@ def choose_visual_type(
             "manufacturing",
             "non-profit",
         ]
-        if any(has(word) for word in ["depreciation", "receivables", "payables", "irrecoverable", "accruals", "prudence", "concepts"]):
-            return "text explanation with optional table", "text-ok", "adjustments are safer as source-bound explanation unless a statement layout is required"
+        if (
+            "verification of the double entry records" in title_text
+            and "bank reconciliation" not in title_text
+            and "control account" not in title_text
+            and "trial balance" not in title_text
+        ):
+            return "text explanation with optional table", "text-ok", "verification overview is a comparison of tools, not one reconciliation diagram"
         if any(term in title_text for term in ratio_terms) or (
             any(has(word) for word in ratio_terms)
             and not any(has(word) for word in statement_terms)
         ):
             return "text explanation with optional table", "text-ok", "ratio formula and interpretation topics are clearer as worked calculations"
-        if any(
+        if title_text.strip() in {"financial statements", "final accounts"} and (
+            has_phrase("income statement") or has_phrase("statement of financial position")
+        ):
+            return (
+                "financial-statement layout summary table",
+                "svg-basic",
+                "financial-statement topics need a compact statement layout table",
+            )
+        if any(term in title_text for term in ["income statement", "statement of financial position", "financial statement"]) and not any(
             has(word)
             for word in [
-                "source",
-                "document",
-                "documents",
-                "journal",
-                "journals",
-                "ledger",
-                "ledgers",
-                "book",
-                "books",
-                "prime",
-                "original",
+                "partnership",
+                "company",
+                "companies",
+                "limited",
+                "liability",
+                "manufacturing",
+                "non",
+                "profit",
+                "club",
+                "trial",
             ]
-        ) or has_phrase("double entry"):
+        ):
+            return "text explanation with optional accounting table", "text-ok", "generic financial statement topics are clearer as worked examples than repeated layout diagrams"
+        if (
+            any(term in title_text for term in statement_terms)
+            or any(has(word) for word in ["statement", "statements", "partnership", "company", "manufacturing"])
+        ) and not any(
+            marker in title_text
+            for marker in ["correction of errors", "correct errors", "effect of errors", "control account", "bank reconciliation"]
+        ):
+            if "incomplete records" in title_text:
+                return "incomplete records reconstruction flow", "svg-basic", "incomplete records need a reconstruction sequence"
+            if "partnership" in title_text:
+                return "partnership appropriation and current account layout", "svg-basic", "partnership accounts need profit appropriation and partner-current structure"
+            if "manufacturing" in title_text or "manufacturer" in title_text or has_phrase("manufacturing accounts"):
+                return "manufacturing account cost-flow layout", "svg-basic", "manufacturing accounts need prime cost to production cost flow"
+            if "club" in title_text or "non-profit" in title_text:
+                return "club receipts-payments and income-expenditure layout", "svg-basic", "club accounts need a receipts-to-income-expenditure distinction"
+            if (
+                "limited company" in title_text
+                or "limited companies" in title_text
+                or "limited liability" in title_text
+                or "company accounts" in title_text
+                or "company financial statements" in title_text
+                or has_phrase("financial statements for companies")
+            ):
+                return "limited company financial statement layout", "svg-basic", "limited company accounts need statement layout detail"
+            return "text explanation with optional accounting table", "text-ok", "generic financial statement topics are clearer as worked examples than repeated layout diagrams"
+        if (
+            any(phrase in title_text for phrase in ["trial balance", "control account", "bank reconciliation", "correction of errors", "correct errors", "effect of errors", "incomplete records"])
+            or has_phrase("trial balance")
+            or has_phrase("control account")
+            or has_phrase("control accounts")
+            or has_phrase("bank reconciliation")
+            or has_phrase("correction of errors")
+            or has_phrase("correct errors")
+            or has_phrase("effect of errors")
+            or has_phrase("incomplete records")
+        ):
+            if "control account" in title_text or "control accounts" in title_text:
+                return "control account reconciliation diagram", "svg-basic", "control accounts need a ledger-to-control comparison"
+            if "correction of errors" in title_text or "correct errors" in title_text or "effect of errors" in title_text:
+                return "error correction and suspense account flow", "svg-basic", "error correction needs a detect-correct-check sequence"
+            if "bank reconciliation" in title_text:
+                return "bank reconciliation workflow diagram", "svg-basic", "bank reconciliation needs a precise comparison and correction flow"
+            if "incomplete records" in title_text:
+                return "incomplete records reconstruction flow", "svg-basic", "incomplete records need a reconstruction sequence"
+            if "trial balance" in title_text:
+                return "trial balance verification table", "svg-basic", "trial balance needs a debit-credit equality check"
+            if has_phrase("control account") or has_phrase("control accounts"):
+                return "control account reconciliation diagram", "svg-basic", "control accounts need a ledger-to-control comparison"
+            if has_phrase("correction of errors") or has_phrase("correct errors") or has_phrase("effect of errors"):
+                return "error correction and suspense account flow", "svg-basic", "error correction needs a detect-correct-check sequence"
+            return "bank reconciliation workflow diagram", "svg-basic", "bank reconciliation needs a precise comparison and correction flow"
+        if any(has(word) for word in ["depreciation", "receivables", "payables", "irrecoverable", "accruals", "prudence", "concepts"]):
+            return "text explanation with optional table", "text-ok", "adjustments are safer as source-bound explanation unless a statement layout is required"
+        if any(
+            phrase in title_text
+            for phrase in [
+                "source documents are",
+                "books of prime entry are",
+                "books of account",
+            ]
+        ):
+            return "text explanation with optional table", "text-ok", "record lists and book references are clearer as source-bound explanation than repeated flowcharts"
+        records_flow_terms = [
+            "source document",
+            "source documents",
+            "book of prime entry",
+            "books of prime entry",
+            "ledger account",
+            "ledger accounts",
+            "recording of transactions",
+            "prepare accounting records",
+            "prepare and understand accounting records",
+        ]
+        if any(term in text for term in records_flow_terms) or has_phrase("double entry system"):
             return "source-document to book-of-prime-entry and ledger flow diagram", "svg-basic", "accounting records need a precise source-to-ledger flow diagram"
-        if any(has(word) for word in ["trial", "balance", "control", "reconciliation", "bank", "error", "errors", "suspense"]):
-            return "verification and reconciliation workflow diagram", "svg-basic", "verification topics need a precise comparison and correction flow"
-        if any(has(word) for word in statement_terms):
-            return "financial-statement layout and calculation diagram", "svg-basic", "financial statements need a precise layout that can be drawn as editable SVG"
         return "text explanation with optional table", "text-ok", "accounting point can be explained without a custom visual"
+
+    if profile.example_domain == "business":
+        title_text = topic.title.lower()
+        if "stakeholder" in text:
+            return "stakeholder influence map", "svg-basic", "stakeholder objectives are clearer as an influence-and-interest map"
+        if any(marker in title_text for marker in ["ownership", "sole trader", "partnership", "limited company", "franchise"]):
+            return "business ownership comparison table", "svg-basic", "ownership forms need a compact comparison of control, risk, and finance"
+        if any(marker in text for marker in ["cash flow", "cash-flow", "inflow", "outflow", "opening balance", "closing balance", "forecast"]):
+            return "cash-flow timeline and balance table", "svg-basic", "cash-flow topics need a time sequence and balance movement"
+        if any(marker in text for marker in ["break-even", "breakeven", "fixed cost", "variable cost", "margin of safety"]):
+            return "break-even chart with cost and revenue lines", "svg-basic", "break-even needs cost and revenue lines on axes"
+        if "marketing mix" in title_text:
+            return "marketing mix quadrant visual", "svg-basic", "marketing mix decisions are clearer in a four-part organizer"
+        if "market segmentation" in title_text or "identifying and understanding customers" in title_text:
+            return "customer segmentation map", "svg-basic", "customer and segmentation topics need a compact market map"
+        if any(marker in text for marker in ["organisational structure", "organisational structures", "organisation chart", "span of control", "chain of command"]):
+            return "organisation structure hierarchy diagram", "svg-basic", "organisational structure needs hierarchy and reporting lines"
+        if any(marker in title_text for marker in ["production process", "production processes", "quality", "stock control"]):
+            if "quality" in title_text:
+                return "quality assurance checkpoint diagram", "svg-basic", "quality topics need a standards-check-feedback loop"
+            return "operations flow and quality checkpoint diagram", "svg-basic", "operations topics need a process flow with checkpoints"
+        return "text explanation with optional business mini case", "text-ok", "business point can be explained with source-bound examples unless a flow, map, or chart is central"
 
     if profile.example_domain == "economics":
         title_text = topic.title.lower()
@@ -289,6 +391,19 @@ def choose_visual_type(
         if any(has(word) for word in ["business", "revenue", "profit", "profits", "cash"]):
             return "text explanation with optional mini case", "text-ok", "business cases can be handled with source-bound text and calculations"
         return "text explanation with optional mini case", "text-ok", "economic point can be explained without a custom visual"
+
+    if profile.example_domain == "history":
+        if any(has(word) for word in ["timeline", "chronology", "chronological", "sequence", "period"]):
+            return "historical timeline visual", "svg-basic", "chronology needs a clear sequence of events or periods"
+        if any(has(word) for word in ["source", "sources", "evidence", "interpretation", "reliability", "provenance"]):
+            return "source evidence comparison visual", "svg-basic", "source work needs evidence, provenance, and inference side by side"
+        if any(has(word) for word in ["change", "continuity", "similarity", "difference"]):
+            return "change and continuity comparison visual", "svg-basic", "comparison history questions need a structured before-after organizer"
+        if any(has(word) for word in ["cause", "causes", "consequence", "consequences", "impact", "significance"]) and any(
+            has(word) for word in ["factor", "factors", "chain", "sequence"]
+        ):
+            return "cause and consequence chain", "svg-basic", "causal history questions need a chain from factor to result"
+        return "text explanation with optional history organizer", "text-ok", "history point can be explained in text unless chronology, causation, source evidence, or comparison is central"
 
     if profile.example_domain == "chemistry":
         if any(has(word) for word in ["bond", "bonds", "bonding", "ionic", "covalent", "metallic", "structure", "structures"]):
@@ -364,6 +479,10 @@ def choose_visual_type(
             or has_phrase("set notation")
         ):
             return "set notation and Venn diagram", "svg-basic", "set notation needs regions and symbol labels"
+        if has_phrase("effect of simple transformations on the graph") or (
+            has("transformations") and has_phrase("graph of y = f")
+        ):
+            return "function graph transformation visual", "svg-basic", "function transformations need before-after graph sketches"
         if any(has(word) for word in ["matrix", "matrices", "vector", "vectors", "transformation", "transformations"]):
             return "transformation, matrix, or vector infographic", "infographic", "multi-step geometry movement and vector reasoning need a richer labelled visual"
         if any(has(word) for word in ["construction", "constructions", "locus", "loci", "bearing", "bearings"]):
@@ -400,25 +519,28 @@ def choose_visual_type(
                 phrase in text
                 for phrase in [
                     "sine and cosine rules",
-                    "area of a triangle",
                     "sine, cosine and tangent functions",
                     "graphs, symmetries and periodicity",
                 ]
             ):
                 return "text explanation with no custom visual", "text-ok", "trigonometric formula topics can be taught with worked steps unless graph or triangle structure is central"
             return "trigonometry circle or graph visual", "svg-basic", "trigonometric ratios and graphs need angle or curve structure"
+        if has_phrase("translation of circles"):
+            return "text explanation with no custom visual", "text-ok", "circle translations can be taught by coordinate changes without a separate image"
+        if any(has(word) for word in ["circle", "circles", "triangle", "triangles", "angle", "angles", "pythagoras"]):
+            return "simple labelled geometry diagram", "svg-basic", "geometry shape relationships need labels"
+        if has_phrase("motion in a straight line") and any(has(word) for word in ["graph", "graphs", "gradient", "gradients", "area"]):
+            return "motion graph visual", "svg-basic", "motion graphs need axes, gradients, and area links"
         if any(has(word) for word in ["tangent", "gradient", "area", "regions", "curve", "curves", "x-axis"]):
             return "calculus graph and area annotation", "svg-basic", "calculus graph reasoning needs annotated graph features"
         if has_phrase("conditions for two straight lines") or has_phrase("product of the gradients"):
             return "text explanation with no custom visual", "text-ok", "parallel and perpendicular gradient rules are clearer as short worked algebra steps"
         if has_phrase("using algebraic methods"):
             return "text explanation with no custom visual", "text-ok", "algebraic intersection methods are clearer as equation-solving steps"
+        if has_phrase("geometrical interpretation of algebraic solution"):
+            return "text explanation with no custom visual", "text-ok", "geometrical interpretation can share the worked graph method without a duplicate visual"
         if any(has(word) for word in ["graph", "graphs", "sketch", "coordinate", "coordinates"]):
             return "function graph or coordinate visual", "svg-basic", "graphs and coordinate geometry are visual by nature"
-        if has_phrase("translation of circles"):
-            return "text explanation with no custom visual", "text-ok", "circle translations can be taught by coordinate changes without a separate image"
-        if any(has(word) for word in ["circle", "circles", "triangle", "triangles", "angle", "angles", "pythagoras"]):
-            return "simple labelled geometry diagram", "svg-basic", "geometry shape relationships need labels"
         if has_phrase("distance-time") or has_phrase("speed-time") or has_phrase("velocity-time"):
             return "motion graph visual", "svg-basic", "motion graphs need axes and labelled line segments"
         if any(has(word) for word in ["force", "forces", "newton"]):
@@ -439,7 +561,7 @@ def choose_visual_type(
         if any(has(word) for word in ["momentum", "impulse", "collision", "collisions"]):
             if not (has("collision") or has("collisions") or has_phrase("conservation of momentum") or has_phrase("direct impact")):
                 return "text explanation with no custom visual", "text-ok", "momentum and impulse definitions can be taught with equations unless before-after states are central"
-            return "mechanics before-after collision infographic", "infographic", "collisions and momentum conservation need context-specific before-after states, not a generic SVG"
+            return "mechanics before-after collision diagram", "svg-basic", "collision and momentum questions need a precise before-after schematic"
         return "text explanation with no custom visual", "text-ok", "symbolic mathematics can be taught with worked steps instead of a separate image"
 
     if profile.example_domain == "generic":
@@ -574,11 +696,68 @@ def is_scope_exclusion_text(text: str) -> bool:
     ]
     return not any(term in text for term in learning_terms)
 
-def choose_provider_for_visual(complexity: str, run_options: GuideRunOptions) -> str:
+def choose_provider_for_visual(
+    complexity: str,
+    run_options: GuideRunOptions,
+    visual_type: str = "",
+) -> str:
     if complexity == "svg-basic":
+        if is_professional_diagram_visual(visual_type):
+            return "kroki"
         return "deterministic-svg"
     if run_options.image_provider in {"prompt-queue", "deterministic-svg"}:
         return "external-generation-required"
     if run_options.image_provider == "custom":
         return f"custom:{run_options.image_model or 'model-not-set'}"
     return run_options.image_provider
+
+
+def is_professional_diagram_visual(visual_type: str) -> bool:
+    text = visual_type.lower()
+    if any(
+        term in text
+        for term in [
+            "axis",
+            "curve",
+            "graph",
+            "number line",
+            "venn",
+            "triangle",
+            "geometry",
+            "ph",
+            "particle",
+            "rate",
+            "energy",
+            "motion",
+            "force",
+            "collision",
+            "probability",
+            "statistics",
+            "chart",
+            "table",
+            "circle",
+            "trigonometry",
+            "calculus",
+            "function",
+        ]
+    ):
+        return False
+    return any(
+        term in text
+        for term in [
+            "flow",
+            "workflow",
+            "hierarchy",
+            "chain",
+            "map",
+            "timeline",
+            "comparison",
+            "source evidence",
+            "checkpoint",
+            "reconciliation",
+            "organisation structure",
+            "stakeholder",
+            "ownership",
+            "segmentation",
+        ]
+    )

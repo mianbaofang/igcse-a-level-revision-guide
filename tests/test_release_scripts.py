@@ -46,6 +46,8 @@ def test_verify_release_samples_fails_final_when_assets_are_pending(tmp_path):
 
     assert result.returncode == 1
     assert "missing guide.pdf" in result.stderr
+    assert "missing final-review-packet.json" in result.stderr
+    assert "missing delivery-contract.json" in result.stderr
     assert "infographic asset(s) still pending" in result.stderr
 
 
@@ -60,6 +62,21 @@ def test_verify_release_samples_passes_completed_outputs(tmp_path):
     assert sum(item["generated_infographics"] for item in payload["samples"]) == 95
     assert all(item["pending_infographics"] == 0 for item in payload["samples"])
     assert all(item["has_pdf"] is True for item in payload["samples"])
+    assert all(item["has_final_review"] is True for item in payload["samples"])
+    assert all(item["has_delivery_contract"] is True for item in payload["samples"])
+
+
+def test_verify_release_samples_requires_final_review_and_delivery_contract(tmp_path):
+    outputs = tmp_path / "outputs"
+    write_sample_outputs(outputs, completed=True)
+    (outputs / "mathematics-9260-sample" / "final-review-packet.json").unlink()
+    (outputs / "economics-9214-sample" / "delivery-contract.json").unlink()
+
+    result = run_verify(outputs)
+
+    assert result.returncode == 1
+    assert "mathematics-9260-sample: missing final-review-packet.json" in result.stderr
+    assert "economics-9214-sample: missing delivery-contract.json" in result.stderr
 
 
 def test_verify_release_samples_rejects_mixed_language_slash_labels(tmp_path):
@@ -75,6 +92,25 @@ def test_verify_release_samples_rejects_mixed_language_slash_labels(tmp_path):
     assert "mixed-language label remains" in result.stderr
 
 
+def test_verify_release_samples_defaults_to_lightweight_v04_evidence():
+    script = Path(__file__).resolve().parents[1] / "scripts" / "verify_release_samples.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["evidence_manifest"].endswith("docs\\release-evidence\\v0.4\\manifest.json") or payload[
+        "evidence_manifest"
+    ].endswith("docs/release-evidence/v0.4/manifest.json")
+    assert payload["entries"]
+    assert all(entry["status"] in {"candidate", "draft", "final-ready", "certified"} for entry in payload["entries"])
+
+
 def test_import_infographic_assets_updates_manifest(tmp_path):
     output_dir = tmp_path / "guide"
     images_dir = output_dir / "images"
@@ -85,10 +121,23 @@ def test_import_infographic_assets_updates_manifest(tmp_path):
     (asset_dir / "visual_002.png").write_bytes(b"fake-png")
     (images_dir / "visual_manifest.json").write_text(
         json.dumps(
-            [
-                {"id": "visual_001", "complexity": "infographic", "asset_status": "external-generation-required", "file": None},
-                {"id": "visual_002", "complexity": "infographic", "asset_status": "external-generation-required", "file": None},
-            ],
+            {
+                "schema_version": 2,
+                "visuals": [
+                    {
+                        "id": "visual_001",
+                        "complexity": "infographic",
+                        "asset_status": "external-generation-required",
+                        "file": None,
+                    },
+                    {
+                        "id": "visual_002",
+                        "complexity": "infographic",
+                        "asset_status": "external-generation-required",
+                        "file": None,
+                    },
+                ],
+            },
             indent=2,
         ),
         encoding="utf-8",
@@ -97,9 +146,12 @@ def test_import_infographic_assets_updates_manifest(tmp_path):
     result = run_import(output_dir, asset_dir, "--provider", "test-provider")
 
     assert result.returncode == 0
-    manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    manifest_payload = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    assert manifest_payload["schema_version"] == 2
+    manifest = manifest_payload["visuals"]
     assert [entry["asset_status"] for entry in manifest] == ["reviewed-generated", "reviewed-generated"]
     assert [entry["generated_by"] for entry in manifest] == ["test-provider", "test-provider"]
+    assert all(entry["asset"]["sha256"] for entry in manifest)
     assert (images_dir / "visual_001_custom.png").exists()
     assert (images_dir / "visual_002.png").exists()
     assert "Imported 2 infographic asset(s)." in result.stdout
@@ -405,15 +457,15 @@ def test_skill_instructions_include_required_preflight_choices():
     assert "name: igcse-a-level-revision-guide" in text
     assert "description:" in text
     assert "Subject choice" in text
-    assert "Output language" in text
+    assert "Term-support language" in text
     assert "Exam year when needed" in text
     assert "Explanation style" in text
     assert "Do not ask the user to choose an image model before the base guide is generated" in text
     assert "how many complex infographic" in text
     assert "pending visual jobs" in text
-    assert "This is a required language lock, not a bilingual mode" in text
-    assert "Do not offer a" in text
-    assert "combined bilingual output" in text
+    assert "handbook body, worked examples, labels, and" in text
+    assert "30-50 item professional glossary" in text
+    assert "Do not generate a fully translated handbook body" in text
 
 
 def test_public_docs_explain_delivery_matrix_and_final_review():
@@ -447,6 +499,7 @@ def run_verify(outputs: Path, *args: str) -> subprocess.CompletedProcess[str]:
         [
             sys.executable,
             str(script),
+            "--legacy-outputs",
             "--outputs-root",
             str(outputs),
             *args,
@@ -519,12 +572,38 @@ def write_sample_outputs(outputs: Path, completed: bool) -> None:
                         "topics": topics,
                         "practice_cards": practice_cards,
                     },
+                    "delivery_status": "ready" if completed else "draft_needs_image_review",
+                    "delivery_state": "final-ready" if completed else "draft",
                     "issues": [],
                 },
                 indent=2,
             ),
             encoding="utf-8",
         )
+        if completed:
+            (sample_dir / "delivery-contract.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "v0.4-core-mvp",
+                        "delivery_state": "final-ready",
+                        "course_spec": {"title": sample},
+                        "learning_units": [],
+                        "pedagogical_units": [],
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+            (sample_dir / "final-review-packet.json").write_text(
+                json.dumps(
+                    {
+                        "machine_validation": {"delivery_status": "ready"},
+                        "agent_self_review": {"must_not_present_as_final": False},
+                    },
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
         manifest = []
         html_images = []
         for index in range(1, infographics + 1):

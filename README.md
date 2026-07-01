@@ -55,10 +55,24 @@ explanations from the current topic/source points, create worked examples,
 decide which points need visuals, and deliver HTML/PDF output.
 
 Delivery quality claims are tracked in the delivery matrix at
-`tests/fixtures/delivery_matrix.json`. Each route has an explicit claim status;
-candidate routes must not be described as release-ready until a fresh output
-passes validation, final review, and visual-status checks. The shared workflow
-is three-board, but the matrix evidence defines what is currently deliverable.
+`tests/fixtures/delivery_matrix.json`. Each route has an explicit claim status
+and a v0.4 release-evidence status. Candidate routes must not be described as
+release-ready until a fresh output passes validation, final review, and
+visual-status checks. The shared workflow is three-board, but the matrix
+evidence defines what is currently deliverable.
+The candid rebuild plan for 95%+ student-usable delivery quality is recorded in
+[`docs/DELIVERY_QUALITY_REBUILD_PLAN.md`](docs/DELIVERY_QUALITY_REBUILD_PLAN.md).
+
+v0.4 status words are intentionally conservative:
+
+- `candidate`: route evidence exists, but it is not delivery-grade.
+- `draft`: a fresh output exists, but concepts, visuals, PDF, validation, or
+  self-review still block final handoff.
+- `final-ready`: current evidence says the output can be handed off after
+  validation, final review, and asset/status checks.
+- `certified`: final-ready evidence has also been reviewed and approved for a
+  release. No current route should be called certified unless the
+  release-evidence manifest says so.
 
 ## Quick Start
 
@@ -72,14 +86,14 @@ https://github.com/mianbaofang/igcse-a-level-revision-guide/tree/main/skill
 Then ask:
 
 ```text
-Install this Skill, then generate a Chinese AQA Chemistry International GCSE revision handbook and export it as PDF.
+Install this Skill, then generate an AQA Chemistry International GCSE revision handbook with a Simplified Chinese term glossary and export it as PDF.
 ```
 
 Typical requests:
 
 ```text
 Generate an Edexcel Accounting International GCSE revision guide.
-Generate a Chinese Cambridge IGCSE Economics guide for the 2027 exam year.
+Generate a Cambridge IGCSE Economics guide for the 2027 exam year with a Japanese term glossary.
 Generate an AQA Mathematics 9260 revision handbook with visual worked examples and final review questions.
 ```
 
@@ -87,8 +101,9 @@ Before generation starts, the Agent should confirm:
 
 1. Exam board, qualification level, subject, code, and official URL when needed.
 2. Exam year when the official page lists multiple syllabus ranges.
-3. Output language: English or Chinese. Student-facing labels, examples, and
-   visual prompts use one language only.
+3. Term-support language: `en` for no glossary, or a support language such as
+   `zh-CN`, `zh-TW`, or `ja` for a 30-50 item professional term glossary. The
+   handbook body, examples, labels, and visual prompts stay in English.
 4. Explanation style: formal, friendly, life-scene, story-based, detective, or
    adventure-style.
 
@@ -130,7 +145,8 @@ Before presenting an output as final, run
 `python -m intl_exam_guide review --out <output-dir>` and read
 `final-review-packet.json`. Validation is not enough by itself: the Agent must
 inspect the rendered excerpt, topic/source summary, worked-example evidence, and
-concept/image job status, then label the output as ready, draft, or blocked.
+concept/image job status, then label the output as draft or final-ready for
+release evidence. A route with only candidate evidence is not delivery-grade.
 A base run with pending `concepts/concept_jobs.json` entries is a draft until
 reviewed concept explanations are imported.
 
@@ -163,14 +179,18 @@ A useful handbook cannot be text-only. The workflow has two passes:
 1. Build topic explanations and worked examples from the official syllabus.
 2. Decide which topics or examples need visual explanation.
 
-Simple reproducible diagrams use SVG. More complex items become visual briefs:
-lab apparatus, geometry diagrams, circuits, economics charts, or text-heavy
+Simple reproducible diagrams use SVG. Medium-complexity professional diagrams
+such as flows, hierarchies, timelines, source-to-ledger routes, and relationship
+maps use the built-in Kroki renderer. Richer items become visual briefs: lab
+apparatus, complex geometry, circuits, economics scenes, or text-heavy
 educational infographics.
 
 When no callable image model is available, chart-like visuals use a scripted
 scientific-vector fallback inspired by `nature-figure`: editable SVG with clear
-axes, labels, source-bound symbols, and review notes. It is not a substitute for
-dense infographics; those remain queued until a reviewed image asset is supplied.
+axes, labels, source-bound symbols, and review notes. Kroki covers professional
+diagram structures that are more precise than hand-built generic SVG. Neither
+route is a substitute for dense infographics; those remain queued until a
+reviewed image asset is supplied.
 
 Recommended external image models include:
 
@@ -201,18 +221,31 @@ Both have been reshaped for revision handbooks.
 
 ## Language Policy
 
-The output language is chosen before generation:
+The handbook body is always English because the exams themselves are in
+English. The preflight language choice is now a term-support language, not a
+translated-body mode:
 
-- English mode keeps student-facing text, labels, examples, and visual prompts in English.
-- Chinese mode keeps student-facing text, labels, examples, and visual prompts in Simplified Chinese.
-- The generator should not create bilingual `Chinese / English` labels.
-- Official English terms can stay in source files or a review appendix, but the student-facing handbook should remain in one language.
+- `en` means English only, with no glossary.
+- `zh-CN`, `zh-TW`, `ja`, or another supported language adds a 30-50 item
+  professional glossary mapping the selected language to the official English
+  exam terms.
+- Student-facing explanations, worked examples, topic labels, diagram text, and
+  image prompts remain English.
+- The generator should not create a fully translated handbook or sprinkle
+  bilingual `Chinese / English` labels through the body.
 
 ## Core Changes Since v0.1.0
 
 README only summarizes changes that affect the Skill's actual generation flow.
 See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 
+- **v0.4:** adds the conservative delivery-state vocabulary (`candidate`,
+  `draft`, `final-ready`, `certified`), the lightweight
+  `docs/release-evidence/` manifest expectation, the English-body plus
+  professional glossary language policy, and the three-tier visual route:
+  exact SVG, built-in Kroki professional diagrams, and external reviewed
+  infographics. This does not upgrade any candidate route to delivery-grade;
+  v0.3 evidence remains historical unless a fresh manifest records it.
 - **v0.3:** resets the final-delivery contract: topic concepts must be reviewed
   before final handoff, roadmap rows use independent mastery targets, repeated
   roadmap titles/mastery cells become validation errors, SVG is limited to

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import os
 
 from intl_exam_guide.models import (
@@ -32,6 +33,8 @@ from intl_exam_guide.planning.practice_generator import (
     concrete_example,
     concrete_example_zh,
 )
+from intl_exam_guide.planning.language_policy import LANGUAGE_CHOICES, handbook_body_language
+from intl_exam_guide.planning.source_points import visible_source_points
 from intl_exam_guide.planning.visual_routing import (
     build_visual_brief,
     choose_provider_for_visual,
@@ -58,9 +61,6 @@ RECOMMENDED_IMAGE_MODEL_LABELS = {
     "qwen-image-pro",
     "sensenova-u1-fast",
 }
-
-LANGUAGE_CHOICES = {"en", "zh-CN"}
-
 
 __all__ = [
     "STYLE_LABELS",
@@ -114,6 +114,8 @@ def build_guide_plan(
         image_endpoint_url=image_endpoint_url,
         image_api_key_env=image_api_key_env,
     )
+    body_language = handbook_body_language(run_options.output_language)
+    body_options = replace(run_options, output_language=body_language)
     topic_guides: list[TopicGuide] = []
     practice_items: list[PracticeItem] = []
     visual_briefs: list[VisualBrief] = []
@@ -122,17 +124,15 @@ def build_guide_plan(
     handbook_topics = [topic for topic in qualification.topics if not is_scope_exclusion_topic(topic)]
 
     for topic_index, topic in enumerate(handbook_topics):
-        points = topic.points[:4]
-        if not points:
-            points = [topic.title]
+        points = visible_source_points(topic, limit=4)
         guide = build_topic_guide(
             topic,
             qualification.qualification_type,
-            run_options.explanation_style,
-            run_options.output_language,
+            body_options.explanation_style,
+            body_options.output_language,
         )
         topic_guides.append(guide)
-        visual = build_visual_brief(topic, guide, run_options, qualification.subject_area)
+        visual = build_visual_brief(topic, guide, body_options, qualification.subject_area)
         if visual:
             visual_briefs.append(visual)
         diagram_briefs.append(guide.diagram_brief)
@@ -145,7 +145,7 @@ def build_guide_plan(
                     number,
                     qualification.qualification_type,
                     run_options.explanation_style,
-                    run_options.output_language,
+                    body_options.output_language,
                     qualification.subject_area,
                     variant_number=variant_number,
                 )
@@ -153,7 +153,7 @@ def build_guide_plan(
 
     revision_stages = build_revision_stages(
         qualification.qualification_type,
-        run_options.output_language,
+        body_options.output_language,
     )
     return GuidePlan(
         qualification=qualification,
@@ -252,7 +252,7 @@ def build_topic_guide(
     explanation_style: str,
     output_language: str,
 ) -> TopicGuide:
-    points = topic.points[:5] or [topic.title]
+    points = visible_source_points(topic, limit=5)
     if output_language == "en":
         visible_points = points
     else:
@@ -296,11 +296,12 @@ def build_topic_guide(
         visible_points,
         output_language,
         source_text=" ".join([topic.title, *points]),
+        topic_title=topic.title,
     )
     diagram_brief = (
         (
             f"Draw a clean concept map for '{topic.title}' with the central title in the middle, "
-            f"branches for {', '.join(points[:4])}, and one short exam-action label on each branch."
+            f"branches for {', '.join(visible_points[:4])}, and one short exam-action label on each branch."
         )
         if output_language == "en"
         else (

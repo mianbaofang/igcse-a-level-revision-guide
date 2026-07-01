@@ -3,6 +3,7 @@ from html import escape
 
 from pypdf import PdfWriter
 
+import intl_exam_guide.validation.checks as validation_checks
 from intl_exam_guide.models import (
     AssessmentPaper,
     GuidePlan,
@@ -24,6 +25,7 @@ from intl_exam_guide.validation.checks import (
     is_contents_or_index_snippet,
     is_cross_subject_borrowed_practice,
     is_placeholder_practice_question,
+    is_svg_safe_visual_brief,
     mixed_language_label_matches,
     normalize_practice_question,
     review_summary,
@@ -31,6 +33,7 @@ from intl_exam_guide.validation.checks import (
     validate_plan,
     validate_guides,
     validate_html_language,
+    validate_html_glossary_policy,
     validate_html_output,
     validate_html_topic_map_mastery,
     validate_html_visual_and_diagram_blocks,
@@ -43,6 +46,7 @@ from intl_exam_guide.validation.checks import (
     validate_topic_coverage,
     validate_visual_briefs,
 )
+from intl_exam_guide.visuals.manifest import build_asset_metadata
 
 
 def valid_plan() -> GuidePlan:
@@ -121,6 +125,33 @@ def valid_plan() -> GuidePlan:
         diagram_briefs=[],
         revision_stages=["Read", "Practise"],
     )
+
+
+def test_accounting_statement_svg_layouts_are_in_safe_scope():
+    briefs = [
+        VisualBrief(
+            topic_title="3.2.5 - Partnership accounts",
+            focus_point="partnership accounts",
+            trigger="partnership accounts need profit appropriation and partner-current structure",
+            visual_type="partnership appropriation and current account layout",
+            complexity="svg-basic",
+            image_provider="deterministic-svg",
+            prompt="",
+            source_points=[],
+        ),
+        VisualBrief(
+            topic_title="3.2.8 - Clubs and non-profit making organisations",
+            focus_point="club accounts",
+            trigger="club accounts need a receipts-to-income-expenditure distinction",
+            visual_type="club receipts-payments and income-expenditure layout",
+            complexity="svg-basic",
+            image_provider="deterministic-svg",
+            prompt="",
+            source_points=[],
+        ),
+    ]
+
+    assert all(is_svg_safe_visual_brief(brief) for brief in briefs)
 
 
 def test_placeholder_practice_question_catches_chinese_authoring_frames():
@@ -269,7 +300,7 @@ def test_preflight_topic_guide_practice_and_visual_validators_pin_error_messages
 
     assert "Missing preflight subject selection." in preflight
     assert "Missing or unsupported explanation style selection." in preflight
-    assert "Missing or unsupported output language selection." in preflight
+    assert "Missing or unsupported term-support language selection." in preflight
     assert "Missing or unsupported image-provider selection." in preflight
     assert "Missing specification PDF URL." in preflight
     assert "Specification PDF hash was not recorded." in preflight
@@ -372,6 +403,16 @@ def test_checklist_diversity_rejects_exact_duplicate_mastery_text():
     )
 
 
+def test_term_support_body_text_still_uses_english_ai_style_checks():
+    plan = valid_plan()
+    plan.run_options.output_language = "zh-CN"
+    plan.topic_guides[0].essence = "Let's dive into source documents and ledger routing."
+
+    messages = [issue.message for issue in validate_guides(plan)]
+
+    assert "Topic guide contains formulaic AI-style wording: 3.1 Source documents" in messages
+
+
 def test_topic_map_mastery_cells_must_not_repeat_across_topics():
     html = """
 <section class="band">
@@ -410,6 +451,30 @@ def test_topic_map_titles_must_not_repeat_across_topics():
     )
 
 
+def test_html_glossary_policy_is_enforced_for_term_support_mode():
+    valid_rows = "".join('<tr class="glossary-term-row"><td>术语</td><td>Term</td><td>Use</td></tr>' for _ in range(30))
+    valid_html = (
+        '<section class="band professional-glossary">'
+        "<p>Term support: English with zh-CN glossary</p>"
+        "<table><thead><tr><th>Simplified Chinese</th><th>English exam term</th><th>Exam use</th></tr></thead>"
+        f"<tbody>{valid_rows}</tbody></table></section>"
+    )
+
+    assert validate_html_glossary_policy(valid_html, "zh-CN") == []
+
+    missing_messages = [issue.message for issue in validate_html_glossary_policy("", "zh-CN")]
+    assert "Term-support handbook is missing the professional term glossary." in missing_messages
+
+    short_rows = '<section class="professional-glossary">' + "".join(
+        '<tr class="glossary-term-row"></tr>' for _ in range(12)
+    ) + "</section>"
+    short_messages = [issue.message for issue in validate_html_glossary_policy(short_rows, "zh-CN")]
+    assert any("30-50 rows" in message for message in short_messages)
+
+    english_messages = [issue.message for issue in validate_html_glossary_policy(valid_html, "en")]
+    assert "English-only handbook must not include a professional term glossary." in english_messages
+
+
 def test_visual_prompt_rejects_board_or_course_packaging():
     plan = valid_plan()
     plan.visual_briefs[0].prompt = "Create an OxfordAQA International GCSE visual with a course badge."
@@ -417,6 +482,37 @@ def test_visual_prompt_rejects_board_or_course_packaging():
     visual_messages = [issue.message for issue in validate_visual_briefs(plan)]
 
     assert "Visual image prompt includes board or course packaging: 3.1 Source documents" in visual_messages
+
+
+def test_visual_provider_contract_rejects_stale_professional_or_scientific_routes():
+    plan = valid_plan()
+    plan.visual_briefs = [
+        VisualBrief(
+            topic_title="Accounting flow",
+            focus_point="source document to ledger route",
+            trigger="medium process flow",
+            visual_type="source-document ledger flow diagram",
+            complexity="svg-basic",
+            image_provider="deterministic-svg",
+            prompt="Draw the source document to ledger flow.",
+            source_points=["Use source documents and books of prime entry."],
+        ),
+        VisualBrief(
+            topic_title="Function graph",
+            focus_point="quadratic graph",
+            trigger="exact graph",
+            visual_type="function graph and equation-balance visual",
+            complexity="svg-basic",
+            image_provider="kroki",
+            prompt="Draw the graph.",
+            source_points=["Sketch quadratic graphs."],
+        ),
+    ]
+
+    messages = [issue.message for issue in validate_visual_briefs(plan)]
+
+    assert "Professional diagram visual must use Kroki renderer: Accounting flow" in messages
+    assert "Exact scientific/vector visual should stay local SVG, not Kroki: Function graph" in messages
 
 
 def test_qualification_notes_and_output_package_pin_release_quality_edges(tmp_path):
@@ -454,6 +550,88 @@ def test_qualification_notes_and_output_package_pin_release_quality_edges(tmp_pa
     output_messages = [issue.message for issue in validate_output_package(plan, tmp_path)]
     assert "Sections directory has only 0 section files." in output_messages
     assert "Visual manifest is missing from images directory." in output_messages
+
+
+def test_image_assets_error_when_svg_titles_and_shapes_are_repetitive(tmp_path):
+    plan = valid_plan()
+    plan.visual_briefs = []
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    manifest_entries = []
+    for index in range(1, 7):
+        filename = f"visual_{index:03d}.svg"
+        (images_dir / filename).write_text(
+            f"""
+            <svg class="visual-svg" viewBox="0 0 100 100">
+              <title>Repeated layout</title>
+              <rect x="10" y="10" width="80" height="80"/>
+              <text>{index}</text>
+            </svg>
+            """,
+            encoding="utf-8",
+        )
+        manifest_entries.append(
+            {
+                "id": f"visual_{index:03d}",
+                "file": filename,
+                "complexity": "svg-basic",
+                "asset_status": "svg-draft",
+            }
+        )
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps({"schema_version": 2, "visuals": manifest_entries}),
+        encoding="utf-8",
+    )
+
+    messages = validate_image_assets(plan, images_dir)
+
+    assert any(
+        issue.severity == "error" and "SVG visual titles are too repetitive" in issue.message
+        for issue in messages
+    )
+    assert any(
+        issue.severity == "error" and "SVG visual structures are too repetitive" in issue.message
+        for issue in messages
+    )
+
+
+def test_image_assets_allow_one_reused_svg_template_in_small_sets(tmp_path):
+    plan = valid_plan()
+    plan.visual_briefs = []
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    manifest_entries = []
+    for index in range(1, 8):
+        filename = f"visual_{index:03d}.svg"
+        title = "Shared flow" if index <= 2 else f"Unique {index}"
+        rect_width = 70 if index <= 2 else 70 + index
+        (images_dir / filename).write_text(
+            f"""
+            <svg class="visual-svg" viewBox="0 0 100 100">
+              <title>{title}</title>
+              <rect x="10" y="10" width="{rect_width}" height="80"/>
+              <text>{index}</text>
+            </svg>
+            """,
+            encoding="utf-8",
+        )
+        manifest_entries.append(
+            {
+                "id": f"visual_{index:03d}",
+                "file": filename,
+                "complexity": "svg-basic",
+                "asset_status": "svg-draft",
+            }
+        )
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps({"schema_version": 2, "visuals": manifest_entries}),
+        encoding="utf-8",
+    )
+
+    messages = [issue.message for issue in validate_image_assets(plan, images_dir)]
+
+    assert not any("SVG visual titles are too repetitive" in message for message in messages)
+    assert not any("SVG visual structures are too repetitive" in message for message in messages)
 
 
 def test_html_language_output_assets_and_summary_helpers_have_direct_contracts(tmp_path):
@@ -562,27 +740,27 @@ def test_validate_html_output_rejects_real_rendered_weak_topic_headings(tmp_path
     ]
     html_path = tmp_path / "guide.html"
     required_phrases = [
-        "怎么用这本手册",
-        "复习路线",
-        "一句话本质",
-        "解题套路",
-        "例题",
-        "解题步骤",
-        "检查答案",
-        "考试陷阱",
-        "来源依据",
-        "图文解释",
-        "信息图生成队列",
+        "How to Study",
+        "Study Roadmap",
+        "One-Sentence Essence",
+        "Method",
+        "Worked Example",
+        "Solution",
+        "Check",
+        "Exam Pitfall",
+        "Source anchor",
+        "Visual Worked Example",
+        "Infographic Queue",
     ]
     topic_sections = "\n".join(
         f'<section class="topic"><h2>T{index}. {title}</h2>'
         f'<figure class="topic-diagram"></figure></section>'
-        for index, title in enumerate(["第 P1 节", "第 P1 节", "第 P1 节", "第 PP1 节"], start=1)
+        for index, title in enumerate(["P1", "P1", "P1", "PP1"], start=1)
     )
     html_path.write_text(
         "<html><body>"
         + "".join(f"<p>{phrase}</p>" for phrase in required_phrases)
-        + "<p>第 4 节</p>"
+        + "<p>中文正文不应出现在英文主体里</p>"
         + topic_sections
         + "</body></html>",
         encoding="utf-8",
@@ -591,8 +769,9 @@ def test_validate_html_output_rejects_real_rendered_weak_topic_headings(tmp_path
     messages = [issue.message for issue in validate_html_output(plan, html_path)]
 
     assert "student-facing topic titles are too repetitive: 2 unique titles for 4 topics" in messages
-    assert "student-facing topic title is module-only and not teachable: 第 P1 节" in messages
-    assert "student-facing topic title is module-only and not teachable: 第 PP1 节" in messages
+    assert "Topic missing from HTML: P1 Algebra" in messages
+    assert "Topic missing from HTML: PP1 Trigonometry" in messages
+    assert "English output contains Chinese characters in the student-facing HTML." in messages
 
 
 def test_expected_topic_marker_localizes_all_keyword_fallback_groups():
@@ -653,11 +832,20 @@ def test_custom_image_provider_accepts_complete_environment(monkeypatch):
 
 
 def test_chinese_placeholder_checks_cover_guide_practice_and_visual_branches():
+    assert has_zh_placeholder_text(["官方大纲要求 本单元第 1 个细分要求"])
+    assert has_zh_placeholder_text(["官方大纲要求 知识点 1"])
+    assert has_zh_placeholder_text(["官方大纲要求 知识单元 1"])
+
+    messages = [issue.message for issue in validate_html_language("en", "<p>官方大纲要求 知识点 1</p>")]
+
+    assert "English output contains Chinese characters in the student-facing HTML." in messages
+
+
+def test_english_syllabus_shell_checks_cover_visible_branches():
     plan = valid_plan()
-    plan.run_options.output_language = "zh-CN"
-    plan.topic_guides[0].essence = "官方大纲要求 本单元第 1 个细分要求"
-    plan.practice_items[0].question = "官方大纲要求 知识点 1"
-    plan.visual_briefs[0].prompt = "官方大纲要求 知识单元 1"
+    plan.topic_guides[0].checklist[0] = "Core content: Candidates should have an understanding of:"
+    plan.practice_items[0].question = "a) Explain the purpose of the:"
+    plan.visual_briefs[0].focus_point = "Students must study one breadth study in change from the following:"
 
     messages = [
         *[issue.message for issue in validate_guides(plan)],
@@ -665,9 +853,25 @@ def test_chinese_placeholder_checks_cover_guide_practice_and_visual_branches():
         *[issue.message for issue in validate_visual_briefs(plan)],
     ]
 
-    assert "Chinese topic guide contains generic syllabus placeholder text: 3.1 Source documents" in messages
-    assert "Chinese practice item contains generic syllabus placeholder text: 3.1 Source documents" in messages
-    assert "Chinese visual brief contains generic syllabus placeholder text: 3.1 Source documents" in messages
+    assert "Topic guide contains syllabus shell text: 3.1 Source documents" in messages
+    assert "Practice item contains syllabus shell text: 3.1 Source documents" in messages
+    assert "Visual brief contains syllabus shell text: 3.1 Source documents" in messages
+
+
+def test_html_output_rejects_student_visible_syllabus_shell_text(tmp_path):
+    plan = valid_plan()
+    html_path = tmp_path / "guide.html"
+    html_path.write_text(
+        "<html lang=\"en\"><body><section><h2>Study Roadmap</h2></section>"
+        "<section><h2>T1. 3.1 Source documents</h2>"
+        "<p>Students should be able to understand the nature of an economic resource.</p>"
+        "</section></body></html>",
+        encoding="utf-8",
+    )
+
+    messages = [issue.message for issue in validate_html_output(plan, html_path)]
+
+    assert "HTML output contains syllabus shell text in student-facing content." in messages
 
 
 def test_encoding_artifact_checks_cover_visible_text_and_html(tmp_path):
@@ -727,6 +931,32 @@ def test_pdf_validation_rejects_excessive_blank_output(tmp_path):
     assert any("almost no extractable text" in message for message in messages)
     assert summary["pdf_pages"] == 30
     assert summary["pdf_blank_text_pages"] == 30
+
+
+def test_pdf_validation_rejects_local_file_url_footer(monkeypatch, tmp_path):
+    plan = valid_plan()
+    pdf_path = tmp_path / "guide.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n")
+
+    def fake_pdf_quality_summary(_plan, _pdf_path):
+        return {
+            "pdf_pages": 5,
+            "pdf_max_recommended_pages": 30,
+            "pdf_size_mib": 1.0,
+            "pdf_max_recommended_mib": 30.0,
+            "pdf_blank_text_pages": 0,
+            "pdf_file_uri_footer_pages": 2,
+            "pdf_average_text_chars": 500,
+        }
+
+    monkeypatch.setattr(validation_checks, "pdf_quality_summary", fake_pdf_quality_summary)
+
+    messages = [issue.message for issue in validate_pdf_output(plan, pdf_path)]
+
+    assert (
+        "PDF output contains local file URL header/footer text on 2 page(s). "
+        "Re-export with headers and footers disabled."
+    ) in messages
 
 
 def test_image_assets_catch_missing_manifest_file_reference_and_svg_shortfall(tmp_path):
@@ -855,6 +1085,137 @@ def test_image_assets_allow_moderate_scientific_template_reuse(tmp_path):
 
     assert not any("SVG visual titles are too repetitive" in message for message in messages)
     assert not any("SVG visual structures are too repetitive" in message for message in messages)
+
+
+def test_image_assets_error_for_pairwise_scientific_svg_reuse(tmp_path):
+    plan = valid_plan()
+    plan.visual_briefs = [
+        VisualBrief(
+            topic_title="Integral as area",
+            focus_point="area between curve and x-axis",
+            trigger="exact curve diagram",
+            visual_type="integral area under curve graph",
+            complexity="svg-basic",
+            image_provider="deterministic-svg",
+            prompt="Draw area under curve.",
+            source_points=["Find the area under a curve."],
+        ),
+        VisualBrief(
+            topic_title="Signed area",
+            focus_point="area below x-axis is negative",
+            trigger="exact curve diagram",
+            visual_type="integral area under curve graph",
+            complexity="svg-basic",
+            image_provider="deterministic-svg",
+            prompt="Draw signed area under curve.",
+            source_points=["Interpret areas below the x-axis as negative."],
+        ),
+    ]
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    for index in range(1, 3):
+        filename = f"visual_{index:03d}.svg"
+        (images_dir / filename).write_text(
+            """
+            <svg><title>Integral diagram</title>
+              <path d="M10 80 C 40 10, 80 10, 110 80"/>
+              <text>label</text>
+            </svg>
+            """,
+            encoding="utf-8",
+        )
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "visuals": [
+                    {
+                        "id": "visual_001",
+                        "file": "visual_001.svg",
+                        "complexity": "svg-basic",
+                        "asset_status": "svg-draft",
+                    },
+                    {
+                        "id": "visual_002",
+                        "file": "visual_002.svg",
+                        "complexity": "svg-basic",
+                        "asset_status": "svg-draft",
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    messages = [issue.message for issue in validate_image_assets(plan, images_dir)]
+
+    assert any("Different scientific SVG visuals reuse the same structure" in message for message in messages)
+
+
+def test_image_assets_report_pending_professional_diagram_jobs(tmp_path):
+    plan = valid_plan()
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "visuals": [
+                    {
+                        "id": "visual_001",
+                        "topic_title": "Source document flow",
+                        "complexity": "svg-basic",
+                        "asset_status": "professional-diagram-required",
+                        "file": None,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    messages = [issue.message for issue in validate_image_assets(plan, images_dir)]
+
+    assert any("Professional diagram rendering failed or is pending" in message for message in messages)
+
+
+def test_image_assets_warn_for_exact_duplicate_raster_assets(tmp_path):
+    plan = valid_plan()
+    images_dir = tmp_path / "images"
+    images_dir.mkdir()
+    first = images_dir / "visual_001.png"
+    second = images_dir / "visual_002.png"
+    first.write_bytes(b"same-raster")
+    second.write_bytes(b"same-raster")
+    manifest = {
+        "schema_version": 2,
+        "visuals": [
+            {
+                "id": "visual_001",
+                "complexity": "infographic",
+                "asset_status": "reviewed-generated",
+                "file": first.name,
+                "asset": build_asset_metadata(first),
+            },
+            {
+                "id": "visual_002",
+                "complexity": "infographic",
+                "asset_status": "reviewed-generated",
+                "file": second.name,
+                "asset": build_asset_metadata(second),
+            },
+        ],
+    }
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(manifest),
+        encoding="utf-8",
+    )
+
+    issues = validate_image_assets(plan, images_dir)
+    messages = [issue.message for issue in issues]
+
+    assert any("Raster infographic assets are reused exactly" in message for message in messages)
+    assert any(issue.severity == "error" and "Raster infographic assets are reused exactly" in issue.message for issue in issues)
 
 
 def test_review_summary_counts_generated_fallback_and_pending_assets(tmp_path):

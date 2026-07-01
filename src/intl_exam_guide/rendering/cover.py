@@ -3,11 +3,12 @@ from __future__ import annotations
 import re
 
 from intl_exam_guide.models import GuideRunOptions, Qualification
+from intl_exam_guide.planning.language_policy import handbook_body_language
 from intl_exam_guide.rendering.text import html_escape, subject_display_name
 
 
 def render_cover(qualification: Qualification, options: GuideRunOptions) -> str:
-    language = options.output_language
+    language = handbook_body_language(options.output_language)
     board = exam_board_identity(qualification)
     qtype = qualification_type_display(qualification)
     subject = cover_subject_title(qualification, language)

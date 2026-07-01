@@ -12,12 +12,14 @@ GENERATED_ASSET_STATUSES = {
     "reviewed-generated",
     "provider-selected-generated",
     "sensenova-generated",
+    "kroki-generated",
 }
 PENDING_ASSET_STATUSES = {
     "external-generation-required",
     "provider-selected-pending-generation",
     "infographic-provider-required",
     "svg-fallback-needs-review",
+    "professional-diagram-required",
 }
 RASTER_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 SVG_EXTENSIONS = {".svg"}
@@ -45,6 +47,7 @@ SCIENTIFIC_VECTOR_TERMS = {
     "statistics",
     "table",
     "triangle",
+    "workflow",
 }
 
 
@@ -93,6 +96,8 @@ def load_visual_manifest(path_or_dir: Path) -> list[dict[str, Any]]:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return []
+    if isinstance(data, dict):
+        data = data.get("visuals") if data.get("schema_version") == 2 else None
     if not isinstance(data, list):
         return []
     return [entry for entry in data if isinstance(entry, dict)]

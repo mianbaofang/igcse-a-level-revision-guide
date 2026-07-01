@@ -767,7 +767,7 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <div class="kicker">三大考试局支持 · v0.3</div>
+          <div class="kicker">三大考试局支持 · v0.4</div>
           <h1>三大考试局复习手册，一句话生成。</h1>
           <p class="lead">支持 AQA、Edexcel、CAIE。把 Skill 链接交给你的 OpenClaw、Hermes 或其他 Agent，说一句“帮我生成某个科目的复习手册”，确认考试局、科目、语言和讲解风格后，它会生成知识点讲解、例题、图文学习单元和可打印 PDF。</p>
           <div class="action-row">
@@ -800,7 +800,7 @@
           <div class="lab-grid">
             <div class="panel">
               <h3>一句话需求</h3>
-              <p>帮我生成 Mathematics 9260 中文复习手册，并导出 PDF。</p>
+              <p>帮我生成 Mathematics 9260 复习手册，附中文专业词对照表，并导出 PDF。</p>
               <div class="source-lines" aria-hidden="true">
                 <span class="line"></span>
                 <span class="line"></span>
@@ -813,7 +813,7 @@
             </div>
             <div class="panel engine">
               <div class="engine-step">确认科目</div>
-              <div class="engine-step">选择语言</div>
+              <div class="engine-step">选择术语表语言</div>
               <div class="engine-step">图文路线</div>
               <div class="engine-step">选择讲解风格</div>
             </div>
@@ -888,7 +888,7 @@
             <div class="num">01 · 选择</div>
             <div>
               <h3>选择科目和语言</h3>
-              <p>用户先确认考试局、科目、代码，以及手册输出中文还是英文；未确认前不开始生成。</p>
+              <p>用户先确认考试局、科目、代码，以及是否需要中文、繁体中文、日语等术语对照表；正文默认保持英文。</p>
             </div>
           </article>
           <article class="flow-item">
@@ -1031,19 +1031,19 @@
     <section class="band alt" id="language">
       <div class="shell">
         <div class="section-head">
-          <h2>先选语言，再生成手册。</h2>
-          <p>生成前需要选择英文或中文；模板标签、讲解框架和生图提示词跟随同一种输出语言。</p>
+          <h2>英文正文，按需加术语表。</h2>
+          <p>生成前选择的是术语辅助语言；手册正文、例题、标签和生图提示词保持英文，非英文支持放进专业词对照表。</p>
         </div>
         <div class="language">
           <article>
-            <h3>输出语言先锁定</h3>
-            <p>英文模式给学生看英文；中文模式给学生看简体中文。不要出现一半中文、一半英文的知识点正文。</p>
-            <div class="sample">原子结构与周期表</div>
+            <h3>术语表辅助</h3>
+            <p>中文、繁体中文、日语等支持语言只作为 30-50 个核心术语对照表加入正文前部。</p>
+            <div class="sample">函数 → Function</div>
           </article>
           <article>
-            <h3>模板标签不混排</h3>
-            <p>英文模式显示英文标签；中文模式显示复习路线、例题，不做中英拼接。</p>
-            <div class="sample">复习路线</div>
+            <h3>正文不翻译</h3>
+            <p>考试语言是英文，所以讲解、例题、图中文字和 image prompts 都保持英文。</p>
+            <div class="sample">Study Roadmap</div>
           </article>
           <article>
             <h3>中文知识点需要复核词表</h3>

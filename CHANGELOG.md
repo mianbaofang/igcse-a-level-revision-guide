@@ -1,5 +1,64 @@
 # Changelog
 
+## 0.4 - 2026-07-02
+
+### Changed
+
+- Added the v0.4 core delivery pipeline contracts:
+  `CourseSpec`, `LearningUnit`, `PedagogicalUnit`, `VisualSpec`,
+  manifest v2, and `DeliveryState`, while preserving v0.3 CLI usage.
+- Moved student-facing source-point selection behind a shared filter so
+  syllabus shell text such as `Candidates should have an understanding of`,
+  `Students will`, and split Pearson bullets like
+  `a) Understand the significance of the following accounting` do not become
+  the visible "what to master", practice focus, or image prompt.
+- Added subject-aware practice generation for Business and History so these
+  courses no longer fall through to generic or mathematics examples.
+- Locked non-English user choices to term-support mode: the handbook body,
+  examples, visual prompts, and cover stay in English, while `zh-CN`,
+  `zh-TW`, `ja`, and other supported choices add only a 30-50 item
+  professional glossary.
+- Tightened Accounting visual routing so source-record lists, trial balance,
+  control accounts, bank reconciliation, error correction, incomplete records,
+  statements, and ratios do not collapse into one repeated SVG template.
+- Added automatic Kroki routing for professional diagram briefs between local
+  deterministic SVG and external image-generation queues.
+
+### Fixed
+
+- Fixed Pearson History option codes such as `A1` being mistaken for
+  mathematics/algebra units.
+- Fixed Cambridge Accounting content extraction so `Candidates should have an
+  understanding of:` is filtered at the parser/source-point layer.
+- Fixed Pearson History breadth/depth-study shell points so visual briefs and
+  practice prompts fall back to the actual option title when no deeper point is
+  present.
+- Added English visible-text validation for syllabus-shell phrases in topic
+  guides, practice cards, and visual briefs.
+- Added plan-level validation that rejects non-English body text in topic
+  guides, practice cards, and visual briefs when a term-support language is
+  selected.
+- Fixed OxfordAQA AS Mathematics SVG selection for motion graphs, connected
+  particles, conservation of momentum, and fixed-plane impact so adjacent
+  mechanics topics no longer reuse the same SVG layout.
+
+### Documentation
+
+- Added the v0.4 release-evidence status vocabulary:
+  `candidate`, `draft`, `final-ready`, and `certified`.
+- Clarified that candidate routes are not delivery-grade and must not be
+  described as release-ready without fresh validation, final-review, concept,
+  visual, package, and PDF/export evidence.
+- Added lightweight `docs/release-evidence/` manifest guidance so release
+  evidence records commands, git revision, validation summary, final-review
+  status, visual/concept state, and reviewer approval when certified.
+- Kept the v0.3 ready/draft evidence as historical facts only; this changelog
+  entry does not certify any new route or generated output.
+- Added a real-sample v0.4 audit covering OxfordAQA Business, OxfordAQA
+  Accounting, Pearson Accounting, Pearson History, Cambridge History, and
+  Cambridge Accounting. All six samples are `draft`, not final-ready, because
+  concept explanations and some accounting infographic assets remain pending.
+
 ## 0.3 - 2026-06-30
 
 ### Changed

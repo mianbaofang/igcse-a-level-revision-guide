@@ -72,6 +72,7 @@ def export_pdf_with_browser_cli(html_path: Path, pdf_path: Path) -> Path:
         raise PdfExportError("No Chrome or Edge executable found for headless PDF export.")
 
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    pdf_path.unlink(missing_ok=True)
     html_uri = html_path.resolve().as_uri()
     with tempfile.TemporaryDirectory() as tmp:
         command = [
@@ -79,12 +80,21 @@ def export_pdf_with_browser_cli(html_path: Path, pdf_path: Path) -> Path:
             "--headless=new",
             "--disable-gpu",
             "--no-first-run",
+            "--no-pdf-header-footer",
             f"--user-data-dir={tmp}",
             f"--print-to-pdf={str(pdf_path.resolve())}",
             html_uri,
         ]
         try:
-            subprocess.run(command, check=True, capture_output=True, text=True, timeout=300)
+            subprocess.run(
+                command,
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=300,
+            )
         except subprocess.TimeoutExpired as exc:
             raise PdfExportError("Browser PDF export timed out after 300 seconds.") from exc
         except subprocess.CalledProcessError as exc:

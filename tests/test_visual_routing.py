@@ -46,32 +46,188 @@ def test_build_visual_brief_returns_none_for_text_only_generic_topic():
 
 def test_build_visual_brief_keeps_english_visible_fields():
     brief = build_visual_brief(
-        Topic(title="3.1 Source documents", points=["source document ledger"]),
+        Topic(
+            title="3.1.8 - Prepare accounting records from source documents",
+            points=["Use source documents, books of prime entry and ledger accounts."],
+        ),
         guide(),
         options(),
         "Accounting",
     )
 
     assert brief is not None
-    assert brief.focus_point == "source document ledger"
+    assert brief.focus_point == "Use source documents, books of prime entry and ledger accounts"
     assert brief.visual_type == "source-document to book-of-prime-entry and ledger flow diagram"
     assert brief.trigger == "accounting records need a precise source-to-ledger flow diagram"
+    assert brief.image_provider == "kroki"
+
+
+def test_professional_diagram_routes_use_kroki_between_local_svg_and_infographic():
+    brief = build_visual_brief(
+        Topic(
+            title="2.1 - Organisation structure",
+            points=["Organisation structure, hierarchy, chain of command and span of control."],
+        ),
+        guide(),
+        options(),
+        "Business",
+    )
+
+    assert brief is not None
+    assert brief.complexity == "svg-basic"
+    assert brief.image_provider == "kroki"
+
+
+def test_exact_curve_and_axis_visuals_stay_local_svg_not_kroki():
+    brief = build_visual_brief(
+        Topic(
+            title="P1.4 - Integration",
+            points=["Interpretation of the definite integral as the area under a curve."],
+        ),
+        guide(),
+        options(),
+        "Mathematics",
+    )
+
+    assert brief is not None
+    assert brief.complexity == "svg-basic"
     assert brief.image_provider == "deterministic-svg"
 
 
-def test_build_visual_brief_localizes_chinese_visual_fields():
+def test_math_collision_momentum_uses_local_svg_not_external_infographic():
     brief = build_visual_brief(
-        Topic(title="3.1 Source documents", points=["source document ledger"]),
+        Topic(
+            title="M1.4 - Momentum and impulse",
+            points=["The principle of conservation of momentum applied to two particles in direct collision."],
+        ),
+        guide(),
+        options(),
+        "Mathematics",
+    )
+
+    assert brief is not None
+    assert brief.visual_type == "mechanics before-after collision diagram"
+    assert brief.complexity == "svg-basic"
+    assert brief.image_provider == "deterministic-svg"
+
+
+def test_math_function_transformations_use_local_svg_not_external_infographic():
+    brief = build_visual_brief(
+        Topic(
+            title="P1.1 - Algebra",
+            points=["Knowledge of the effect of simple transformations on the graph of y = f (x)."],
+        ),
+        guide(),
+        options(),
+        "Mathematics",
+    )
+
+    assert brief is not None
+    assert brief.visual_type == "function graph transformation visual"
+    assert brief.complexity == "svg-basic"
+    assert brief.image_provider == "deterministic-svg"
+
+
+def test_math_triangle_area_formula_does_not_duplicate_sine_rule_visual():
+    visual_type, complexity, _ = route(
+        "PP1.2 - Trigonometry: The area of a triangle in the form ab Csin2",
+        ["The area of a triangle in the form ab Csin2."],
+        "Mathematics",
+    )
+
+    assert visual_type == "text explanation with no custom visual"
+    assert complexity == "text-ok"
+
+
+def test_math_motion_graph_gradient_area_uses_motion_graph_svg():
+    visual_type, complexity, _ = route(
+        "M1.1 - Motion in a straight line with constant acceleration",
+        ["Use of gradients and area under graphs to solve problems."],
+        "Mathematics",
+    )
+
+    assert visual_type == "motion graph visual"
+    assert complexity == "svg-basic"
+
+
+def test_term_support_language_keeps_visual_fields_in_english():
+    brief = build_visual_brief(
+        Topic(
+            title="3.1.8 - Prepare accounting records from source documents",
+            points=["Use source documents, books of prime entry and ledger accounts."],
+        ),
         guide(),
         options(language="zh-CN"),
         "Accounting",
     )
 
     assert brief is not None
-    assert brief.focus_point == "原始凭证与发票"
-    assert brief.visual_type == "会计记录流程图"
-    assert brief.trigger == "场景、因果和流程需要用箭头串起来。"
-    assert brief.image_provider == "deterministic-svg"
+    assert brief.focus_point == "Use source documents, books of prime entry and ledger accounts"
+    assert brief.visual_type == "source-document to book-of-prime-entry and ledger flow diagram"
+    assert brief.trigger == "accounting records need a precise source-to-ledger flow diagram"
+    assert brief.image_provider == "kroki"
+
+
+def test_accounting_records_route_only_draws_true_recording_processes():
+    list_cases = [
+        ("3.1.3 - Source documents are", ["Source documents are invoices and credit notes."]),
+        ("3.1.4 - Books of prime entry are", ["Books of prime entry include sales and purchases journals."]),
+        ("3.3.11 - Record the sale of a non-current asset in the books of account", ["Record disposals in the books of account."]),
+    ]
+
+    for title, points in list_cases:
+        visual_type, complexity, _ = route(title, points, "Accounting")
+        assert complexity == "text-ok"
+        assert visual_type == "text explanation with optional table"
+
+    visual_type, complexity, _ = route(
+        "3.2.9 - How to correct errors in double entry records",
+        ["Correct errors in accounting records and explain suspense accounts."],
+        "Accounting",
+    )
+
+    assert complexity == "svg-basic"
+    assert visual_type == "error correction and suspense account flow"
+
+
+def test_accounting_verification_routes_do_not_collapse_into_bank_reconciliation():
+    cases = [
+        (
+            "3.2.1 - Verification of the double entry records",
+            ["Verification techniques are trial balance, ledger control accounts and bank reconciliation statements."],
+            "text explanation with optional table",
+            "text-ok",
+        ),
+        (
+            "3.2.5 - Prepare, understand and interpret trade payables and trade receivables ledger control accounts",
+            ["Prepare and interpret trade payables and trade receivables ledger control accounts."],
+            "control account reconciliation diagram",
+            "svg-basic",
+        ),
+        (
+            "3.2.10 - The effect of errors on profit calculations",
+            ["The effect of errors includes the adjustment of profit or loss following the correction of errors."],
+            "error correction and suspense account flow",
+            "svg-basic",
+        ),
+        (
+            "3.4.8 - Prepare and comment on income statements and statements of financial position from a trial balance",
+            ["Prepare statements from a trial balance including adjustments from accounting concepts."],
+            "text explanation with optional accounting table",
+            "text-ok",
+        ),
+        (
+            "3.4.15 - Prepare and comment on the internal financial statements of limited liability companies",
+            ["Prepare financial statements for limited liability companies."],
+            "limited company financial statement layout",
+            "svg-basic",
+        ),
+    ]
+
+    for title, points, expected_type, expected_complexity in cases:
+        visual_type, complexity, _ = route(title, points, "Accounting")
+        assert visual_type == expected_type
+        assert complexity == expected_complexity
 
 
 def test_image_prompt_keeps_board_and_course_packaging_out_of_model_prompt():
@@ -96,7 +252,7 @@ def test_image_prompt_keeps_board_and_course_packaging_out_of_model_prompt():
         assert leaked not in brief.prompt
 
 
-def test_chinese_image_prompt_is_content_only_not_source_metadata():
+def test_term_support_image_prompt_is_english_content_only_not_source_metadata():
     brief = build_visual_brief(
         Topic(
             title="OxfordAQA 9660 P1.3 - Trigonometry",
@@ -110,9 +266,10 @@ def test_chinese_image_prompt_is_content_only_not_source_metadata():
     )
 
     assert brief is not None
-    assert "主题：数学：" in brief.prompt
-    assert "机构标识" in brief.prompt
-    assert "正弦" in brief.prompt
+    assert "Topic: mathematics:" in brief.prompt
+    assert "institutional logos" in brief.prompt
+    assert "sine" in brief.prompt
+    assert "制作一张中文学习信息图" not in brief.prompt
     for leaked in ["Oxford", "AQA", "International", "9660", "国际课程", "官方英文来源"]:
         assert leaked not in brief.prompt
 
@@ -134,6 +291,17 @@ def test_math_visual_routing_does_not_treat_ordinary_set_as_venn():
     assert "set notation" not in visual_type
     assert complexity == "text-ok"
     assert "exclusions" in trigger
+
+
+def test_math_visual_routing_avoids_duplicate_intersection_svg_for_adjacent_methods():
+    visual_type, complexity, _ = route(
+        "P1.1 - Algebra: Geometrical interpretation of algebraic solution of equations",
+        ["Geometrical interpretation of algebraic solution of equations and use of intersection points of graphs of functions to solve equations."],
+        "Mathematics",
+    )
+
+    assert complexity == "text-ok"
+    assert visual_type == "text explanation with no custom visual"
 
 
 def test_accounting_visual_routes_cover_ratio_and_default_text_branch():
@@ -162,6 +330,142 @@ def test_accounting_visual_routes_do_not_overdraw_adjustments_or_ratios():
     assert depreciation_type == "text explanation with optional table"
     assert ratio_complexity == "text-ok"
     assert ratio_type == "text explanation with optional table"
+
+
+def test_accounting_bank_reconciliation_prefers_reconciliation_over_ledger_flow():
+    visual_type, complexity, _ = route(
+        "3.3 - Bank reconciliation",
+        ["cash book bank statement unpresented cheques and outstanding lodgements"],
+        "Accounting",
+    )
+
+    assert complexity == "svg-basic"
+    assert "reconciliation" in visual_type
+
+
+def test_accounting_depreciation_reducing_balance_is_not_reconciliation():
+    visual_type, complexity, _ = route(
+        "2.5 - Depreciation",
+        ["Distinguish between straight line and reducing balance methods of depreciation."],
+        "Accounting",
+    )
+
+    assert complexity == "text-ok"
+    assert "reconciliation" not in visual_type
+
+
+def test_accounting_statement_variants_use_topic_specific_professional_svgs():
+    visual_type, complexity, trigger = route(
+        "5.4 - Company financial statements",
+        ["Prepare financial statements for companies."],
+        "Accounting",
+    )
+
+    assert complexity == "svg-basic"
+    assert visual_type == "limited company financial statement layout"
+    assert "statement layout detail" in trigger
+
+
+def test_accounting_manufacturer_statements_do_not_route_to_records_flow():
+    visual_type, complexity, _ = route(
+        "4.5 - Financial statements of a manufacturer",
+        ["Prepare financial statements and manufacturing accounts from books of account."],
+        "Accounting",
+    )
+
+    assert complexity == "svg-basic"
+    assert visual_type == "manufacturing account cost-flow layout"
+
+
+def test_business_production_does_not_match_product_marketing_mix_substring():
+    visual_type, complexity, _ = route(
+        "Production processes",
+        ["Methods of production and efficiency."],
+        "Business",
+    )
+
+    assert complexity == "svg-basic"
+    assert "operations flow" in visual_type
+    assert "marketing mix" not in visual_type
+
+
+def test_business_product_word_alone_does_not_force_marketing_mix_visual():
+    visual_type, complexity, _ = route(
+        "Good customer services",
+        ["product knowledge and customer service expectations"],
+        "Business",
+    )
+
+    assert complexity == "text-ok"
+    assert "marketing mix" not in visual_type
+
+
+def test_business_visual_routes_are_not_swallowed_by_economics_text_branch():
+    cases = [
+        (
+            "Break-even analysis",
+            ["fixed costs variable costs revenue break-even chart"],
+            "break-even",
+        ),
+        (
+            "Cash-flow forecasting",
+            ["cash inflows outflows opening closing balance forecast"],
+            "cash-flow",
+        ),
+        (
+            "Marketing mix",
+            ["product price place promotion"],
+            "marketing mix",
+        ),
+        (
+            "Stakeholders",
+            ["main stakeholders of businesses and their objectives"],
+            "stakeholder",
+        ),
+    ]
+
+    for title, points, expected in cases:
+        visual_type, complexity, _ = route(title, points, "Business")
+
+        assert complexity == "svg-basic"
+        assert expected in visual_type
+
+
+def test_history_visual_routes_cover_common_humanities_structures():
+    cases = [
+        (
+            "Causes of the First World War",
+            ["cause factor chain: alliances, arms race, imperial tension"],
+            "cause",
+        ),
+        (
+            "Chronology of reform",
+            ["timeline period sequence"],
+            "timeline",
+        ),
+        (
+            "Using historical sources",
+            ["source evidence interpretation reliability"],
+            "source evidence",
+        ),
+    ]
+
+    for title, points, expected in cases:
+        visual_type, complexity, _ = route(title, points, "History")
+
+        assert complexity == "svg-basic"
+        assert expected in visual_type
+
+
+def test_history_visual_routes_do_not_draw_every_cause_word():
+    visual_type, complexity, _ = route(
+        "What caused the First World War?",
+        ["What caused the First World War?"],
+        "History",
+    )
+
+    assert complexity == "text-ok"
+    assert "history organizer" in visual_type
 
 
 def test_economics_visual_routes_only_draw_named_curve_topics():
@@ -370,7 +674,7 @@ def test_as_math_formula_topics_stay_text_only_after_visual_tightening():
         assert complexity == "text-ok"
 
 
-def test_as_math_keeps_svg_for_graphs_and_forces_but_queues_collisions():
+def test_as_math_keeps_svg_for_graphs_forces_and_collisions():
     cases = [
         (
             "PP1.2 - Trigonometry: Their graphs, symmetries and periodicity",
@@ -382,16 +686,16 @@ def test_as_math_keeps_svg_for_graphs_and_forces_but_queues_collisions():
             ["Newton's three laws of motion."],
             "svg-basic",
         ),
-        (
-            "M1.4 - Momentum and impulse: Direct impact with a fixed surface",
-            ["Direct impact with a fixed surface."],
-            "infographic",
-        ),
-        (
-            "M1.4 - Momentum and impulse: The principle of conservation of momentum applied to two particles",
-            ["The principle of conservation of momentum applied to two particles."],
-            "infographic",
-        ),
+            (
+                "M1.4 - Momentum and impulse: Direct impact with a fixed surface",
+                ["Direct impact with a fixed surface."],
+                "svg-basic",
+            ),
+            (
+                "M1.4 - Momentum and impulse: The principle of conservation of momentum applied to two particles",
+                ["The principle of conservation of momentum applied to two particles."],
+                "svg-basic",
+            ),
     ]
 
     for title, points, expected_complexity in cases:

@@ -2,32 +2,48 @@ from __future__ import annotations
 
 import re
 
+from intl_exam_guide.models import Topic
+from intl_exam_guide.planning.localization import zh_topic_reference
+from intl_exam_guide.planning.source_points import clean_source_point, is_syllabus_shell
+
 
 def build_checklist(
     points: list[str],
     output_language: str,
     source_text: str | None = None,
+    topic_title: str | None = None,
 ) -> list[str]:
     label = clean_label(points[0] if points else "this syllabus point")
     source_points = [clean_label(point) for point in points if clean_label(point)]
     primary_point = source_points[0] if source_points else label
     secondary_point = next((point for point in source_points[1:] if point != primary_point), "")
     context = " ".join([source_text or "", *points]).lower()
+    unit_context = topic_context(topic_title or source_text or "", output_language)
     if output_language == "en":
         return [
-            f"Core content: {primary_point}.",
+            f"Core content in {unit_context}: {primary_point}.",
             relationship_sentence(context, label, secondary_point, output_language),
             boundary_sentence(context, label, output_language),
         ]
     return [
-        f"核心内容：{primary_point}。",
+        f"核心内容：{unit_context} - {primary_point}。",
         relationship_sentence(context, label, secondary_point, output_language),
         boundary_sentence(context, label, output_language),
     ]
 
 
 def clean_label(value: str) -> str:
-    return re.sub(r"\s+", " ", value).strip().rstrip(".。")
+    cleaned = re.sub(r"\s+", " ", clean_source_point(value)).strip().rstrip(".。")
+    return "" if is_syllabus_shell(cleaned) else cleaned
+
+
+def topic_context(value: str, output_language: str) -> str:
+    cleaned = clean_label(value)
+    if not cleaned:
+        return "this syllabus unit" if output_language == "en" else "本节"
+    if output_language == "zh-CN":
+        return zh_topic_reference(Topic(title=cleaned))
+    return cleaned[:90]
 
 
 def relationship_sentence(

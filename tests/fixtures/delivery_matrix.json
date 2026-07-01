@@ -6,6 +6,9 @@
     "subject": "Chemistry",
     "language": "zh-CN",
     "claim_status": "candidate",
+    "release_status": "candidate",
+    "evidence_manifest": null,
+    "status_note": "Candidate route only; not delivery-grade without fresh release evidence.",
     "expected": {
       "min_topics": 20,
       "min_practice_per_topic": 1,
@@ -21,6 +24,9 @@
     "subject": "Accounting",
     "language": "en",
     "claim_status": "candidate",
+    "release_status": "candidate",
+    "evidence_manifest": null,
+    "status_note": "Candidate route only; not delivery-grade without fresh release evidence.",
     "expected": {
       "min_topics": 15,
       "min_practice_per_topic": 1,
@@ -36,6 +42,9 @@
     "subject": "Economics",
     "language": "zh-CN",
     "claim_status": "candidate",
+    "release_status": "candidate",
+    "evidence_manifest": null,
+    "status_note": "Candidate route only; not delivery-grade without fresh release evidence.",
     "expected": {
       "min_topics": 15,
       "min_practice_per_topic": 1,
@@ -51,6 +60,9 @@
     "subject": "Mathematics",
     "language": "zh-CN",
     "claim_status": "candidate",
+    "release_status": "candidate",
+    "evidence_manifest": null,
+    "status_note": "Candidate route only; not delivery-grade without fresh release evidence.",
     "expected": {
       "min_topics": 6,
       "min_practice_per_topic": 1,

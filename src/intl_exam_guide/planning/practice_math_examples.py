@@ -7,6 +7,34 @@ def mathematics_specialist_example(
     text: str,
     number: int,
 ) -> tuple[str, list[str], list[str], list[str]]:
+    if has_terms(text, ["relative frequencies", "equally likely outcomes", "assigning probabilities", "probability"]):
+        if has_terms(text, ["relative frequencies"]):
+            return (
+                "A coin is tossed 50 times and lands heads 31 times. Estimate the probability of heads from the relative frequency.",
+                ["Use frequency divided by total trials.", "Write the estimate as a decimal or fraction.", "State that it is an estimate."],
+                ["Estimated probability = 31/50.", "31/50 = 0.62.", "Answer: estimated probability of heads is 0.62."],
+                ["Relative frequency uses observed results.", "The answer is an estimate, not an exact value.", "The total number of trials is 50."],
+            )
+        return (
+            "A fair die is rolled once. Find the probability of getting a number greater than 4.",
+            ["Count the favourable outcomes.", "Count all equally likely outcomes.", "Write the probability as a fraction."],
+            ["Numbers greater than 4 are 5 and 6.", "There are 2 favourable outcomes out of 6 equally likely outcomes.", "P(number > 4) = 2/6 = 1/3.", "Answer: 1/3."],
+            ["Equal likelihood means simple counting works.", "The probability is reduced to simplest form.", "The sample space has 6 outcomes."],
+        )
+    if has_terms(text, ["using algebraic methods", "equal roots", "distinct real roots", "no real roots"]):
+        return (
+            "Two curves intersect when x^2 - 4x + 5 = 0. Use the discriminant to decide whether the curves meet.",
+            ["Write the intersection equation.", "Calculate the discriminant.", "Interpret the sign of the discriminant in context."],
+            ["For x^2 - 4x + 5 = 0, a=1, b=-4, c=5.", "b^2 - 4ac = 16 - 20 = -4.", "The discriminant is negative.", "Answer: there are no real intersections."],
+            ["The discriminant links algebra to graph intersections.", "No real roots means no real intersection points.", "The conclusion is stated in context."],
+        )
+    if has_terms(text, ["translation of circles", "translated circle"]):
+        return (
+            "The circle x^2 + y^2 = 9 is translated 4 units right and 2 units down. Write the new equation.",
+            ["Move the centre by the translation vector.", "Keep the radius the same.", "Write the completed-square form."],
+            ["The original centre is (0,0) and radius is 3.", "After translation the centre is (4,-2).", "New equation: (x-4)^2 + (y+2)^2 = 9.", "Answer: (x-4)^2 + (y+2)^2 = 9."],
+            ["A translation changes the centre, not the radius.", "The y-coordinate sign changes correctly.", "The final equation matches the new centre."],
+        )
     if has_terms(text, ["surd", "surds", "rationalisation"]):
         return (
             "Simplify sqrt(72) + sqrt(18), then rationalise 5/sqrt(2).",

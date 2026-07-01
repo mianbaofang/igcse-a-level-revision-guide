@@ -34,6 +34,7 @@ GENERATED_STATUSES = {
     "reviewed-generated",
     "provider-selected-generated",
 }
+RELEASE_STATUSES = {"candidate", "draft", "final-ready", "certified"}
 PENDING_STATUSES = {
     "external-generation-required",
     "provider-selected-pending-generation",
@@ -61,17 +62,32 @@ def main() -> int:
         help="Directory containing mathematics/economics/chemistry sample outputs.",
     )
     parser.add_argument(
+        "--evidence-manifest",
+        default="docs/release-evidence/v0.4/manifest.json",
+        help="v0.4+ lightweight release-evidence manifest.",
+    )
+    parser.add_argument(
+        "--legacy-outputs",
+        action="store_true",
+        help="Verify the legacy ignored outputs/*-sample directories instead of v0.4 evidence.",
+    )
+    parser.add_argument(
         "--allow-pending",
         action="store_true",
         help="Allow pending infographic assets. Use only before final image generation.",
     )
     args = parser.parse_args()
 
-    outputs_root = Path(args.outputs_root).resolve()
+    if not args.legacy_outputs:
+        return verify_release_evidence(Path(args.evidence_manifest).resolve())
+    return verify_legacy_outputs(Path(args.outputs_root).resolve(), args.allow_pending)
+
+
+def verify_legacy_outputs(outputs_root: Path, allow_pending: bool) -> int:
     rows: list[dict[str, object]] = []
     failures: list[str] = []
     for sample, expected in SAMPLES.items():
-        row, sample_failures = verify_sample(outputs_root / sample, sample, expected, args.allow_pending)
+        row, sample_failures = verify_sample(outputs_root / sample, sample, expected, allow_pending)
         rows.append(row)
         failures.extend(sample_failures)
 
@@ -82,6 +98,99 @@ def main() -> int:
             print(f"- {item}", file=sys.stderr)
         return 1
     return 0
+
+
+def verify_release_evidence(manifest_path: Path) -> int:
+    failures: list[str] = []
+    manifest = read_json(manifest_path, {})
+    if not isinstance(manifest, dict):
+        failures.append(f"{manifest_path}: release evidence manifest is not an object")
+        manifest = {}
+    entries = manifest.get("entries")
+    if not isinstance(entries, list) or not entries:
+        failures.append(f"{manifest_path}: entries must be a non-empty list")
+        entries = []
+    release = str(manifest.get("release") or "")
+    if not release.startswith("v0.4"):
+        failures.append(f"{manifest_path}: release must start with v0.4")
+    if str(manifest.get("overall_status") or "") not in RELEASE_STATUSES:
+        failures.append(f"{manifest_path}: overall_status must be one of {sorted(RELEASE_STATUSES)}")
+    linked_report = manifest.get("linked_report")
+    repo_root = manifest_path.parents[3]
+    if isinstance(linked_report, str) and linked_report and not (repo_root / linked_report).exists():
+        failures.append(f"{manifest_path}: linked_report does not exist: {linked_report}")
+
+    rows = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            failures.append(f"{manifest_path}: entry is not an object")
+            continue
+        row, entry_failures = verify_evidence_entry(entry)
+        rows.append(row)
+        failures.extend(entry_failures)
+
+    print(json.dumps({"evidence_manifest": str(manifest_path), "entries": rows}, ensure_ascii=False, indent=2))
+    if failures:
+        print("\nRelease evidence verification failed:", file=sys.stderr)
+        for item in failures:
+            print(f"- {item}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def verify_evidence_entry(entry: dict[str, object]) -> tuple[dict[str, object], list[str]]:
+    entry_id = str(entry.get("id") or "<missing-id>")
+    failures: list[str] = []
+    required = ["id", "status", "provider", "level", "subject", "language", "commands"]
+    for key in required:
+        if not entry.get(key):
+            failures.append(f"{entry_id}: missing {key}")
+    status = str(entry.get("status") or "")
+    if status not in RELEASE_STATUSES:
+        failures.append(f"{entry_id}: status must be one of {sorted(RELEASE_STATUSES)}")
+    commands = entry.get("commands")
+    if not isinstance(commands, list) or not commands:
+        failures.append(f"{entry_id}: commands must be a non-empty list")
+
+    summary = entry.get("validation_summary")
+    if not isinstance(summary, dict):
+        failures.append(f"{entry_id}: validation_summary must be an object")
+        summary = {}
+    if int(summary.get("error_count") or 0) != 0:
+        failures.append(f"{entry_id}: validation_summary error_count must be 0")
+
+    final_review = entry.get("final_review")
+    if not isinstance(final_review, dict):
+        failures.append(f"{entry_id}: final_review must be an object")
+        final_review = {}
+    must_not_present = final_review.get("must_not_present_as_final")
+    pending_concepts = int(summary.get("pending_concept_explanations") or 0)
+    pending_images = int(summary.get("pending_infographic_assets") or 0)
+    if status in {"final-ready", "certified"}:
+        if pending_concepts or pending_images:
+            failures.append(f"{entry_id}: final-ready/certified entries cannot have pending concept or image work")
+        if must_not_present is not False:
+            failures.append(f"{entry_id}: final-ready/certified entry must allow final presentation")
+    elif must_not_present is not True:
+        failures.append(f"{entry_id}: draft/candidate entry must not be presentable as final")
+
+    output_dir = str(entry.get("output_dir") or "")
+    if output_dir and (Path(output_dir).is_absolute() or not output_dir.startswith("outputs/")):
+        failures.append(f"{entry_id}: output_dir should be an ignored outputs/ relative path")
+
+    return (
+        {
+            "id": entry_id,
+            "status": status,
+            "provider": entry.get("provider"),
+            "subject": entry.get("subject"),
+            "topics": summary.get("topics"),
+            "pending_concepts": pending_concepts,
+            "pending_images": pending_images,
+            "must_not_present_as_final": must_not_present,
+        },
+        failures,
+    )
 
 
 def verify_sample(
@@ -96,23 +205,34 @@ def verify_sample(
     manifest_path = sample_dir / "images" / "visual_manifest.json"
     html_path = sample_dir / "guide.html"
     pdf_path = sample_dir / "guide.pdf"
+    final_review_path = sample_dir / "final-review-packet.json"
+    delivery_contract_path = sample_dir / "delivery-contract.json"
 
     required_files = [validation_path, run_options_path, manifest_path, html_path]
     if not allow_pending:
-        required_files.append(pdf_path)
+        required_files.extend([pdf_path, final_review_path, delivery_contract_path])
     for path in required_files:
         if not path.exists():
             failures.append(f"{sample}: missing {path.name}")
 
     validation = read_json(validation_path, {})
     run_options = read_json(run_options_path, {})
-    manifest = read_json(manifest_path, [])
+    final_review = read_json(final_review_path, {})
+    delivery_contract = read_json(delivery_contract_path, {})
+    raw_manifest = read_json(manifest_path, [])
+    manifest = manifest_entries_from_payload(raw_manifest)
+    if manifest is None:
+        failures.append(f"{sample}: visual_manifest.json is not a legacy list or schema_version 2 object")
+        manifest = []
     html = html_path.read_text(encoding="utf-8", errors="replace") if html_path.exists() else ""
     review = validation.get("review_summary", {}) if isinstance(validation, dict) else {}
     issues = validation.get("issues", []) if isinstance(validation, dict) else []
     issue_errors = [issue for issue in issues if issue.get("severity") == "error"]
     if issue_errors:
         failures.append(f"{sample}: validation has {len(issue_errors)} error issue(s)")
+    if not allow_pending:
+        final_failures = final_delivery_failures(sample, validation, final_review, delivery_contract)
+        failures.extend(final_failures)
 
     if review.get("topics") != expected["topics"]:
         failures.append(f"{sample}: expected {expected['topics']} topics, got {review.get('topics')}")
@@ -159,6 +279,10 @@ def verify_sample(
         "broken_html_images": broken_images,
         "has_html": html_path.exists(),
         "has_pdf": pdf_path.exists(),
+        "has_final_review": final_review_path.exists(),
+        "has_delivery_contract": delivery_contract_path.exists(),
+        "delivery_status": validation.get("delivery_status") if isinstance(validation, dict) else None,
+        "delivery_state": validation.get("delivery_state") if isinstance(validation, dict) else None,
         "validation_errors": len(issue_errors),
     }
     return row, failures
@@ -171,6 +295,17 @@ def read_json(path: Path, fallback: object) -> object:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return fallback
+
+
+def manifest_entries_from_payload(payload: object) -> list[dict[str, object]] | None:
+    if isinstance(payload, dict) and payload.get("schema_version") == 2:
+        visuals = payload.get("visuals")
+        if isinstance(visuals, list):
+            return [entry for entry in visuals if isinstance(entry, dict)]
+        return None
+    if isinstance(payload, list):
+        return [entry for entry in payload if isinstance(entry, dict)]
+    return None
 
 
 def count_infographics(images_dir: Path, manifest: object) -> tuple[int, int, int]:
@@ -193,6 +328,37 @@ def count_infographics(images_dir: Path, manifest: object) -> tuple[int, int, in
         if filename and not exists:
             missing += 1
     return generated, pending, missing
+
+
+def final_delivery_failures(
+    sample: str,
+    validation: object,
+    final_review: object,
+    delivery_contract: object,
+) -> list[str]:
+    failures: list[str] = []
+    if not isinstance(validation, dict):
+        return [f"{sample}: validation.json is not an object"]
+    if validation.get("delivery_status") != "ready":
+        failures.append(f"{sample}: delivery_status is not ready")
+    if validation.get("delivery_state") != "final-ready":
+        failures.append(f"{sample}: delivery_state is not final-ready")
+
+    if not isinstance(delivery_contract, dict):
+        failures.append(f"{sample}: delivery-contract.json is not an object")
+    elif delivery_contract.get("delivery_state") != "final-ready":
+        failures.append(f"{sample}: delivery contract is not final-ready")
+
+    if not isinstance(final_review, dict):
+        failures.append(f"{sample}: final-review-packet.json is not an object")
+        return failures
+    machine = final_review.get("machine_validation")
+    agent_review = final_review.get("agent_self_review")
+    if not isinstance(machine, dict) or machine.get("delivery_status") != "ready":
+        failures.append(f"{sample}: final review delivery_status is not ready")
+    if not isinstance(agent_review, dict) or agent_review.get("must_not_present_as_final") is not False:
+        failures.append(f"{sample}: final review does not allow final presentation")
+    return failures
 
 
 def count_broken_html_images(sample_dir: Path, html: str) -> int:

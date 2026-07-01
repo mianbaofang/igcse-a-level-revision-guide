@@ -363,7 +363,7 @@ def zh_point_label(point: str, index: int = 0) -> str:
     label = zh_mapped_point_label(text, allow_english_fallback=True, index=index)
     if label:
         return label
-    # ponytail: keep Chinese mode Chinese-only; extend the shared glossary for richer labels.
+    # ponytail: legacy helper retained for tests; production body text stays English.
     return f"本节核心主题 {index + 1}"
 
 

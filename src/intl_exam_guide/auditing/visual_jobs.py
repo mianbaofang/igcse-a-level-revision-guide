@@ -6,6 +6,7 @@ PENDING_STATUSES = {
     "infographic-provider-required",
     "provider-selected-pending-generation",
     "svg-fallback-needs-review",
+    "professional-diagram-required",
 }
 IMPORT_HINT = (
     "Import with scripts/import_infographic_assets.py using a file named with this visual ID."
@@ -15,8 +16,6 @@ IMPORT_HINT = (
 def build_visual_jobs(manifest: list[dict[str, object]]) -> list[dict[str, object]]:
     jobs: list[dict[str, object]] = []
     for entry in manifest:
-        if entry.get("complexity") != "infographic":
-            continue
         if str(entry.get("asset_status", "")).lower() not in PENDING_STATUSES:
             continue
         jobs.append(
@@ -24,6 +23,8 @@ def build_visual_jobs(manifest: list[dict[str, object]]) -> list[dict[str, objec
                 "id": entry.get("id"),
                 "topic_title": entry.get("topic_title"),
                 "status": "needs_generation_or_review",
+                "complexity": entry.get("complexity"),
+                "visual_type": entry.get("visual_type"),
                 "current_file": entry.get("file"),
                 "replacement_target": entry.get("id"),
                 "prompt": entry.get("prompt"),

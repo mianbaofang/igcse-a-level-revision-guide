@@ -27,6 +27,7 @@ from intl_exam_guide.providers.common import (
     parse_assessments_from_pdf,
     parse_command_words_from_pdf,
     parse_generic_topics_from_pdf,
+    parse_humanities_topics,
     parse_pearson_subsection_line,
     parse_pearson_topic_tables,
     parse_page,
@@ -298,6 +299,127 @@ def test_generic_pdf_parser_handles_pearson_learning_tables():
     assert "a) Explain the purpose of books of original entry." in topics[3].points
 
 
+def test_humanities_parser_handles_cambridge_history_question_headings():
+    pages = [
+        (
+            12,
+            """
+            Core content: Option A
+            1 Were the revolutions of 1848 important?
+            Focus points
+            Why were there revolutions in 1848?
+            How far did the revolutions change Europe?
+            Specified content
+            The causes and consequences of the 1848 revolutions.
+            2 How was Italy unified?
+            Focus points
+            Why was Mazzini important?
+            How important was Garibaldi?
+            Specified content
+            The role of Cavour, Garibaldi and foreign intervention.
+            3 Why was there a civil war in the United States?
+            Focus points
+            How important was slavery as a cause of conflict?
+            What were the consequences of the war?
+            4 Why did the First World War break out?
+            Focus points
+            How far was Germany responsible for the war?
+            What was the impact of alliances?
+            5 How secure was the Treaty of Versailles?
+            Focus points
+            Why did the peacemakers disagree?
+            What were the consequences of the treaty?
+            6 Why had international peace collapsed by 1939?
+            Focus points
+            What was the impact of appeasement?
+            Why did the League of Nations fail?
+            """,
+        )
+    ]
+
+    topics = parse_humanities_topics(pages)
+    titles = [topic.title for topic in topics]
+    joined = " ".join(titles + [point for topic in topics for point in topic.points])
+
+    assert len(topics) >= 6
+    assert "1 - Were the revolutions of 1848 important?" in titles
+    assert "6 - Why had international peace collapsed by 1939?" in titles
+    assert "Content unit" not in joined
+    assert "AO1" not in joined
+
+
+def test_humanities_parser_handles_pearson_history_option_codes():
+    pages = [
+        (
+            16,
+            """
+            Paper 1: Depth Studies
+            Students must study one depth study from the following:
+            A1 The origins and course of the First World War, 1905-18
+            What students need to study
+            The Alliance System and international rivalry.
+            The Schlieffen Plan and the outbreak of war.
+            A2 Russia and the Soviet Union, 1905-24
+            What students need to study
+            The 1905 Revolution and its consequences.
+            The Bolshevik seizure of power.
+            A3 Germany: development of dictatorship, 1918-45
+            What students need to study
+            The Weimar Republic and the rise of the Nazi Party.
+            A4 Colonial rule and the nationalist challenge in India, 1919-47
+            What students need to study
+            Gandhi, Congress and independence campaigns.
+            A5 Dictatorship and conflict in the USSR, 1924-53
+            What students need to study
+            Stalin's control and economic change.
+            B8 Diversity, rights and equality in Britain, 1914-2010
+            What students need to study
+            Changes in migration, rights and social attitudes.
+            """,
+        )
+    ]
+
+    topics = parse_generic_topics_from_pdf(pages)
+    titles = [topic.title for topic in topics]
+
+    assert len(topics) >= 6
+    assert "A1 - The origins and course of the First World War, 1905-18" in titles
+    assert "B8 - Diversity, rights and equality in Britain, 1914-2010" in titles
+    assert not any(title.startswith("Content unit") for title in titles)
+
+
+def test_humanities_parser_filters_study_option_shell_points():
+    pages = [
+        (
+            20,
+            """
+            Students must study one breadth study in change from the following:
+            A5 East Germany, 1958-90.
+            Students must study one breadth study in change from the following:
+            B4 China: conflict, crisis and change, 1900-89
+            B5 Russia and the Soviet Union, 1924-53
+            B6 South Africa, 1948-94
+            B7 The Middle East: conflict, crisis and change, 1917-2012
+            B8 Diversity, rights and equality in Britain, 1914-2010.
+            Students will:
+            """,
+        )
+    ]
+
+    topics = parse_generic_topics_from_pdf(pages)
+
+    assert [topic.title for topic in topics] == [
+        "A5 - East Germany, 1958-90.",
+        "B4 - China: conflict, crisis and change, 1900-89",
+        "B5 - Russia and the Soviet Union, 1924-53",
+        "B6 - South Africa, 1948-94",
+        "B7 - The Middle East: conflict, crisis and change, 1917-2012",
+        "B8 - Diversity, rights and equality in Britain, 1914-2010.",
+    ]
+    assert topics[0].points == ["East Germany, 1958-90."]
+    assert topics[1].points == ["China: conflict, crisis and change, 1900-89"]
+
+
 def test_pearson_learning_tables_ignore_trailing_front_matter():
     pages = [
         (
@@ -501,6 +623,31 @@ def test_cambridge_content_overview_is_not_mixed_with_detailed_subject_content()
         "3.1 - The trial balance",
     ]
     assert "7.3 - Technology and sustainability" not in titles
+
+
+def test_cambridge_accounting_parser_filters_understanding_shell_points():
+    pages = [
+        (
+            11,
+            """
+            3 Subject content
+            3.2 Corrections of errors
+            Candidates should have an understanding of:
+            how to correct errors using journal entries
+            how to prepare suspense accounts
+            4 Details of the assessment
+            """,
+        ),
+    ]
+
+    topics = parse_generic_topics_from_pdf(pages)
+
+    assert topics[0].title == "3.2 - Corrections of errors"
+    assert "Candidates should have an understanding of:" not in topics[0].points
+    assert topics[0].points == [
+        "how to correct errors using journal entries",
+        "how to prepare suspense accounts",
+    ]
 
 
 def test_cambridge_subject_page_requires_exam_year_when_ranges_are_ambiguous():

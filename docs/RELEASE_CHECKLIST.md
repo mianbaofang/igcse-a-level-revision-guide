@@ -26,6 +26,24 @@
 - [ ] Do not use old ignored `outputs/` folders, stale `validation.json`, or
   local design drafts as proof that the current release output is valid.
 
+## Release Evidence Status
+
+- [ ] Classify every changed delivery claim as one of `candidate`, `draft`,
+  `final-ready`, or `certified`.
+- [ ] Candidate routes are described only as candidate routes; they are not
+  release-ready or delivery-grade.
+- [ ] Draft outputs have a fresh command and review packet, but the remaining
+  blocker is named: pending concepts, pending complex images, PDF/export gap,
+  validation error, or Agent self-review block.
+- [ ] Final-ready outputs have fresh validation, `final-review-packet.json`,
+  concept status, visual status, package manifest, and PDF/export evidence from
+  the current code.
+- [ ] Certified outputs meet the final-ready bar and have an explicit release
+  owner or subject-aware reviewer approval recorded in the manifest.
+- [ ] For any `draft`, `final-ready`, or `certified` claim, create or update a
+  concise `docs/release-evidence/<version>/manifest.json` entry. Do not commit
+  the generated output directory used to collect the evidence.
+
 ## Commands
 
 - [ ] Offline demo works:
@@ -100,7 +118,9 @@ python -m intl_exam_guide generate --provider cambridge --query "Chemistry 9701"
 - [ ] Run `python -m intl_exam_guide review --out <sample-output>` for each
   release sample and record whether it is `ready`,
   `draft_needs_concept_review`, `draft_needs_image_review`, or
-  `blocked_errors`.
+  `blocked_errors`. Map that internal result to release evidence status:
+  `draft`, `final-ready`, or `certified`; leave route-only checks as
+  `candidate`.
 - [ ] For every release-ready sample,
   `validation.json.review_summary.pending_concept_explanations` is `0`. If it is
   nonzero, write the missing items from `concepts/concept_jobs.json`, save
@@ -164,8 +184,9 @@ python scripts/render_intro_animation.py --html docs/project-intro-animation-en.
 - [ ] Generated HTML includes website listing metadata when discovered from a subject page.
 - [ ] Generated HTML includes one concept map per topic.
 - [ ] Generated HTML includes practice cards with command words, solution steps, and answer checkpoints.
-- [ ] Generated HTML records the selected output language in `run-options.json`.
-- [ ] Template labels follow the selected output language and do not use bilingual `Chinese / English` pairs.
+- [ ] Generated HTML records the selected term-support language in `run-options.json`.
+- [ ] Handbook body, template labels, examples, diagram text, and image prompts remain English.
+- [ ] Non-`en` runs include a 30-50 item professional glossary mapping the selected support language to English exam terms.
 - [ ] Official source text remains traceable in structured files or a separated review appendix, not mixed into the student-facing topic body.
 - [ ] Generated PDF opens locally.
 
@@ -180,5 +201,5 @@ python scripts/render_intro_animation.py --html docs/project-intro-animation-en.
 - [ ] 中文 README 能解释项目是什么、适合谁、怎么跑。
 - [ ] 中文 README 解释 International GCSE / International AS-A-level 的蓝色/红色 listing 映射。
 - [ ] 准确性政策中明确说明“不编造 syllabus、不复制真题、不提交 PDF”。
-- [ ] 语言策略明确：生成前选择 `en` 或 `zh-CN`，正文、模板标签、例题框架和生图提示词跟随同一种语言，不做中英混排。
+- [ ] 语言策略明确：生成前选择术语辅助语言；手册正文保持英文，非 `en` 只增加 30-50 个“用户语言 → English exam term”专业词对照表。
 - [ ] 给孩子正式使用前，需要老师或熟悉大纲的人复核深度例题。

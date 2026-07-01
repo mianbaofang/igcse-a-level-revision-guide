@@ -99,9 +99,35 @@ def apply_concept_explanations(
         if not guide:
             missing.append(topic_title)
             continue
-        guide.checklist = clean_values[:4]
+        if clean_values:
+            guide.checklist = clean_values[:4]
+        apply_optional_text(entry, guide, "essence")
+        apply_optional_text(entry, guide, "analogy")
+        apply_optional_text(entry, guide, "mini_worked_example")
+        apply_optional_text(entry, guide, "pitfall")
+        guide.diagram_brief = build_clean_diagram_brief(topic_title, clean_values)
+        steps = entry.get("worked_solution_steps")
+        if isinstance(steps, list):
+            clean_steps = [str(value).strip() for value in steps if str(value).strip()]
+            if clean_steps:
+                guide.worked_solution_steps = clean_steps[:5]
         imported += 1
     return imported, missing
+
+
+def apply_optional_text(entry: dict[str, object], guide: object, field_name: str) -> None:
+    value = entry.get(field_name)
+    if isinstance(value, str) and value.strip():
+        setattr(guide, field_name, value.strip())
+
+
+def build_clean_diagram_brief(topic_title: str, values: list[str]) -> str:
+    branches = [value.rstrip(".") for value in values[:3]]
+    branch_text = ", ".join(branches) if branches else "definition, relationship, common pitfall"
+    return (
+        f"Draw a clean concept map for '{topic_title}' with the central title in the middle, "
+        f"branches for {branch_text}, and one short exam-action label on each branch."
+    )
 
 
 def rerender_handbook(output_dir: Path) -> dict[str, object]:
