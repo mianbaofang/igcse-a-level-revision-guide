@@ -329,6 +329,7 @@ def test_export_pdf_with_browser_cli_success_uses_expected_flags(monkeypatch, tm
     assert command[0] == str(browser_path)
     assert "--headless=new" in command
     assert "--no-pdf-header-footer" in command
+    assert "--print-to-pdf-no-header" in command
     assert f"--print-to-pdf={str(pdf_path.resolve())}" in command
     assert html_path.resolve().as_uri() in command
 

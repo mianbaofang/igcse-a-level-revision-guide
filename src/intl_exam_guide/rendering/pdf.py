@@ -83,6 +83,7 @@ def export_pdf_with_browser_cli(html_path: Path, pdf_path: Path) -> Path:
             "--disable-gpu",
             "--no-first-run",
             "--no-pdf-header-footer",
+            "--print-to-pdf-no-header",
             f"--user-data-dir={tmp}",
             f"--print-to-pdf={str(pdf_path.resolve())}",
             html_uri,

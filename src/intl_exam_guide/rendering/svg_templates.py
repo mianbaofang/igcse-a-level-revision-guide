@@ -84,6 +84,10 @@ def render_topic_visual_svg(visual: VisualBrief, index: int, language: str = "en
             visual.focus_point,
             zh_math_variant("algebra", text),
         )
+    if any(word in text for word in ["binomial distribution", "bernoulli"]):
+        return render_math_topic_svg(index, "Binomial distribution visual", visual.focus_point, "probability:binomial")
+    if any(word in text for word in ["random variable", "variance", "standard deviation"]):
+        return render_math_topic_svg(index, "Discrete random variable visual", visual.focus_point, "probability:table")
     if "statistics chart" in text:
         return render_statistics_svg(index)
     if any(word in text for word in ["set notation", "venn"]):
@@ -1240,11 +1244,9 @@ def render_zh_math_topic_svg(index: int, title: str, focus: str, variant: str) -
   <title id="visual-title-{index}">{html_escape(display_title)}</title>
   <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
   <text x="52" y="68" fill="#1354a5" font-size="24" font-weight="800">{html_escape(display_title)}</text>
-  {svg_multiline_text(focus or title, 52, 100, 15, 24, 17, 800, "#5b677a")}
   <g>{render_zh_math_motif(index, variant, focus)}</g>
   <rect x="418" y="82" width="244" height="216" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
   {''.join(cards)}
-  <text x="438" y="282" font-size="15" fill="#5b677a">公式、条件、答案形式一起检查</text>
 </svg>
 """
 
@@ -1278,11 +1280,9 @@ def render_math_topic_svg(index: int, title: str, focus: str, variant: str) -> s
   <title id="visual-title-{index}">{html_escape(display_title)}</title>
   <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
   <text x="52" y="68" fill="#1354a5" font-size="24" font-weight="800">{html_escape(display_title)}</text>
-  {svg_multiline_text(focus or title, 52, 100, 18, 24, 16, 800, "#5b677a")}
   <g>{render_math_motif(index, variant, focus)}</g>
   <rect x="418" y="82" width="244" height="216" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
   {''.join(cards)}
-  <text x="438" y="282" font-size="15" fill="#5b677a">check formula, condition, and answer form</text>
 </svg>
 """
 

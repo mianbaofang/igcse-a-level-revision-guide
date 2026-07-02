@@ -154,6 +154,26 @@ def test_mechanics_routes_use_topic_specific_structures():
     assert len({svg_structure_fingerprint(svg) for svg in svgs}) == 3
 
 
+def test_probability_statistics_routes_use_topic_specific_structures():
+    random_variable = visual_with_focus(
+        "statistics chart visual",
+        "Discrete random variables and their associated probability distributions.",
+    )
+    binomial = visual_with_focus(
+        "statistics chart visual",
+        "Binomial distribution. Introduced as the sum of independent Bernoulli trials.",
+    )
+
+    random_svg = render_topic_visual_svg(random_variable, 1, "en")
+    binomial_svg = render_topic_visual_svg(binomial, 2, "en")
+
+    assert "E(X), Var(X)" in random_svg
+    assert "X ~ B(n,p)" in binomial_svg
+    assert "Data becomes evidence" not in random_svg
+    assert "Data becomes evidence" not in binomial_svg
+    assert svg_structure_fingerprint(random_svg) != svg_structure_fingerprint(binomial_svg)
+
+
 def test_svg_topic_router_covers_english_subject_routes():
     route_expectations = [
         ("ledger flow diagram", "Accounting records flow"),
