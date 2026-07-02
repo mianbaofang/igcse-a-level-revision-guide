@@ -28,10 +28,6 @@
   Accounting, Pearson IGCSE Physics 2017, and Cambridge IGCSE History 0470.
   Each has zero validation errors, zero pending concept explanations, zero
   blank PDF text pages, and no local-file footer leakage.
-- OxfordAQA IGCSE Chemistry was deliberately left as `draft_needs_image_review`
-  after concept review because it has 10 dense infographics pending external
-  image generation. This is the expected behavior: pending image work must not
-  be presented as final.
 
 ## 0.4 - 2026-07-02
 

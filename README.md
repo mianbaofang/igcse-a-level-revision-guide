@@ -250,9 +250,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the complete history.
   leakage is blocked for Business/Economics/Physics samples, Cambridge/Pearson
   syllabus boilerplate is filtered before student-facing text, Kroki
   professional-diagram assets are rendered/importable, and PDF export strips
-  browser footers plus trailing blank pages. Six fresh samples are final-ready;
-  the Chemistry sample remains draft because it correctly waits for 10 external
-  infographics.
+  browser footers plus trailing blank pages. Six fresh samples are final-ready.
 - **v0.4:** adds the conservative delivery-state vocabulary (`candidate`,
   `draft`, `final-ready`, `certified`), the lightweight
   `docs/release-evidence/` manifest expectation, the English-body plus

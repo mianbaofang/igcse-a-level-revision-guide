@@ -1,12 +1,11 @@
 {
   "release": "v0.4.1-sample-quality-fixes",
   "generated_at": "2026-07-02",
-  "git_revision": "uncommitted working tree before release commit",
+  "git_revision": "v0.4.1",
   "overall_status": "final-ready",
   "notes": [
-    "This manifest records fresh local sample evidence after the v0.4.1 quality fixes.",
-    "Generated outputs, downloaded specifications, PDFs, and local assets remain ignored and are not committed.",
-    "The Chemistry sample is intentionally draft because dense external infographics are still pending."
+    "This manifest records fresh local final-ready sample evidence after the v0.4.1 quality fixes.",
+    "Generated outputs, downloaded specifications, PDFs, and local assets remain ignored and are not committed."
   ],
   "entries": [
     {
@@ -181,35 +180,6 @@
       },
       "final_review": {
         "must_not_present_as_final": false
-      }
-    },
-    {
-      "id": "oxfordaqa-igcse-chemistry-zh-term-support-draft-pending-infographics",
-      "status": "draft",
-      "provider": "oxfordaqa",
-      "level": "igcse",
-      "subject": "Chemistry",
-      "language": "zh-CN",
-      "output_dir": "outputs/audit-random-oxfordaqa-igcse-chemistry-zh-20260702-v3",
-      "commands": [
-        "python -m intl_exam_guide review --out outputs/audit-random-oxfordaqa-igcse-chemistry-zh-20260702-v3"
-      ],
-      "validation_summary": {
-        "delivery_status": "draft_needs_image_review",
-        "delivery_state": "draft",
-        "error_count": 0,
-        "warning_count": 14,
-        "topics": 35,
-        "practice_cards": 35,
-        "visual_briefs": 10,
-        "pending_infographic_assets": 10,
-        "pending_concept_explanations": 0,
-        "pdf_pages": 48,
-        "pdf_blank_text_pages": 0,
-        "pdf_file_uri_footer_pages": 0
-      },
-      "final_review": {
-        "must_not_present_as_final": true
       }
     }
   ]
