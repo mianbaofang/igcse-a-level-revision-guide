@@ -608,6 +608,21 @@ def test_render_html_writes_english_handbook_with_selected_language_glossary(tmp
     assert "deterministic-svg" not in html
 
 
+def test_visual_styles_keep_source_html_compact_and_print_full_width():
+    css = stylesheet()
+    print_css = css[css.index("@media print") :]
+
+    assert "padding: 8px;" in css
+    assert ".visual-example figcaption {\n  margin-bottom: 8px;" in css
+    assert ".visual-grid {\n  display: grid;\n  grid-template-columns: 1fr;\n  gap: 10px;" in css
+    assert ".generated-infographic-grid {\n  display: grid;\n  grid-template-columns: 1fr;\n  gap: 10px;" in css
+    assert "@page { size: A4; margin: 3.5mm; }" in print_css
+    assert ".visual-grid," in print_css
+    assert ".generated-infographic-grid {" in print_css
+    assert "grid-template-columns: 1fr;" in print_css
+    assert ".visual-svg { max-height: none; object-fit: contain; }" in print_css
+
+
 def test_topic_renderers_cover_guides_practice_story_and_visual_blocks():
     qualification = sample_rendering_qualification()
     topic = qualification.topics[0]

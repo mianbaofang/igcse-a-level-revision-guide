@@ -287,21 +287,21 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
 .practice-question { font-weight: 700; }
 .visual-example {
   margin: 18px 0 0;
-  padding: 14px;
+  padding: 8px;
   background: #ffffff;
   border: 1px solid var(--line);
   border-left: 5px solid var(--red);
 }
 .visual-example figcaption {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--red);
   font-weight: 800;
 }
 .visual-grid {
   display: grid;
-  grid-template-columns: minmax(0, .58fr) minmax(240px, .42fr);
-  gap: 16px;
-  align-items: stretch;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: start;
 }
 .visual-svg {
   display: block;
@@ -321,9 +321,9 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
 }
 .generated-infographic-grid {
   display: grid;
-  grid-template-columns: minmax(0, .64fr) minmax(240px, .36fr);
-  gap: 16px;
-  align-items: stretch;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-items: start;
 }
 .infographic-image {
   display: block;
@@ -531,17 +531,18 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
   .assessment,
   .logic-card,
   .practice,
-  .visual-example,
   .visual-notes,
   .infographic-card {
     padding: 3mm;
   }
   .practice-block { grid-template-columns: 1fr; }
   .practice-block .practice:nth-child(n+2) { display: none; }
-  .visual-example { margin: 3mm 0 0; break-inside: avoid-page; }
+  .visual-example { margin: 2mm 0 0; break-inside: avoid-page; }
+  .visual-example figcaption { margin-bottom: 1.5mm; }
   .visual-grid,
   .generated-infographic-grid {
     grid-template-columns: 1fr;
+    gap: 2mm;
     align-items: start;
   }
   .visual-svg { max-height: none; object-fit: contain; }

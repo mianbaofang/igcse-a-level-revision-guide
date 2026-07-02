@@ -15,6 +15,7 @@ from intl_exam_guide.rendering.svg_templates import (
     render_force_svg,
     render_gas_tests_svg,
     render_market_svg,
+    render_math_topic_svg,
     market_variant_from_text,
     render_motion_svg,
     render_number_svg,
@@ -106,6 +107,20 @@ def test_trig_tangent_functions_do_not_route_to_circle_tangent_svg():
 
     assert "sin, cos, tan" in svg
     assert "radius ⟂ tangent" not in svg
+
+
+def test_math_topic_svg_uses_compact_internal_frame():
+    svg = render_math_topic_svg(
+        1,
+        "Trigonometry visual",
+        "The sine and cosine rules",
+        "trig:triangle",
+    )
+
+    assert 'rect x="6" y="6" width="708" height="348"' in svg
+    assert 'transform="translate(-28 -14) scale(1.15)"' in svg
+    assert 'rect x="436" y="72" width="270" height="244"' in svg
+    assert 'rect x="20" y="20" width="680" height="320"' not in svg
 
 
 def test_motion_graph_gradient_area_uses_distinct_velocity_area_svg():

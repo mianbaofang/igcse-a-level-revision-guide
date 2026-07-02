@@ -1231,21 +1231,21 @@ def render_zh_math_topic_svg(index: int, title: str, focus: str, variant: str) -
     labels = labels_by_variant.get(base_variant, ("读图", "建模", "检查"))
     cards = []
     for position, label in enumerate(labels):
-        x = 438
-        y = 106 + position * 64
+        x = 456
+        y = 96 + position * 72
         cards.append(
-            f'<rect x="{x}" y="{y}" width="202" height="44" rx="10" fill="#ffffff" '
+            f'<rect x="{x}" y="{y}" width="232" height="52" rx="10" fill="#ffffff" '
             f'stroke="#d7deea" stroke-width="2"/>'
-            f'<text x="{x + 18}" y="{y + 29}" font-size="18" font-weight="800" '
+            f'<text x="{x + 18}" y="{y + 34}" font-size="20" font-weight="800" '
             f'fill="#172033">{html_escape(label)}</text>'
         )
     return f"""
 <svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
   <title id="visual-title-{index}">{html_escape(display_title)}</title>
-  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
-  <text x="52" y="68" fill="#1354a5" font-size="24" font-weight="800">{html_escape(display_title)}</text>
-  <g>{render_zh_math_motif(index, variant, focus)}</g>
-  <rect x="418" y="82" width="244" height="216" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
+  <rect x="6" y="6" width="708" height="348" rx="16" fill="#ffffff" stroke="#d7deea"/>
+  <text x="30" y="52" fill="#1354a5" font-size="26" font-weight="800">{html_escape(display_title)}</text>
+  <g transform="translate(-28 -14) scale(1.15)">{render_zh_math_motif(index, variant, focus)}</g>
+  <rect x="436" y="72" width="270" height="244" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
   {''.join(cards)}
 </svg>
 """
@@ -1267,21 +1267,21 @@ def render_math_topic_svg(index: int, title: str, focus: str, variant: str) -> s
     labels = labels_by_variant.get(base_variant, ("read", "model", "check"))
     cards = []
     for position, label in enumerate(labels):
-        x = 438
-        y = 106 + position * 64
+        x = 456
+        y = 96 + position * 72
         cards.append(
-            f'<rect x="{x}" y="{y}" width="202" height="44" rx="10" fill="#ffffff" '
+            f'<rect x="{x}" y="{y}" width="232" height="52" rx="10" fill="#ffffff" '
             f'stroke="#d7deea" stroke-width="2"/>'
-            f'<text x="{x + 18}" y="{y + 29}" font-size="18" font-weight="800" '
+            f'<text x="{x + 18}" y="{y + 34}" font-size="20" font-weight="800" '
             f'fill="#172033">{html_escape(label)}</text>'
         )
     return f"""
 <svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
   <title id="visual-title-{index}">{html_escape(display_title)}</title>
-  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
-  <text x="52" y="68" fill="#1354a5" font-size="24" font-weight="800">{html_escape(display_title)}</text>
-  <g>{render_math_motif(index, variant, focus)}</g>
-  <rect x="418" y="82" width="244" height="216" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
+  <rect x="6" y="6" width="708" height="348" rx="16" fill="#ffffff" stroke="#d7deea"/>
+  <text x="30" y="52" fill="#1354a5" font-size="26" font-weight="800">{html_escape(display_title)}</text>
+  <g transform="translate(-28 -14) scale(1.15)">{render_math_motif(index, variant, focus)}</g>
+  <rect x="436" y="72" width="270" height="244" rx="16" fill="#f7fbff" stroke="#9cbce8" stroke-width="3"/>
   {''.join(cards)}
 </svg>
 """
@@ -1804,7 +1804,7 @@ def render_zh_math_motif(index: int, variant: str, focus: str = "") -> str:
   <text x="110" y="250" font-size="18" font-weight="800" fill="#1354a5">A</text>
   <text x="296" y="250" font-size="18" font-weight="800" fill="#1354a5">B</text>
   <text x="238" y="120" font-size="18" font-weight="800" fill="#1354a5">C</text>
-  <text x="128" y="146" font-size="22" font-weight="800" fill="#b83246">sine / cosine rule</text>
+  <text x="106" y="98" font-size="20" font-weight="800" fill="#b83246">sine / cosine rule</text>
   <text x="126" y="304" font-size="20" font-weight="800" fill="#1f7a5b">match sides to angles</text>
 """
     if variant == "trig:graph":
