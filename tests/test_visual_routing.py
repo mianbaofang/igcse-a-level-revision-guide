@@ -44,6 +44,61 @@ def test_build_visual_brief_returns_none_for_text_only_generic_topic():
     assert brief is None
 
 
+def test_physics_visual_routing_draws_only_central_diagrams():
+    assert route(
+        "1.1 - use the following units",
+        ["kilogram (kg), metre (m), newton (N)."],
+        "Physics",
+    )[1] == "text-ok"
+    assert route(
+        "5.5 - know and use the relationship between pressure, force and area",
+        ["pressure = force / area"],
+        "Physics",
+    )[1] == "text-ok"
+    assert route(
+        "7.19 - know that fission produces daughter nuclei and neutrons",
+        ["number of neutrons"],
+        "Physics",
+    )[1] == "text-ok"
+    assert route(
+        "1.21 - describe the forces acting on falling objects",
+        ["weight and air resistance"],
+        "Physics",
+    )[1] == "text-ok"
+    visual_type, complexity, _ = route(
+        "1.17 - know and use the relationship between unbalanced force, mass and acceleration",
+        ["force = mass x acceleration"],
+        "Physics",
+    )
+    assert visual_type == "mechanics force or collision diagram"
+    assert complexity == "svg-basic"
+
+
+def test_chemistry_visual_routing_avoids_unsafe_local_svg():
+    assert route(
+        "3.1.3 - The Periodic Table",
+        ["Group properties and periodic trends."],
+        "Chemistry",
+    )[1] == "text-ok"
+    assert route(
+        "3.4.1 - Purity and chromatography",
+        ["Use chromatography to separate mixtures."],
+        "Chemistry",
+    )[1] == "text-ok"
+    assert route(
+        "3.6.3 - The mole concept",
+        ["Amount of substance and moles."],
+        "Chemistry",
+    )[1] == "text-ok"
+    visual_type, complexity, _ = route(
+        "3.9.1 - Exothermic and endothermic reactions",
+        ["Energy profile diagrams."],
+        "Chemistry",
+    )
+    assert visual_type == "reaction energy profile diagram"
+    assert complexity == "svg-basic"
+
+
 def test_build_visual_brief_keeps_english_visible_fields():
     brief = build_visual_brief(
         Topic(
@@ -479,6 +534,9 @@ def test_economics_visual_routes_only_draw_named_curve_topics():
     assert "demand-supply" in visual_type
 
     for title, points in [
+        ("Movements along a demand curve", ["movements along a demand curve"]),
+        ("Movements along a supply curve", ["movements along a supply curve"]),
+        ("Consequences of changes in foreign exchange rate", ["consequences of changes in foreign exchange rate"]),
         ("Macroeconomics", ["government inflation trade exchange imports exports"]),
         ("Production resources", ["land labour capital enterprise factors"]),
         ("Business finance", ["business revenue profit cash"]),

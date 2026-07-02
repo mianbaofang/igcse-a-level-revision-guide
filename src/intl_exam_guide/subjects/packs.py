@@ -11,6 +11,7 @@ PRIORITY_SUBJECT_NAMES = {
     "physics",
     "chemistry",
     "economics",
+    "business",
     "biology",
     "accounting",
 }
@@ -61,6 +62,14 @@ PACKS_BY_DOMAIN = {
         concept_focus=("economic agent", "incentive or constraint", "trade-off/result"),
         practice_focus=("scenario", "cause and consequence", "judgement or calculation"),
         visual_boundary="Use curves and flows only for named diagram relationships.",
+    ),
+    "business": SubjectPack(
+        name="business",
+        example_domain="business",
+        priority=True,
+        concept_focus=("business decision", "stakeholder or market effect", "case boundary"),
+        practice_focus=("business context", "cause-effect link", "judgement or recommendation"),
+        visual_boundary="Use ownership, stakeholder, marketing, operations, organisation, and finance visuals only when they clarify the business decision.",
     ),
     "biology": SubjectPack(
         name="biology",

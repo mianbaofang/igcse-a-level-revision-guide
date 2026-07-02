@@ -11,6 +11,7 @@ def test_priority_subject_packs_cover_market_core_subjects():
     assert set(PRIORITY_SUBJECT_PACKS) == {
         "accounting",
         "biology",
+        "business",
         "chemistry",
         "economics",
         "mathematics",
@@ -28,6 +29,31 @@ def test_resolve_subject_pack_uses_declared_subject_before_generic_fallback():
     assert pack.name == "accounting"
     assert pack.priority is True
     assert "ledger or statement step" in pack.practice_focus
+
+    business_pack = resolve_subject_pack(
+        "Business",
+        Topic(title="Stakeholders", points=["Main stakeholders of businesses."]),
+        "Main stakeholders of businesses.",
+    )
+    assert business_pack.name == "business"
+    assert business_pack.priority is True
+    assert "business context" in business_pack.practice_focus
+
+
+def test_science_profile_is_not_stolen_by_history_source_terms():
+    pack = resolve_subject_pack(
+        None,
+        Topic(
+            title="3.6.1 - Conservation of mass",
+            points=[
+                "chemical equations",
+                "Chemical reactions can be represented by word equations or by symbol equations.",
+            ],
+        ),
+        "chemical equations source evidence reactions symbol equations",
+    )
+
+    assert pack.name == "chemistry"
 
 
 def test_subject_writing_and_review_jobs_define_non_template_contracts():

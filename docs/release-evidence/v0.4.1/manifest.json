@@ -1,0 +1,216 @@
+{
+  "release": "v0.4.1-sample-quality-fixes",
+  "generated_at": "2026-07-02",
+  "git_revision": "uncommitted working tree before release commit",
+  "overall_status": "final-ready",
+  "notes": [
+    "This manifest records fresh local sample evidence after the v0.4.1 quality fixes.",
+    "Generated outputs, downloaded specifications, PDFs, and local assets remain ignored and are not committed.",
+    "The Chemistry sample is intentionally draft because dense external infographics are still pending."
+  ],
+  "entries": [
+    {
+      "id": "oxfordaqa-as-mathematics-zh-term-support-final-ready",
+      "status": "final-ready",
+      "provider": "oxfordaqa",
+      "level": "as-level",
+      "subject": "Mathematics",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-core-aqa-as-mathematics-zh-20260702-v1",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-core-aqa-as-mathematics-zh-20260702-v1"
+      ],
+      "validation_summary": {
+        "delivery_status": "ready",
+        "delivery_state": "final-ready",
+        "error_count": 0,
+        "warning_count": 0,
+        "topics": 99,
+        "practice_cards": 99,
+        "visual_briefs": 24,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 117,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": false
+      }
+    },
+    {
+      "id": "cambridge-igcse-economics-0455-zh-term-support-final-ready",
+      "status": "final-ready",
+      "provider": "cambridge",
+      "level": "igcse",
+      "subject": "Economics",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-core-caie-igcse-economics-0455-zh-20260702-v3",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-core-caie-igcse-economics-0455-zh-20260702-v3"
+      ],
+      "validation_summary": {
+        "delivery_status": "ready",
+        "delivery_state": "final-ready",
+        "error_count": 0,
+        "warning_count": 0,
+        "topics": 100,
+        "practice_cards": 100,
+        "visual_briefs": 5,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 111,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": false
+      }
+    },
+    {
+      "id": "oxfordaqa-igcse-business-zh-term-support-final-ready",
+      "status": "final-ready",
+      "provider": "oxfordaqa",
+      "level": "igcse",
+      "subject": "Business",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-core-oxfordaqa-igcse-business-zh-20260702-v2",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-core-oxfordaqa-igcse-business-zh-20260702-v2"
+      ],
+      "validation_summary": {
+        "delivery_status": "ready",
+        "delivery_state": "final-ready",
+        "error_count": 0,
+        "warning_count": 0,
+        "topics": 29,
+        "practice_cards": 29,
+        "visual_briefs": 11,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 40,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": false
+      }
+    },
+    {
+      "id": "pearson-igcse-accounting-zh-term-support-final-ready",
+      "status": "final-ready",
+      "provider": "pearson",
+      "level": "igcse",
+      "subject": "Accounting",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-core-pearson-igcse-accounting-zh-20260702-v1",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-core-pearson-igcse-accounting-zh-20260702-v1"
+      ],
+      "validation_summary": {
+        "delivery_status": "ready",
+        "delivery_state": "final-ready",
+        "error_count": 0,
+        "warning_count": 0,
+        "topics": 22,
+        "practice_cards": 22,
+        "visual_briefs": 7,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 32,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": false
+      }
+    },
+    {
+      "id": "pearson-igcse-physics-2017-zh-term-support-final-ready",
+      "status": "final-ready",
+      "provider": "pearson",
+      "level": "igcse",
+      "subject": "Physics",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-random-pearson-igcse-physics-2017-zh-20260702-v5",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-random-pearson-igcse-physics-2017-zh-20260702-v5"
+      ],
+      "validation_summary": {
+        "delivery_status": "ready",
+        "delivery_state": "final-ready",
+        "error_count": 0,
+        "warning_count": 0,
+        "topics": 107,
+        "practice_cards": 107,
+        "visual_briefs": 1,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 121,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": false
+      }
+    },
+    {
+      "id": "cambridge-igcse-history-0470-zh-term-support-final-ready",
+      "status": "final-ready",
+      "provider": "cambridge",
+      "level": "igcse",
+      "subject": "History",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-random-cambridge-igcse-history-0470-zh-20260702-v1",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-random-cambridge-igcse-history-0470-zh-20260702-v1"
+      ],
+      "validation_summary": {
+        "delivery_status": "ready",
+        "delivery_state": "final-ready",
+        "error_count": 0,
+        "warning_count": 0,
+        "topics": 30,
+        "practice_cards": 30,
+        "visual_briefs": 3,
+        "pending_infographic_assets": 0,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 39,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": false
+      }
+    },
+    {
+      "id": "oxfordaqa-igcse-chemistry-zh-term-support-draft-pending-infographics",
+      "status": "draft",
+      "provider": "oxfordaqa",
+      "level": "igcse",
+      "subject": "Chemistry",
+      "language": "zh-CN",
+      "output_dir": "outputs/audit-random-oxfordaqa-igcse-chemistry-zh-20260702-v3",
+      "commands": [
+        "python -m intl_exam_guide review --out outputs/audit-random-oxfordaqa-igcse-chemistry-zh-20260702-v3"
+      ],
+      "validation_summary": {
+        "delivery_status": "draft_needs_image_review",
+        "delivery_state": "draft",
+        "error_count": 0,
+        "warning_count": 14,
+        "topics": 35,
+        "practice_cards": 35,
+        "visual_briefs": 10,
+        "pending_infographic_assets": 10,
+        "pending_concept_explanations": 0,
+        "pdf_pages": 48,
+        "pdf_blank_text_pages": 0,
+        "pdf_file_uri_footer_pages": 0
+      },
+      "final_review": {
+        "must_not_present_as_final": true
+      }
+    }
+  ]
+}

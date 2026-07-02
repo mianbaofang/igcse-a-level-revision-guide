@@ -8,7 +8,7 @@ from intl_exam_guide.planning.guide_plan import (
     build_run_options,
     normalize_image_provider,
 )
-from intl_exam_guide.planning.source_points import clean_source_point
+from intl_exam_guide.planning.source_points import clean_source_point, visible_source_points
 
 
 def sample_accounting_qualification() -> Qualification:
@@ -129,6 +129,44 @@ def test_clean_source_point_removes_embedded_syllabus_shell():
         clean_source_point("Students should be able to understand the nature of an economic resource")
         == "understand the nature of an economic resource"
     )
+
+
+def test_source_points_remove_cambridge_page_boilerplate():
+    topic = Topic(
+        title="1.2.2 Quantity and quality of factors of production",
+        points=[
+            "causes of changes in the quantity and quality of factors of production",
+            "Cambridge IGCSE Economics 0455 syllabus for 2027, 2028 and 2029. Subject content",
+            "12www.cambridgeinternational.org/igcseBack to contents page",
+            "Faculty feedback: Understanding how and why our climate is changing.",
+            "Feedback from: Dr Example, Cambridge Zero",
+        ],
+    )
+
+    assert visible_source_points(topic) == [
+        "causes of changes in the quantity and quality of factors of production"
+    ]
+    assert (
+        clean_source_point(
+            "main influences on whether supply is elastic or inelastic Cambridge IGCSE Economics 0455 syllabus for 2027, 2028 and 2029. Subject content 15www.cambridgeinternational.org/igcseBack to contents page"
+        )
+        == "main influences on whether supply is elastic or inelastic"
+    )
+
+
+def test_source_points_remove_pearson_page_boilerplate_and_formula_noise():
+    topic = Topic(
+        title="5.5 - pressure, force and area",
+        points=[
+            "forcepressure area=",
+            "Specification - Issue 4 - September 2024 © Pearson Education Limited 2024",
+            "(b) Density and pressure",
+            "Students should:",
+        ],
+    )
+
+    assert visible_source_points(topic) == ["pressure = force / area"]
+    assert clean_source_point("force = mass ¡Á acceleration") == "force = mass x acceleration"
     assert (
         clean_source_point("Using algebraic methods. Students will be expected to interpret the result")
         == "Using algebraic methods. interpret the result"

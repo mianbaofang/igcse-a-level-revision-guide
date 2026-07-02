@@ -20,10 +20,13 @@ from intl_exam_guide.rendering.html import render_html
 from intl_exam_guide.validation.checks import (
     duplicate_practice_question_topics,
     expected_topic_marker,
+    has_pdf_local_footer_text,
+    has_source_boilerplate_text,
     has_zh_placeholder_text,
     issues_to_dict,
     is_contents_or_index_snippet,
     is_cross_subject_borrowed_practice,
+    is_cross_subject_borrowed_text,
     is_placeholder_practice_question,
     is_svg_safe_visual_brief,
     mixed_language_label_matches,
@@ -413,6 +416,25 @@ def test_term_support_body_text_still_uses_english_ai_style_checks():
     assert "Topic guide contains formulaic AI-style wording: 3.1 Source documents" in messages
 
 
+def test_topic_guide_rejects_cross_subject_borrowed_templates():
+    plan = valid_plan()
+    plan.topic_guides[0].essence = (
+        "This topic is about angles to side ratios and periodic graph values."
+    )
+
+    messages = [issue.message for issue in validate_guides(plan)]
+
+    assert "Topic guide appears to borrow a different subject template: 3.1 Source documents" in messages
+    assert is_cross_subject_borrowed_text(
+        "A typical question gives masses and velocities before writing the momentum equation.",
+        "Business",
+    )
+    assert not is_cross_subject_borrowed_text(
+        "A typical question gives masses and velocities before writing the momentum equation.",
+        "Physics",
+    )
+
+
 def test_topic_map_mastery_cells_must_not_repeat_across_topics():
     html = """
 <section class="band">
@@ -663,13 +685,21 @@ def test_html_language_output_assets_and_summary_helpers_have_direct_contracts(t
     )
 
     html_issues = [issue.message for issue in validate_html_output(plan, html_path)]
-    language_issues = [issue.message for issue in validate_html_language("zh-CN", "How to Study")]
+    required_english_body = (
+        "How to Study Study Roadmap One-Sentence Essence Method Worked Example "
+        "Solution Check Exam Pitfall Source anchor"
+    )
+    language_issues = [issue.message for issue in validate_html_language("zh-CN", required_english_body)]
+    term_support_body_issues = [
+        issue.message for issue in validate_html_language("zh-CN", required_english_body + "<p>中文正文</p>")
+    ]
     image_issues = [issue.message for issue in validate_image_assets(plan, images_dir)]
     summary = review_summary(plan, html_path=html_path, output_dir=tmp_path)
 
     assert any("bilingual mixed-language label" in message for message in html_issues)
     assert any("English output contains Chinese characters" in message for message in html_issues)
-    assert "Chinese output contains an English template phrase: How to Study" in language_issues
+    assert not language_issues
+    assert "English output contains Chinese characters in the student-facing HTML." in term_support_body_issues
     assert any("infographic briefs are queued for external image generation" in message for message in image_issues)
     assert summary["topics"] == 1
     assert summary["pending_infographic_assets"] == 1
@@ -715,6 +745,11 @@ def test_validation_small_helpers_have_direct_branch_contracts():
         "Find the hypotenuse of a right-angled triangle.",
         "Mathematics",
     )
+    assert has_source_boilerplate_text(
+        "Cambridge IGCSE Economics 0455 syllabus for 2027, 2028 and 2029. Subject content"
+    )
+    assert has_source_boilerplate_text("Faculty feedback: this is not syllabus content.")
+    assert not has_source_boilerplate_text("Explain demand and supply in a market.")
     assert has_zh_placeholder_text(["官方大纲要求 本单元第 1 个细分要求"])
 
 
@@ -931,6 +966,26 @@ def test_pdf_validation_rejects_excessive_blank_output(tmp_path):
     assert any("almost no extractable text" in message for message in messages)
     assert summary["pdf_pages"] == 30
     assert summary["pdf_blank_text_pages"] == 30
+
+
+def test_pdf_validation_rejects_any_blank_text_page(tmp_path):
+    plan = valid_plan()
+    pdf_path = tmp_path / "one-blank.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=595, height=842)
+    with pdf_path.open("wb") as handle:
+        writer.write(handle)
+
+    messages = [issue.message for issue in validate_pdf_output(plan, pdf_path)]
+
+    assert "PDF output has 1 pages with almost no extractable text." in messages
+
+
+def test_pdf_local_footer_text_detection_covers_file_urls_and_local_guide_paths():
+    assert has_pdf_local_footer_text("file:///E:/Object/output/guide.html")
+    assert has_pdf_local_footer_text(r"file:\C:\Users\Ethan\Desktop\guide.htm")
+    assert has_pdf_local_footer_text(r"C:\Users\Ethan\Desktop\aqa-as-accounting-revision-guide\guide.htm")
+    assert not has_pdf_local_footer_text("Source anchor: page 12")
 
 
 def test_pdf_validation_rejects_local_file_url_footer(monkeypatch, tmp_path):

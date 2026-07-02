@@ -648,6 +648,16 @@ def test_topic_renderers_cover_guides_practice_story_and_visual_blocks():
     assert "Everyday Analogy" in render_topic_guide(guide, "en")
     assert "Concept map for 3.1 - Source documents" in render_topic_diagram(topic, guide, 1, "en")
     assert "Local SVG draft" in render_visual_example(topic, guide, visual, 1, {}, "en")
+    kroki_visual = sample_visual_brief(image_provider="kroki")
+    kroki_asset = {
+        visual_asset_key_from_brief(kroki_visual): {
+            "file": "visual_001_kroki.svg",
+            "asset_status": "kroki-generated",
+        }
+    }
+    kroki_html = render_visual_example(topic, guide, kroki_visual, 1, kroki_asset, "en")
+    assert 'src="images/visual_001_kroki.svg"' in kroki_html
+    assert '<svg class="visual-svg"' not in kroki_html
     assert "Image model slot: custom-provider" in render_visual_example(
         topic,
         guide,

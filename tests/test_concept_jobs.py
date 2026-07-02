@@ -61,12 +61,28 @@ def test_concept_jobs_are_bound_to_current_topic_source():
 
     assert len(jobs) == 1
     assert jobs[0]["topic_title"] == "2.3 - Market failure: External costs and benefits"
-    assert jobs[0]["source_points"] == ["External costs and benefits affect third parties."]
+    assert jobs[0]["source_points"] == ["External costs and benefits affect third parties"]
     assert jobs[0]["contract_version"] == "v0.4-pedagogy-mvp"
     assert jobs[0]["subject_pack"] == "economics"
     assert jobs[0]["writing_contract"]["subject_pack"] == "economics"
     assert jobs[0]["review_contract"]["id"] == "concept_001_review"
     assert "Stay inside topic_title and source_points" in str(jobs[0]["task"])
+
+
+def test_concept_jobs_use_visible_source_points_without_pdf_boilerplate():
+    plan = sample_plan()
+    plan.qualification.topics[0].points = [
+        "External costs and benefits affect third parties.",
+        "Cambridge IGCSE Economics 0455 syllabus for 2027, 2028 and 2029. Subject content",
+        "12www.cambridgeinternational.org/igcseBack to contents page",
+        "Faculty feedback: Understanding how and why our climate is changing.",
+    ]
+
+    jobs = build_concept_jobs(plan)
+
+    assert jobs[0]["source_points"] == ["External costs and benefits affect third parties"]
+    assert "Back to contents" not in concept_jobs_markdown(jobs)
+    assert "Faculty feedback" not in concept_jobs_markdown(jobs)
 
 
 def test_concept_jobs_write_review_files_and_read_reviewed_titles(tmp_path):

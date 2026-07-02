@@ -15,6 +15,7 @@ from intl_exam_guide.rendering.svg_templates import (
     render_force_svg,
     render_gas_tests_svg,
     render_market_svg,
+    market_variant_from_text,
     render_motion_svg,
     render_number_svg,
     render_organic_svg,
@@ -441,6 +442,27 @@ def test_market_demand_and_supply_shift_svgs_are_distinct():
     assert "Demand increases" in demand_svg
     assert "Supply increases" in supply_svg
     assert svg_structure_fingerprint(demand_svg) != svg_structure_fingerprint(supply_svg)
+
+
+def test_market_curve_svgs_cover_distinct_economics_variants():
+    cases = [
+        ("Shifts of a demand curve", "demand", "Demand increases"),
+        ("Shifts of a supply curve", "supply", "Supply increases"),
+        ("Market equilibrium", "equilibrium", "Equilibrium"),
+        ("Market disequilibrium", "disequilibrium", "Shortage"),
+        ("Determination of foreign exchange rate", "foreign_exchange", "Exchange rate"),
+    ]
+    fingerprints = []
+
+    for index, (text, expected_variant, expected_label) in enumerate(cases, start=1):
+        variant = market_variant_from_text(text)
+        svg = render_market_svg(index, "en", variant)
+        fingerprints.append(svg_structure_fingerprint(svg))
+
+        assert variant == expected_variant
+        assert expected_label in svg
+
+    assert len(set(fingerprints)) == len(cases)
 
 
 def test_accounting_statement_variant_svgs_use_distinct_professional_layouts():

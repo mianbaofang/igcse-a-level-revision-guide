@@ -13,24 +13,25 @@ if str(SRC_PATH) not in sys.path:
 from intl_exam_guide.visuals.manifest import build_asset_metadata  # noqa: E402
 
 
-RASTER_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+VISUAL_ASSET_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
 REPLACEABLE_STATUSES = {
     "external-generation-required",
     "infographic-provider-required",
     "provider-selected-pending-generation",
     "svg-fallback-needs-review",
+    "professional-diagram-required",
 }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Import externally generated infographic assets into visual_manifest.json."
+        description="Import reviewed visual assets into visual_manifest.json."
     )
     parser.add_argument("output_dir", help="A generated guide output directory.")
     parser.add_argument(
         "--asset-dir",
         required=True,
-        help="Directory containing generated raster images named with manifest IDs, e.g. visual_001.png.",
+        help="Directory containing generated/reviewed assets named with manifest IDs, e.g. visual_001.png or visual_001.svg.",
     )
     parser.add_argument("--provider", default="external-provider")
     parser.add_argument("--status", default="reviewed-generated")
@@ -75,7 +76,7 @@ def main() -> int:
     imported = 0
     missing: list[str] = []
     for entry in manifest:
-        if not isinstance(entry, dict) or entry.get("complexity") != "infographic":
+        if not isinstance(entry, dict) or entry.get("complexity") not in {"infographic", "svg-basic"}:
             continue
         visual_id = str(entry.get("id") or "")
         if not visual_id:
@@ -138,7 +139,7 @@ def main() -> int:
         )
     )
     if args.print_finalize_command:
-        print(f"Imported {imported} infographic asset(s).")
+        print(f"Imported {imported} visual asset(s).")
         if rerender_result.get("rerendered"):
             print(f"Re-rendered handbook HTML: {rerender_result.get('html')}")
         elif args.rerender:
@@ -168,7 +169,7 @@ def load_source_assets_by_key(asset_dir: Path) -> dict[str, Path]:
         if not key or not filename:
             continue
         source = asset_dir / filename
-        if source.is_file() and source.suffix.lower() in RASTER_EXTENSIONS:
+        if source.is_file() and source.suffix.lower() in VISUAL_ASSET_EXTENSIONS:
             assets.setdefault(key, source)
     return assets
 
@@ -207,7 +208,7 @@ def find_asset(
         path
         for path in asset_dir.iterdir()
         if path.is_file()
-        and path.suffix.lower() in RASTER_EXTENSIONS
+        and path.suffix.lower() in VISUAL_ASSET_EXTENSIONS
         and (path.stem == visual_id or path.stem.startswith(f"{visual_id}_"))
     ]
     if candidates:

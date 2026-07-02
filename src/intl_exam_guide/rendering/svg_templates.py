@@ -680,10 +680,16 @@ def render_accounting_statement_variant_svg(index: int, title: str, labels: tupl
 
 def market_variant_from_text(text: str) -> str:
     focus = text.lower()
+    if "disequilibrium" in focus:
+        return "disequilibrium"
+    if "foreign exchange" in focus or "exchange rate" in focus:
+        return "foreign_exchange"
     supply_shift_clues = [
         "changes in supply",
         "change in supply",
         "supply curve shifts",
+        "shifts of a supply curve",
+        "shift of a supply curve",
         "determine the supply",
         "supply for goods",
         "supply of goods",
@@ -694,6 +700,8 @@ def market_variant_from_text(text: str) -> str:
         "changes in demand",
         "change in demand",
         "demand curve shifts",
+        "shifts of a demand curve",
+        "shift of a demand curve",
         "determine the demand",
         "demand for goods",
         "demand of goods",
@@ -715,6 +723,49 @@ def render_market_svg(index: int, language: str, variant: str = "equilibrium") -
     price = "价格" if zh else "Price"
     qty = "数量" if zh else "Quantity"
     equilibrium = "均衡" if zh else "Equilibrium"
+    if variant == "foreign_exchange":
+        market = "外汇市场" if zh else "Foreign exchange market"
+        currency = "货币数量" if zh else "Quantity of currency"
+        rate = "汇率" if zh else "Exchange rate"
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(market)} rate diagram</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="60" y="72" fill="#1354a5" font-size="24" font-weight="800">{html_escape(market)}</text>
+  <path d="M118 286V88M118 286h478" stroke="#172033" stroke-width="4"/>
+  <path d="M160 126C258 144 396 196 560 266" fill="none" stroke="#b83246" stroke-width="6"/>
+  <path d="M164 268C286 224 430 156 566 112" fill="none" stroke="#1f7a5b" stroke-width="6"/>
+  <circle cx="358" cy="188" r="10" fill="#d99a24"/>
+  <path d="M358 188v98M118 188h240" stroke="#d99a24" stroke-width="3" stroke-dasharray="7 6"/>
+  <text x="134" y="92" font-size="17" font-weight="800">{html_escape(rate)}</text>
+  <text x="456" y="318" font-size="17" font-weight="800">{html_escape(currency)}</text>
+  <text x="530" y="132" font-size="18" font-weight="800" fill="#1f7a5b">{html_escape(supply)} of currency</text>
+  <text x="530" y="266" font-size="18" font-weight="800" fill="#b83246">{html_escape(demand)} for currency</text>
+  <text x="376" y="184" font-size="17" font-weight="800" fill="#9b6a10">rate</text>
+</svg>
+"""
+    if variant == "disequilibrium":
+        shortage = "短缺" if zh else "Shortage"
+        surplus = "过剩" if zh else "Surplus"
+        return f"""
+<svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">
+  <title id="visual-title-{index}">{html_escape(title)} - disequilibrium</title>
+  <rect x="20" y="20" width="680" height="320" rx="20" fill="#ffffff" stroke="#d7deea"/>
+  <text x="60" y="72" fill="#1354a5" font-size="24" font-weight="800">Market disequilibrium</text>
+  <path d="M118 284V92M118 284h470" stroke="#172033" stroke-width="4"/>
+  <path d="M150 118L548 260" stroke="#b83246" stroke-width="6"/>
+  <path d="M150 260L548 118" stroke="#1f7a5b" stroke-width="6"/>
+  <path d="M198 144h312" stroke="#d99a24" stroke-width="5" stroke-dasharray="9 7"/>
+  <path d="M198 234h312" stroke="#6c63ff" stroke-width="5" stroke-dasharray="9 7"/>
+  <path d="M236 144v90M470 144v90" stroke="#172033" stroke-width="3"/>
+  <text x="250" y="136" font-size="17" font-weight="800" fill="#9b6a10">{html_escape(surplus)}</text>
+  <text x="312" y="256" font-size="17" font-weight="800" fill="#544bd1">{html_escape(shortage)}</text>
+  <text x="552" y="266" font-size="18" font-weight="800" fill="#b83246">{html_escape(demand)}</text>
+  <text x="552" y="126" font-size="18" font-weight="800" fill="#1f7a5b">{html_escape(supply)}</text>
+  <text x="132" y="96" font-size="17" font-weight="800">{html_escape(price)}</text>
+  <text x="520" y="314" font-size="17" font-weight="800">{html_escape(qty)}</text>
+</svg>
+"""
     if variant == "demand":
         return f"""
 <svg class="visual-svg" viewBox="0 0 720 360" role="img" aria-labelledby="visual-title-{index}">

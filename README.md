@@ -106,13 +106,19 @@ Before generation starts, the Agent should confirm:
    handbook body, examples, labels, and visual prompts stay in English.
 4. Explanation style: formal, friendly, life-scene, story-based, detective, or
    adventure-style.
+5. Infographic capability: ask whether the user has a callable image or
+   infographic route for this run. If yes, collect the route type, such as an
+   installed image-generation Skill, a custom API endpoint plus environment
+   variable name, a project script, or an existing generated-asset directory.
+   If no, explain that simple SVG and Kroki diagrams can still be rendered but
+   dense infographics will remain pending, then ask whether to continue as a
+   draft-with-pending-images run.
 
-The user should not be forced to choose an image model at the beginning. The
-base handbook is generated first. After that, the Agent reports how many complex
-infographics are needed. If the user has a callable image API, image-generation
-Skill, script, or generated asset directory, the Agent should run that route and
-then import or attach the reviewed images automatically. Otherwise, the package
-writes pending visual jobs and clearly marks complex visuals as not yet reviewed.
+The user should not be forced through a generic image-model menu. The required
+early question is whether a callable image route exists at all. After the base
+handbook is generated, the Agent reports how many complex infographics are
+needed, runs or imports the confirmed route when available, and clearly marks
+any unresolved complex visuals as not yet reviewed.
 
 ## What It Produces
 
@@ -239,6 +245,14 @@ translated-body mode:
 README only summarizes changes that affect the Skill's actual generation flow.
 See [CHANGELOG.md](CHANGELOG.md) for the complete history.
 
+- **v0.4.1:** fixes the first real v0.4 sample-audit regressions: term-support
+  languages now mean English body plus glossary only, cross-subject template
+  leakage is blocked for Business/Economics/Physics samples, Cambridge/Pearson
+  syllabus boilerplate is filtered before student-facing text, Kroki
+  professional-diagram assets are rendered/importable, and PDF export strips
+  browser footers plus trailing blank pages. Six fresh samples are final-ready;
+  the Chemistry sample remains draft because it correctly waits for 10 external
+  infographics.
 - **v0.4:** adds the conservative delivery-state vocabulary (`candidate`,
   `draft`, `final-ready`, `certified`), the lightweight
   `docs/release-evidence/` manifest expectation, the English-body plus

@@ -419,6 +419,13 @@ def validate_guides(plan: GuidePlan) -> list[ValidationIssue]:
                     f"Topic guide contains syllabus shell text: {guide.topic_title}",
                 )
             )
+        if is_cross_subject_borrowed_text(" ".join(body_values), plan.qualification.subject_area):
+            issues.append(
+                ValidationIssue(
+                    "error",
+                    f"Topic guide appears to borrow a different subject template: {guide.topic_title}",
+                )
+            )
         if has_encoding_artifacts(body_values):
             issues.append(
                 ValidationIssue(
@@ -770,6 +777,8 @@ def validate_html_output(plan: GuidePlan, html_path: Path) -> list[ValidationIss
         issues.append(ValidationIssue("error", message))
     if has_syllabus_shell_text([html_body]):
         issues.append(ValidationIssue("error", "HTML output contains syllabus shell text in student-facing content."))
+    if has_source_boilerplate_text(html_body):
+        issues.append(ValidationIssue("error", "HTML output contains source boilerplate in student-facing content."))
     issues.extend(validate_html_glossary_policy(html, options.output_language))
     rendered_titles = rendered_topic_titles(html)
     for message in topic_title_quality_issues(rendered_titles, body_language):
@@ -909,7 +918,8 @@ def rendered_topic_titles(html: str) -> list[str]:
 
 def validate_html_language(output_language: str, html: str) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
-    if output_language == "en":
+    body_language = handbook_body_language(output_language)
+    if body_language == "en":
         checked_html = strip_allowed_glossary_html(html)
         if re.search(r"[\u4e00-\u9fff]", checked_html):
             issues.append(
@@ -1037,7 +1047,6 @@ def validate_pdf_output(plan: GuidePlan, pdf_path: Path) -> list[ValidationIssue
     max_mib = summary_float(summary, "pdf_max_recommended_mib")
     blank_text_pages = summary_int(summary, "pdf_blank_text_pages")
     file_uri_footer_pages = summary_int(summary, "pdf_file_uri_footer_pages")
-    blank_limit = max(2, int(page_count * 0.03))
     issues: list[ValidationIssue] = []
     if page_count <= 0:
         issues.append(ValidationIssue("error", f"PDF output has no pages: {pdf_path}"))
@@ -1057,7 +1066,7 @@ def validate_pdf_output(plan: GuidePlan, pdf_path: Path) -> list[ValidationIssue
                 f"of {max_mib:.1f} MiB.",
             )
         )
-    if blank_text_pages > blank_limit:
+    if blank_text_pages:
         issues.append(
             ValidationIssue(
                 "error",
@@ -1086,7 +1095,7 @@ def pdf_quality_summary(plan: GuidePlan, pdf_path: Path) -> dict[str, object]:
             except (KeyError, ValueError, TypeError):
                 text = ""
             page_text_lengths.append(len(text.strip()))
-            if "file:///" in text or "file:\\" in text:
+            if has_pdf_local_footer_text(text):
                 file_uri_footer_pages += 1
     except (OSError, ValueError, KeyError) as exc:
         return {"read_error": str(exc)}
@@ -1128,12 +1137,13 @@ def validate_image_assets(plan: GuidePlan, images_dir: Path) -> list[ValidationI
     manifest_path = images_dir / "visual_manifest.json"
     manifest_entries = load_visual_manifest(images_dir)
     svg_safe_asset_count = count_renderable_svg_safe_assets(manifest_entries, images_dir)
-    if svg_safe_asset_count < len(svg_briefs):
+    required_svg_asset_count = count_required_svg_safe_assets(len(svg_briefs), manifest_entries)
+    if svg_safe_asset_count < required_svg_asset_count:
         issues.append(
             ValidationIssue(
                 "error",
                 f"Images directory has {svg_safe_asset_count} renderable assets for "
-                f"{len(svg_briefs)} SVG-safe visual briefs.",
+                f"{required_svg_asset_count} SVG-safe visual briefs.",
             )
         )
     if not manifest_path.exists():
@@ -1223,6 +1233,15 @@ def validate_pairwise_svg_reuse(
     return []
 
 
+def has_pdf_local_footer_text(text: str) -> bool:
+    normalized = text.replace("\\", "/")
+    return bool(
+        "file:///" in normalized
+        or "file:/" in normalized
+        or re.search(r"[A-Za-z]:/[^ \n\r]*guide\.html?\b", normalized, flags=re.IGNORECASE)
+    )
+
+
 def is_pairwise_svg_reuse_risky(brief: VisualBrief) -> bool:
     text = f"{brief.visual_type} {brief.focus_point} {brief.trigger}".lower()
     return any(
@@ -1270,6 +1289,19 @@ def count_renderable_svg_safe_assets(
         if filename.lower().endswith(".svg") or has_renderable_infographic(entry, images_dir):
             count += 1
     return count
+
+
+def count_required_svg_safe_assets(
+    svg_brief_count: int,
+    manifest_entries: list[dict[str, object]],
+) -> int:
+    pending_professional = sum(
+        1
+        for entry in manifest_entries
+        if str(entry.get("complexity")) == "svg-basic"
+        and str(entry.get("asset_status", "")).lower() == "professional-diagram-required"
+    )
+    return max(0, svg_brief_count - pending_professional)
 
 
 def validate_infographic_assets(
@@ -1570,11 +1602,18 @@ def is_contents_or_index_snippet(snippet: object) -> bool:
 
 
 def is_cross_subject_borrowed_practice(question: str, subject_area: str | None) -> bool:
+    return is_cross_subject_borrowed_text(question, subject_area)
+
+
+def is_cross_subject_borrowed_text(text: str, subject_area: str | None) -> bool:
     area = (subject_area or "").lower()
-    if any(term in area for term in ["math", "mathematics", "further mathematics"]):
-        return False
-    question_lower = question.lower()
+    text_lower = text.lower()
+    is_math = any(term in area for term in ["math", "mathematics", "further mathematics"])
+    is_physics = "physics" in area
     borrowed_math_markers = [
+        "angles to side ratios",
+        "periodic graph values",
+        "gradient, intercepts, coordinates",
         "mean and range",
         "median and range",
         "right-angled triangle",
@@ -1584,7 +1623,30 @@ def is_cross_subject_borrowed_practice(question: str, subject_area: str | None) 
         "straight line y =",
         "drink is mixed using juice and water in the ratio",
     ]
-    return any(marker in question_lower for marker in borrowed_math_markers)
+    borrowed_physics_markers = [
+        "before-and-after momentum",
+        "masses and velocities",
+        "momentum equation",
+        "two skaters",
+    ]
+    if not is_math and any(marker in text_lower for marker in borrowed_math_markers):
+        return True
+    if not (is_math or is_physics) and any(marker in text_lower for marker in borrowed_physics_markers):
+        return True
+    return False
+
+
+def has_source_boilerplate_text(text: str) -> bool:
+    lower = text.lower()
+    markers = [
+        "back to contents page",
+        "faculty feedback:",
+        "feedback from:",
+        "head of education and student engagement",
+    ]
+    if any(marker in lower for marker in markers):
+        return True
+    return bool(re.search(r"\bCambridge\s+IGCSE\b.+?\bSubject content\b", text, flags=re.IGNORECASE))
 
 
 def mixed_language_label_matches(html: str) -> list[str]:

@@ -6,6 +6,7 @@ from pathlib import Path
 from intl_exam_guide.models import GuidePlan, Topic
 from intl_exam_guide.planning.language_policy import handbook_body_language
 from intl_exam_guide.planning.localization import zh_teachable_topic_title
+from intl_exam_guide.planning.source_points import visible_source_points
 from intl_exam_guide.subjects import (
     build_subject_review_job,
     build_subject_writing_job,
@@ -22,7 +23,7 @@ def build_concept_jobs(plan: GuidePlan) -> list[dict[str, object]]:
     jobs: list[dict[str, object]] = []
     for index, guide in enumerate(plan.topic_guides, start=1):
         topic = topics.get(guide.topic_title)
-        source_points = topic.points if topic else []
+        source_points = visible_source_points(topic) if topic else []
         source_text = " ".join([guide.topic_title, *source_points])
         pack = resolve_subject_pack(plan.qualification.subject_area, topic, source_text)
         job_id = f"concept_{index:03d}"

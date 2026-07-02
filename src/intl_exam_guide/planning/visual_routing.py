@@ -336,6 +336,15 @@ def choose_visual_type(
     if profile.example_domain == "economics":
         title_text = topic.title.lower()
         if any(
+            phrase in title_text
+            for phrase in [
+                "movements along a demand curve",
+                "movements along a supply curve",
+                "consequences of changes in foreign exchange rate",
+            ]
+        ):
+            return "text explanation with optional mini case", "text-ok", "curve movement and consequence topics are clearer as source-bound explanation unless a graph change is requested"
+        if any(
             marker in text
             for marker in [
                 "ppc",
@@ -366,6 +375,7 @@ def choose_visual_type(
                     "supply curve",
                     "market equilibrium",
                     "market disequilibrium",
+                    "determination of foreign exchange rate",
                     "foreign exchange rate",
                 ]
             )
@@ -373,6 +383,7 @@ def choose_visual_type(
             or has_phrase("supply curve")
             or has_phrase("market equilibrium")
             or has_phrase("market disequilibrium")
+            or has_phrase("determination of foreign exchange rate")
             or has_phrase("foreign exchange rate")
         ):
             return "demand-supply curve and market diagram", "svg-basic", "market relationships need precise curve axes and labels"
@@ -406,6 +417,24 @@ def choose_visual_type(
         return "text explanation with optional history organizer", "text-ok", "history point can be explained in text unless chronology, causation, source evidence, or comparison is central"
 
     if profile.example_domain == "chemistry":
+        if any(has(word) for word in ["electrolysis", "reactivity"]):
+            return "chemistry process infographic", "infographic", "electrolysis and reactivity need linked apparatus, particles, and observations"
+        if any(has(word) for word in ["rate", "rates", "haber"]):
+            return "reaction-rate graph and particle explanation", "svg-basic", "rate topics need a precise graph before any richer illustration"
+        if any(has(word) for word in ["periodic", "group", "groups", "transition"]):
+            return "text explanation with structured comparison", "text-ok", "periodic trends are safer as source-bound text unless a reviewed table is supplied"
+        if any(
+            phrase in text
+            for phrase in [
+                "conservation of mass",
+                "amount of substance",
+                "mole concept",
+                "molar concentration",
+                "molar concentrations",
+                "quantitative",
+            ]
+        ) or any(has(word) for word in ["mole", "moles", "molar", "concentration", "concentrations"]):
+            return "text explanation with worked calculation", "text-ok", "quantity topics are clearer as worked calculations than as separate images"
         if any(has(word) for word in ["bond", "bonds", "bonding", "ionic", "covalent", "metallic", "structure", "structures"]):
             return "bonding and structure model", "infographic", "bonding and structure relationships need visual spatial explanation"
         if any(has(word) for word in ["organic", "hydrocarbon", "hydrocarbons", "polymer", "polymers", "crude", "carboxylic"]):
@@ -413,7 +442,9 @@ def choose_visual_type(
         if any(has(word) for word in ["electrolysis", "reactivity"]):
             return "chemistry process infographic", "infographic", "electrolysis and reactivity need linked apparatus, particles, and observations"
         if any(has(word) for word in ["chromatography", "purity", "pure", "mixture", "mixtures", "separation"]):
-            return "chromatography and purity method diagram", "svg-basic", "separation methods need a precise labelled method diagram"
+            return "chromatography text explanation with optional method notes", "text-ok", "chromatography needs a reviewed labelled method diagram before visual delivery"
+        if any(has(word) for word in ["salt", "salts", "redox", "equilibrium"]):
+            return "text explanation with structured chemistry steps", "text-ok", "this chemistry relationship is safer as text unless a reviewed process diagram is supplied"
         if any(has(word) for word in ["solid", "liquid", "liquids", "particle", "particles", "atom", "atoms"]):
             return "particle model with labelled states", "svg-basic", "state changes are clearer with particle arrangement and movement"
         if (
@@ -424,20 +455,37 @@ def choose_visual_type(
             return "common gas tests observation chart", "svg-basic", "gas tests need a structured observation and conclusion chart"
         if any(has(word) for word in ["acid", "acids", "base", "bases", "alkali", "alkalis", "salt", "salts", "ph"]):
             return "pH scale and preparation flow diagram", "svg-basic", "scales and preparation flow are clearer as diagrams"
-        if any(has(word) for word in ["rate", "rates", "equilibrium", "haber"]):
+        if any(has(word) for word in ["rate", "rates", "haber"]):
             return "reaction-rate graph and particle explanation", "svg-basic", "rate topics need a precise graph before any richer illustration"
         if any(has(word) for word in ["energy", "exothermic", "endothermic"]):
+            if "calculating" in text or "calculation" in text:
+                return "text explanation with worked calculation", "text-ok", "energy calculations are clearer as worked calculations than as separate images"
             return "reaction energy profile diagram", "svg-basic", "energy profile curves are visual by nature"
-        if any(has(word) for word in ["mole", "moles", "molar", "concentration", "concentrations"]):
-            return "text explanation with worked calculation", "text-ok", "quantity topics are clearer as worked calculations than as separate images"
 
     if profile.example_domain == "physics":
+        if has_phrase("use the following units") or has("units"):
+            return "text explanation with worked calculation", "text-ok", "unit lists are clearer as text and conversion practice"
         if has_phrase("distance-time") or has_phrase("speed-time") or has_phrase("velocity-time"):
             return "distance-time motion graph visual", "svg-basic", "motion graphs need axes and labelled line segments"
-        if any(has(word) for word in ["force", "forces", "newton", "acceleration", "motion"]):
-            return "force and motion diagram", "svg-basic", "force questions need precise arrows and labels"
-        if any(has(word) for word in ["circuit", "electricity", "current", "voltage"]):
-            return "circuit and measurement infographic", "infographic", "circuits need component placement and measurement labels"
+        if "falling objects" in text:
+            return "text explanation with optional force notes", "text-ok", "falling-object force balance is safer as text unless a reviewed free-body diagram is supplied"
+        if "force arrows" in text or "draw force arrows" in text:
+            return "force and motion force arrows", "svg-basic", "explicit force-arrow tasks need a labelled free-body style diagram"
+        if any(
+            phrase in text
+            for phrase in [
+                "forces acting",
+                "free-body",
+                "free body",
+                "unbalanced force",
+                "resultant force",
+            ]
+        ):
+            return "mechanics force or collision diagram", "svg-basic", "force questions need precise arrows and labels"
+        if any(has(word) for word in ["circuit", "electricity", "current", "voltage", "magnet", "magnetic", "motor"]):
+            return "text explanation with optional apparatus sketch", "text-ok", "electromagnetism is safer as text unless a reviewed apparatus diagram is supplied"
+        if any(has(word) for word in ["pressure", "density", "gas", "gases", "temperature", "fission", "fusion", "radioactive"]):
+            return "text explanation with worked calculation", "text-ok", "physics formula and nuclear topics are clearer as source-bound worked steps unless a reviewed diagram is supplied"
         return "text explanation with optional diagram", "text-ok", "physics point can be explained without a custom visual unless a graph, force diagram, or circuit is central"
 
     if profile.example_domain == "mathematics":

@@ -137,14 +137,14 @@ def resolve_subject_profile(
         return BUSINESS
     if looks_like_economics(text):
         return ECONOMICS
-    if looks_like_history(text):
-        return HISTORY
     if looks_like_chemistry(text):
         return CHEMISTRY
     if looks_like_biology(text):
         return BIOLOGY
     if looks_like_physics(text):
         return PHYSICS
+    if looks_like_history(text):
+        return HISTORY
     return GENERIC
 
 

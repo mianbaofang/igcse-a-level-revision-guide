@@ -228,10 +228,10 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert (output_dir / "sections" / "03_topic_navigation.txt").exists()
     assert (output_dir / "sections" / "04_topic_guides_and_examples.txt").exists()
     assert (output_dir / "images" / "visual_manifest.json").exists()
-    assert len(list((output_dir / "images").glob("*.svg"))) == 3
+    assert len(list((output_dir / "images").glob("*.svg"))) == 2
     html = (output_dir / "guide.html").read_text(encoding="utf-8")
     assert html.count('class="topic-diagram"') == 0
-    assert html.count('class="visual-example"') == 3
+    assert html.count('class="visual-example"') == 2
     assert "Concept Map" not in html
     assert "Visual Worked Example" in html
     assert "Delivery Status" in html
@@ -249,10 +249,10 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert validation["review_summary"]["image_provider"] == "deterministic-svg"
     assert validation["review_summary"]["explanation_style"] == "friendly"
     assert validation["review_summary"]["output_language"] == "en"
-    assert validation["review_summary"]["visual_briefs"] == 3
-    assert validation["review_summary"]["visual_examples_in_html"] == 3
+    assert validation["review_summary"]["visual_briefs"] == 2
+    assert validation["review_summary"]["visual_examples_in_html"] == 2
     assert validation["review_summary"]["section_files"] == 7
-    assert validation["review_summary"]["image_files"] == 3
+    assert validation["review_summary"]["image_files"] == 2
     assert validation["review_summary"]["has_visual_manifest"] is True
     assert validation["review_summary"]["has_package_manifest"] is True
     assert validation["review_summary"]["concept_jobs"] == 3
@@ -1157,7 +1157,7 @@ def test_visual_type_classifier_uses_subject_specific_infographics():
         ),
         ["A mixture consists of two or more substances not chemically combined."],
     )
-    assert chromatography_complexity == "svg-basic"
+    assert chromatography_complexity == "text-ok"
     assert "chromatography" in chromatography_visual
     assert "geometry" not in chromatography_visual
 

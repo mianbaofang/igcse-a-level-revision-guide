@@ -156,7 +156,7 @@ def test_plain_symbolic_mathematics_does_not_get_a_visual_by_default():
 def test_statistics_is_not_used_as_generic_fallback_for_unrelated_topics():
     unrelated_cases = [
         ("Accounting", "bank reconciliation", ["cash book, bank statement, unpresented cheques"], "svg-basic"),
-        ("Chemistry", "chromatography", ["separate dyes using chromatography and calculate Rf values"], "svg-basic"),
+        ("Chemistry", "chromatography", ["separate dyes using chromatography and calculate Rf values"], "text-ok"),
         ("Economics", "opportunity cost", ["choices, scarcity, opportunity cost, trade-offs"], "text-ok"),
     ]
 

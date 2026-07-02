@@ -97,6 +97,64 @@ def test_accounting_business_topic_does_not_trigger_trigonometry_template():
     assert "public sector organisations" in text
 
 
+def test_term_support_language_still_writes_english_concept_body():
+    entry = SCRIPT_MODULE.write_entry(
+        {
+            "topic_title": "P1.1 Algebra: Quadratic functions",
+            "source_points": ["Sketch and interpret quadratic graphs."],
+            "output_language": "zh-CN",
+            "subject_pack": "mathematics",
+        }
+    )
+
+    text = " ".join(
+        [
+            entry["essence"],
+            entry["analogy"],
+            entry["mini_worked_example"],
+            entry["pitfall"],
+            *entry["worked_solution_steps"],
+            *entry["explanations"],
+        ]
+    )
+
+    assert "quadratic" in text.lower()
+    assert not any("\u4e00" <= char <= "\u9fff" for char in text)
+
+
+def test_business_topic_does_not_trigger_math_or_physics_templates():
+    entry = SCRIPT_MODULE.write_entry(
+        {
+            "topic_title": "1.2 - Stakeholders",
+            "source_points": [
+                "Main stakeholders of businesses.",
+                "Objectives of stakeholders and how they can conflict.",
+            ],
+            "output_language": "en",
+            "subject_pack": "business",
+        }
+    )
+
+    text = " ".join(
+        [
+            entry["essence"],
+            entry["analogy"],
+            entry["mini_worked_example"],
+            entry["pitfall"],
+            *entry["worked_solution_steps"],
+            *entry["explanations"],
+        ]
+    ).lower()
+
+    assert "business" in text
+    assert "stakeholder" in text
+    assert "angles to side ratios" not in text
+    assert "periodic graph values" not in text
+    assert "two skaters" not in text
+    assert "masses and velocities" not in text
+    assert "momentum equation" not in text
+
+
 def test_accounting_depreciation_does_not_trigger_coordinate_geometry_template():
     entry = SCRIPT_MODULE.write_entry(
         {

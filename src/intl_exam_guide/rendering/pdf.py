@@ -51,7 +51,9 @@ def export_pdf_with_playwright(html_path: Path, pdf_path: Path) -> Path:
                     path=str(pdf_path.resolve()),
                     print_background=True,
                     prefer_css_page_size=True,
+                    display_header_footer=False,
                 )
+                trim_trailing_blank_pdf_pages(pdf_path)
                 return pdf_path
             except PlaywrightError as exc:
                 label = channel or "bundled chromium"
@@ -101,6 +103,31 @@ def export_pdf_with_browser_cli(html_path: Path, pdf_path: Path) -> Path:
             detail = (exc.stderr or exc.stdout or "").strip().splitlines()
             suffix = f" {detail[0]}" if detail else ""
             raise PdfExportError(f"Browser PDF export failed.{suffix}") from exc
+    trim_trailing_blank_pdf_pages(pdf_path)
+    return pdf_path
+
+
+def trim_trailing_blank_pdf_pages(pdf_path: Path, min_text_chars: int = 80) -> Path:
+    """Remove only trailing pages with almost no extractable text."""
+
+    try:
+        from pypdf import PdfReader, PdfWriter
+
+        reader = PdfReader(str(pdf_path))
+        last_content_index = -1
+        for index, page in enumerate(reader.pages):
+            text = (page.extract_text() or "").strip()
+            if len(text) >= min_text_chars:
+                last_content_index = index
+        if last_content_index < 0 or last_content_index == len(reader.pages) - 1:
+            return pdf_path
+        writer = PdfWriter()
+        for page in reader.pages[: last_content_index + 1]:
+            writer.add_page(page)
+        with pdf_path.open("wb") as handle:
+            writer.write(handle)
+    except Exception:
+        return pdf_path
     return pdf_path
 
 

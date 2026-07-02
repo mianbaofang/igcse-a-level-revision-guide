@@ -34,12 +34,10 @@ def main() -> int:
 def write_entry(job: dict[str, object]) -> dict[str, object]:
     topic_title = str(job.get("topic_title") or "")
     source_points = [str(point) for point in job.get("source_points", []) if str(point).strip()]
-    language = str(job.get("output_language") or "en")
     subject_pack = str(job.get("subject_pack") or "").lower()
     first_point = clean_point(source_points[0] if source_points else topic_title)
     topic_focus = clean_topic_focus(topic_title)
-    if language == "zh-CN":
-        return write_zh_entry(topic_title, topic_focus, first_point, source_points, subject_pack)
+    # Term-support languages add a glossary only; handbook body prose stays English.
     return write_en_entry(topic_title, topic_focus, first_point, source_points, subject_pack)
 
 
@@ -228,6 +226,14 @@ def en_essence(concept: str, lower: str, subject_pack: str) -> str:
         return "Translation of circles is about moving the centre of a circle while keeping its radius unchanged."
     if "relative frequencies" in lower or "equally likely outcomes" in lower:
         return "Assigning probabilities here means choosing the right basis: observed relative frequency or counting equally likely outcomes."
+    if subject_pack == "accounting":
+        return f"{concept} is about recording, classifying, or checking financial information in the required accounting format."
+    if subject_pack == "business":
+        return f"{concept} is about how a business decision affects objectives, stakeholders, customers, operations, finance, or people."
+    if subject_pack == "economics":
+        return f"{concept} is about how economic choices create incentives, constraints, and consequences."
+    if subject_pack != "mathematics":
+        return f"{concept} is the specific source-bound idea that the question wants you to define, connect, and apply."
     if "exponential" in lower and "graph" in lower:
         return f"{concept} is about recognising how an exponential graph changes, especially its growth/decay shape and asymptote."
     if "graph" in lower or "curve" in lower:
@@ -240,10 +246,6 @@ def en_essence(concept: str, lower: str, subject_pack: str) -> str:
         return f"{concept} is about modelling uncertain outcomes with a defined probability rule."
     if any(word in lower for word in ["momentum", "impulse", "impact", "collision"]):
         return f"{concept} tracks motion through mass, velocity, and the change caused by an impact or impulse."
-    if subject_pack == "accounting":
-        return f"{concept} is about recording, classifying, or checking financial information in the required accounting format."
-    if subject_pack == "economics":
-        return f"{concept} is about how economic choices create incentives, constraints, and consequences."
     return f"{concept} is the specific syllabus idea that the question wants you to define, connect, and apply."
 
 
@@ -257,6 +259,8 @@ def en_definition_sentence(
         return "Competition dynamics describe how firms respond over time to rival pressure, with short-run effects such as price or service changes and long-run effects such as innovation, efficiency, and consumer choice."
     if "competitive market process" in lower or "compete on price" in lower:
         return "Non-price competition means firms try to win customers by improving product quality, reducing costs, or improving service rather than only cutting price."
+    if subject_pack in {"accounting", "business", "economics", "history"}:
+        return source_bound_definition_sentence(concept, source_points, subject_pack)
     if "use of factorisation" in lower:
         return "Using factorisation to solve means rewriting an expression as factors and then applying the zero-product rule."
     if "discriminant of a quadratic" in lower:
@@ -335,6 +339,28 @@ def en_relationship_sentence(
         return "The relationship is between rival pressure, firms' responses, and the short-run or long-run benefits that may result for consumers and the market."
     if "competitive market process" in lower or "compete on price" in lower:
         return "The relationship is that competition creates pressure on firms to improve product quality, reduce costs, and improve service so they can attract or keep customers."
+    if subject_pack == "accounting":
+        fragments = usable_source_fragments(source_points)
+        if len(fragments) >= 2:
+            return f"The relationship is between {fragments[0]} and {fragments[1]}, staying inside this accounting unit."
+        if fragments:
+            return f"The relationship to track is the accounting purpose named here: {fragments[0]}."
+        return f"The relationship is the accounting record, statement, or control purpose that makes {concept} a separate syllabus point."
+    if subject_pack == "economics":
+        fragments = usable_source_fragments(source_points)
+        if fragments:
+            return f"The relationship to track is the economic cause, choice, cost, or consequence named here: {fragments[0]}."
+        return f"The relationship is the economic link that makes {concept} a separate syllabus point."
+    if subject_pack == "business":
+        fragments = usable_source_fragments(source_points)
+        if fragments:
+            return f"The relationship to track is the business decision, stakeholder, market, operation, or finance link named here: {fragments[0]}."
+        return f"The relationship is the business link that makes {concept} a separate syllabus point."
+    if subject_pack == "history":
+        fragments = usable_source_fragments(source_points)
+        if fragments:
+            return f"The relationship to track is the event, cause, consequence, source, or change named here: {fragments[0]}."
+        return f"The relationship is the historical link that makes {concept} a separate syllabus point."
     if "use of factorisation" in lower:
         return "The relationship is that if (x-a)(x-b)=0, then each factor gives one possible solution."
     if "discriminant of a quadratic" in lower:
@@ -418,16 +444,20 @@ def en_analogy(concept: str, lower: str, subject_pack: str) -> str:
         return "Think of competition as a race over several laps: an early price or service response can become longer-term efficiency or innovation."
     if "competitive market process" in lower or "compete on price" in lower:
         return "Think of rival firms as runners in a race: one can lower price, but another can still compete by offering a better product or faster service."
+    if subject_pack == "accounting":
+        return "Think of the accounting record as a receipt trail: each entry must explain where the number came from and where it goes."
+    if subject_pack == "business":
+        return "Think of the business as a control room: each decision changes costs, customers, workers, owners, or long-term direction."
+    if subject_pack == "economics":
+        return "Think of a market as a set of nudges: every cost, benefit, or rule changes somebody's choice."
+    if subject_pack != "mathematics":
+        return f"Think of {concept} as the signpost that tells you which source-bound idea the question is asking for."
     if "graph" in lower or "curve" in lower:
         return "Think of the graph as a map: the route shape tells you more than a list of isolated points."
     if "probability" in lower:
         return "Think of it as setting the rules of a game before you count possible results."
     if "momentum" in lower or "impact" in lower:
         return "Think of two skaters pushing off: direction and speed both matter, not just who is heavier."
-    if subject_pack == "accounting":
-        return "Think of the accounting record as a receipt trail: each entry must explain where the number came from and where it goes."
-    if subject_pack == "economics":
-        return "Think of a market as a set of nudges: every cost, benefit, or rule changes somebody's choice."
     return f"Think of {concept} as the signpost that tells you which tool the question is asking for."
 
 
@@ -436,6 +466,14 @@ def en_mini_example(concept: str, lower: str, subject_pack: str) -> str:
         return "A typical question asks you to explain how competition may benefit consumers immediately and how it may improve efficiency, innovation, or choice over time."
     if "competitive market process" in lower or "compete on price" in lower:
         return "A typical question describes rival firms and asks why competition may lead to improved products, lower costs, or better service even when prices are not cut."
+    if subject_pack == "accounting":
+        return "A typical question gives transaction data and asks you to place it in the correct record or statement."
+    if subject_pack == "business":
+        return "A typical question gives a business situation and asks you to explain the effect on objectives, stakeholders, customers, operations, or finance."
+    if subject_pack == "economics":
+        return "A typical question gives a real market situation and asks you to explain the cause-and-effect chain."
+    if subject_pack != "mathematics":
+        return f"A typical question asks you to recognise {concept}, connect it to the source point, and apply it to the given situation."
     if "use of factorisation" in lower:
         return "A typical question asks you to factorise first, set each factor equal to zero, and list all valid solutions."
     if "discriminant of a quadratic" in lower:
@@ -452,10 +490,6 @@ def en_mini_example(concept: str, lower: str, subject_pack: str) -> str:
         return "A typical question defines the outcomes first, then asks for a probability, expectation, or distribution value."
     if "momentum" in lower or "impact" in lower:
         return "A typical question gives masses and velocities, then asks you to write the before-and-after momentum equation."
-    if subject_pack == "accounting":
-        return "A typical question gives transaction data and asks you to place it in the correct record or statement."
-    if subject_pack == "economics":
-        return "A typical question gives a real market situation and asks you to explain the cause-and-effect chain."
     return f"A typical question asks you to recognise {concept}, state the relevant relationship, then apply it to the given data."
 
 
@@ -473,6 +507,34 @@ def en_steps(concept: str, lower: str, subject_pack: str) -> list[str]:
             "State whether the response is price competition or non-price competition.",
             "Explain the firm behaviour, such as product improvement, cost reduction, or service improvement.",
             "Link the behaviour to gaining or retaining customers.",
+        ]
+    if subject_pack == "accounting":
+        return [
+            "Identify the source document, transaction, or statement named in the question.",
+            "Place each amount in the correct side, column, or section.",
+            "Apply the relevant accounting rule or control purpose.",
+            "Check that totals, balances, and labels answer the question.",
+        ]
+    if subject_pack == "business":
+        return [
+            "Identify the business decision, issue, or stakeholder named in the question.",
+            "Explain the likely effect on costs, revenue, customers, workers, owners, or operations.",
+            "Use the source point to keep the answer inside the required business idea.",
+            "Finish with a judgement or recommendation when the command word asks for one.",
+        ]
+    if subject_pack == "economics":
+        return [
+            "Identify the decision maker or market in the scenario.",
+            "State the incentive, constraint, cost, or benefit involved.",
+            "Explain the chain of effects using the correct economic term.",
+            "Finish with the result or judgement asked for by the command word.",
+        ]
+    if subject_pack != "mathematics":
+        return [
+            "Identify the exact source-bound idea named by the question.",
+            "State the relationship, boundary, or effect described in the source point.",
+            "Apply it only to the given situation.",
+            "Check that the answer does not import a different topic.",
         ]
     if "use of factorisation" in lower:
         return [
@@ -523,20 +585,6 @@ def en_steps(concept: str, lower: str, subject_pack: str) -> list[str]:
             "Apply the stated conservation, impulse, or restitution relationship.",
             "Check signs and units before giving the final velocity or statement.",
         ]
-    if subject_pack == "accounting":
-        return [
-            "Identify the source document, transaction, or statement named in the question.",
-            "Place each amount in the correct side, column, or section.",
-            "Apply the relevant accounting rule or control purpose.",
-            "Check that totals, balances, and labels answer the question.",
-        ]
-    if subject_pack == "economics":
-        return [
-            "Identify the decision maker or market in the scenario.",
-            "State the incentive, constraint, cost, or benefit involved.",
-            "Explain the chain of effects using the correct economic term.",
-            "Finish with the result or judgement asked for by the command word.",
-        ]
     return [
         "Identify the exact syllabus idea named by the question.",
         "Write the definition, formula, graph feature, or relationship it uses.",
@@ -550,6 +598,14 @@ def en_pitfall(concept: str, lower: str, subject_pack: str) -> str:
         return "The common error is listing benefits of competition without separating short-run responses from long-run market outcomes."
     if "competitive market process" in lower or "compete on price" in lower:
         return "The common error is treating competition as only a price cut and ignoring product quality, cost reduction, and service improvement."
+    if subject_pack == "accounting":
+        return "The common error is using the right number in the wrong account, side, or statement section."
+    if subject_pack == "business":
+        return "The common error is giving a definition without explaining the effect on the business or stakeholder in the context."
+    if subject_pack == "economics":
+        return "The common error is naming a concept without explaining the cause-and-effect chain in the scenario."
+    if subject_pack != "mathematics":
+        return f"The common error is writing a memorised phrase about {concept} without using the source-bound condition in the question."
     if "use of factorisation" in lower:
         return "The common error is finding the factors but not setting each factor equal to zero."
     if "discriminant of a quadratic" in lower:
@@ -564,10 +620,6 @@ def en_pitfall(concept: str, lower: str, subject_pack: str) -> str:
         return "Do not plot random points when the mark is for a named graph feature such as a root, gradient, asymptote, vertex, or transformation."
     if "momentum" in lower or "impact" in lower:
         return "The common error is changing direction signs halfway through the momentum or restitution equation."
-    if subject_pack == "accounting":
-        return "The common error is using the right number in the wrong account, side, or statement section."
-    if subject_pack == "economics":
-        return "The common error is naming a concept without explaining the cause-and-effect chain in the scenario."
     return f"The common error is writing a memorised phrase about {concept} without using the actual condition in the question."
 
 

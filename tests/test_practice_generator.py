@@ -98,6 +98,33 @@ def test_accounting_and_chemistry_examples_route_to_subject_specific_branches():
     assert "ledger" not in chemistry_text
 
 
+def test_physics_examples_route_to_physics_not_math_fallbacks():
+    cases = [
+        (
+            "5.5 - pressure, force and area",
+            "pressure = force / area",
+            ["pressure", "400 pa"],
+        ),
+        (
+            "5.21 - pressure and Kelvin temperature of a fixed mass of gas",
+            "gas at constant volume",
+            ["constant volume", "pressure increases"],
+        ),
+        (
+            "7.19 - fission of U-235",
+            "number of neutrons",
+            ["fission", "daughter nuclei"],
+        ),
+    ]
+
+    for title, focus, expected_terms in cases:
+        text = combined_text(concrete_example(Topic(title=title, points=[focus]), focus, 0, "Physics"))
+        assert "right-angled triangle" not in text
+        assert "drink is mixed" not in text
+        for expected in expected_terms:
+            assert expected in text
+
+
 def test_mathematics_algebra_example_is_not_generic():
     question, frame, steps, checkpoints = concrete_example(
         Topic(title="A2 - Algebra and equations", points=["Solve linear equations."]),

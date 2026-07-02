@@ -493,6 +493,10 @@ th, td { border: 1px solid var(--line); padding: 10px 12px; vertical-align: top;
     padding: 7mm 0;
     border-bottom: 1px solid var(--line);
   }
+  body > section:last-of-type {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
   .band > *,
   .topic > * {
     max-width: none;

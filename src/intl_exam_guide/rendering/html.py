@@ -598,14 +598,15 @@ def render_visual_example(
     language: str = "en",
 ) -> str:
     title = display_topic_title(topic, index, language)
+    asset = (visual_assets or {}).get(visual_asset_key_from_brief(visual))
     if visual.complexity == "infographic":
-        asset = (visual_assets or {}).get(visual_asset_key_from_brief(visual))
         source = topic.source_snippets[0] if topic.source_snippets else None
         source_label = format_source_reference(source, language)
         return render_infographic_required(title, visual, asset, source_label, language)
 
     source = topic.source_snippets[0] if topic.source_snippets else None
     source_label = format_source_reference(source, language)
+    visual_html = render_manifest_visual_asset(title, visual, asset) or render_topic_visual_svg(visual, index, language)
     model_note = (
         (
             "Local SVG draft"
@@ -644,7 +645,7 @@ def render_visual_example(
 <figure class="visual-example" aria-label="Visual worked example for {html_escape(title)}">
   <figcaption>{render_icon("visual")}<span>{html_escape(caption)}</span></figcaption>
   <div class="visual-grid">
-    {render_topic_visual_svg(visual, index, language)}
+    {visual_html}
     <div class="visual-notes">
       <div class="visual-model">{html_escape(model_note)}</div>
       <div class="visual-source">{html_escape(source_prefix)}: {html_escape(source_label)}</div>
@@ -654,6 +655,27 @@ def render_visual_example(
   </div>
 </figure>
 """
+
+
+def render_manifest_visual_asset(
+    title: str,
+    visual: VisualBrief,
+    asset: dict[str, Any] | None,
+) -> str:
+    if not asset:
+        return ""
+    filename = str(asset.get("file") or "")
+    if not filename:
+        return ""
+    status = str(asset.get("asset_status") or "").lower()
+    if visual.image_provider != "kroki" and status not in {"reviewed-generated", "generated", "provider-selected-generated"}:
+        return ""
+    if Path(filename).suffix.lower() not in {".svg", ".png", ".jpg", ".jpeg", ".webp"}:
+        return ""
+    return (
+        f'<img class="visual-svg visual-asset" '
+        f'src="images/{html_escape(filename)}" alt="{html_escape(title)} visual">'
+    )
 
 
 

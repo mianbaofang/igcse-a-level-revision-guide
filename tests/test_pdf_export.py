@@ -130,6 +130,7 @@ def test_export_pdf_with_playwright_success_closes_browser(monkeypatch, tmp_path
     assert pdf_events
     assert pdf_events[0][1]["print_background"] is True
     assert pdf_events[0][1]["prefer_css_page_size"] is True
+    assert pdf_events[0][1]["display_header_footer"] is False
 
 
 def test_export_pdf_with_playwright_reports_launch_failures(monkeypatch, tmp_path):
@@ -330,3 +331,45 @@ def test_export_pdf_with_browser_cli_success_uses_expected_flags(monkeypatch, tm
     assert "--no-pdf-header-footer" in command
     assert f"--print-to-pdf={str(pdf_path.resolve())}" in command
     assert html_path.resolve().as_uri() in command
+
+
+def test_trim_trailing_blank_pdf_pages_removes_only_tail(monkeypatch, tmp_path):
+    pdf_path = tmp_path / "guide.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n")
+    added_texts: list[str] = []
+
+    class FakePage:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+        def extract_text(self) -> str:
+            return self.text
+
+    content_text = (
+        "This page has enough extractable text to count as real content, "
+        "with more than eighty characters."
+    )
+
+    class FakeReader:
+        pages = [
+            FakePage(content_text),
+            FakePage(""),
+            FakePage(""),
+        ]
+
+    class FakeWriter:
+        def add_page(self, page: FakePage) -> None:
+            added_texts.append(page.text)
+
+        def write(self, handle) -> None:
+            handle.write(b"%PDF-1.4\ntrimmed")
+
+    fake_pypdf = types.ModuleType("pypdf")
+    fake_pypdf.PdfReader = lambda _path: FakeReader()
+    fake_pypdf.PdfWriter = FakeWriter
+    monkeypatch.setitem(sys.modules, "pypdf", fake_pypdf)
+
+    assert pdf.trim_trailing_blank_pdf_pages(pdf_path) == pdf_path
+
+    assert added_texts == [content_text]
+    assert pdf_path.read_bytes().endswith(b"trimmed")

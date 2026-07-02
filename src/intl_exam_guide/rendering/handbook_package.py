@@ -132,8 +132,6 @@ def write_sections(
 def write_visual_assets(plan: GuidePlan, images_dir: Path) -> list[Path]:
     existing_entries = load_visual_manifest(images_dir)
     existing_by_key = build_visual_asset_lookup(existing_entries)
-    for old_svg in images_dir.glob("*.svg"):
-        old_svg.unlink()
     manifest = []
     written: list[Path] = []
     for index, brief in enumerate(plan.visual_briefs, start=1):
@@ -153,16 +151,28 @@ def write_visual_assets(plan: GuidePlan, images_dir: Path) -> list[Path]:
             filename = f"visual_{index:03d}_{slugify(brief.topic_title)}.svg"
             path = images_dir / filename
             if brief.image_provider == "kroki":
-                try:
-                    render_kroki_svg_asset(brief, path)
-                    written.append(path)
-                    asset_status = "kroki-generated"
-                    review_status = "draft"
-                except KrokiRenderError as exc:
-                    filename = None
-                    asset_status = "professional-diagram-required"
-                    review_status = "pending"
-                    previous = {**previous, "kroki_error": str(exc)}
+                previous_file = str(previous.get("file") or "")
+                previous_status = str(previous.get("asset_status") or "").lower()
+                if (
+                    previous_status in {"kroki-generated", "reviewed-generated", "generated"}
+                    and previous_file.lower().endswith(".svg")
+                    and (images_dir / previous_file).exists()
+                ):
+                    filename = previous_file
+                    written.append(images_dir / filename)
+                    asset_status = str(previous.get("asset_status") or "kroki-generated")
+                    review_status = str(previous.get("review_status") or "draft")
+                else:
+                    try:
+                        render_kroki_svg_asset(brief, path)
+                        written.append(path)
+                        asset_status = "kroki-generated"
+                        review_status = "draft"
+                    except KrokiRenderError as exc:
+                        filename = None
+                        asset_status = "professional-diagram-required"
+                        review_status = "pending"
+                        previous = {**previous, "kroki_error": str(exc)}
             else:
                 path.write_text(
                     render_topic_visual_svg(brief, index, handbook_body_language(plan.run_options.output_language)).strip(),

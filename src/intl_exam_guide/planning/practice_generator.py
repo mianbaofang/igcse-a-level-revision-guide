@@ -147,6 +147,8 @@ def concrete_example(
     profile = resolve_subject_profile(subject_area, topic, text)
     if profile.example_domain == "chemistry":
         return chemistry_example(text, focus, number)
+    if profile.example_domain == "physics":
+        return physics_example(text, focus, number)
     if profile.example_domain == "biology":
         return biology_example(text, focus, number)
     if profile.example_domain == "business":
@@ -568,6 +570,61 @@ def accounting_example_zh(
         ["找出业务事件。", "匹配对应会计记录或规则。", "说明对账户或报表的影响。"],
         [f"本题考查“{visible_focus}”。", "先把业务事件转成会计语言。", "再应用分类、计算或复式记账逻辑。", "最后说明对利润、资产、负债、权益或记录核对的影响。"],
         ["使用会计记录或报表。", "说明影响，而不是只背词。", "没有借用其他科目的题型。"],
+    )
+
+
+def physics_example(
+    text: str,
+    focus: str,
+    number: int,
+) -> tuple[str, list[str], list[str], list[str]]:
+    if any(word in text for word in ["gas", "kelvin", "temperature", "volume"]):
+        return (
+            "A fixed mass of gas is heated at constant volume. Explain what happens to the pressure.",
+            ["Keep the condition fixed.", "Link temperature to particle motion.", "Link collisions to pressure."],
+            ["The volume and amount of gas stay constant.", "A higher Kelvin temperature means the gas particles have more kinetic energy.", "They collide with the container walls more often and with greater force.", "So the pressure increases."],
+            ["Constant volume is used.", "Particle motion is mentioned.", "Pressure change is linked to collisions."],
+        )
+    if any(word in text for word in ["pressure", "area", "forcepressure"]):
+        return (
+            "A force of 120 N acts on an area of 0.30 m2. Calculate the pressure.",
+            ["Identify force and area.", "Use pressure = force / area.", "Give the unit."],
+            ["Pressure = force / area.", "Pressure = 120 / 0.30.", "Pressure = 400.", "Answer: 400 Pa."],
+            ["Force is divided by area.", "The area is in m2.", "The answer uses pascals."],
+        )
+    if any(word in text for word in ["fission", "fusion", "radioactive", "neutron", "nuclei"]):
+        return (
+            "In nuclear fission, a U-235 nucleus absorbs a neutron and splits. State two products of the fission process.",
+            ["Identify the starting nucleus.", "Recall what fission produces.", "State two products clearly."],
+            ["Fission is the splitting of a large unstable nucleus.", "The nucleus splits into two smaller daughter nuclei.", "It also releases neutrons and energy.", "Answer: daughter nuclei and neutrons are two products."],
+            ["Does not describe chemical burning.", "Mentions nuclei or neutrons.", "States products, not just 'radiation'."],
+        )
+    if any(word in text for word in ["acceleration", "velocity", "speed", "distance", "motion"]):
+        return (
+            "A trolley changes velocity from 2.0 m/s to 8.0 m/s in 3.0 s. Calculate its acceleration.",
+            ["Find the change in velocity.", "Use acceleration = change in velocity / time.", "Check the unit."],
+            ["Change in velocity = 8.0 - 2.0 = 6.0 m/s.", "Acceleration = 6.0 / 3.0.", "Acceleration = 2.0 m/s2.", "Answer: 2.0 m/s2."],
+            ["Final minus initial velocity is used.", "Time is in seconds.", "The unit is m/s2."],
+        )
+    if any(word in text for word in ["force", "newton", "mass", "weight"]):
+        return (
+            "A 4.0 kg object accelerates at 3.0 m/s2. Calculate the resultant force.",
+            ["Identify mass and acceleration.", "Use force = mass x acceleration.", "Give the unit."],
+            ["Force = mass x acceleration.", "Force = 4.0 x 3.0.", "Force = 12.", "Answer: 12 N."],
+            ["Mass is in kg.", "Acceleration is in m/s2.", "The answer uses newtons."],
+        )
+    if any(word in text for word in ["circuit", "current", "voltage", "resistance"]):
+        return (
+            "A resistor has a potential difference of 6.0 V and a current of 0.50 A. Calculate its resistance.",
+            ["Identify voltage and current.", "Use resistance = voltage / current.", "Give the unit."],
+            ["Resistance = voltage / current.", "Resistance = 6.0 / 0.50.", "Resistance = 12.", "Answer: 12 ohms."],
+            ["Voltage is divided by current.", "The unit is ohms.", "The calculation uses the component values."],
+        )
+    return (
+        f"Use the physics idea '{focus}' in a short exam answer: state the quantity or process, then link it to a condition, observation, or unit.",
+        ["Identify the physical quantity or process.", "State the law, relationship, or condition.", "Apply it to the given situation."],
+        [f"The focus is {focus}.", "A correct answer names the physical relationship first.", "It then applies the relationship to the situation.", "The final sentence checks the unit, condition, or observation."],
+        ["Uses physics quantities.", "Does not borrow a mathematics-only context.", "Checks units or conditions."],
     )
 
 

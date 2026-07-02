@@ -154,7 +154,7 @@ def test_import_infographic_assets_updates_manifest(tmp_path):
     assert all(entry["asset"]["sha256"] for entry in manifest)
     assert (images_dir / "visual_001_custom.png").exists()
     assert (images_dir / "visual_002.png").exists()
-    assert "Imported 2 infographic asset(s)." in result.stdout
+    assert "Imported 2 visual asset(s)." in result.stdout
     assert f"python -m intl_exam_guide review --out {output_dir}" in result.stdout
 
 
@@ -219,6 +219,42 @@ def test_import_infographic_assets_replaces_provider_selected_pending_asset(tmp_
     manifest = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
     assert manifest[0]["file"] == "visual_001.png"
     assert manifest[0]["asset_status"] == "reviewed-generated"
+
+
+def test_import_infographic_assets_replaces_pending_professional_diagram(tmp_path):
+    output_dir = tmp_path / "guide"
+    images_dir = output_dir / "images"
+    asset_dir = tmp_path / "generated"
+    images_dir.mkdir(parents=True)
+    asset_dir.mkdir()
+    (asset_dir / "visual_001.svg").write_text('<svg viewBox="0 0 10 10"></svg>', encoding="utf-8")
+    (images_dir / "visual_manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "visuals": [
+                    {
+                        "id": "visual_001",
+                        "complexity": "svg-basic",
+                        "asset_status": "professional-diagram-required",
+                        "file": None,
+                    }
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_import(output_dir, asset_dir)
+
+    assert result.returncode == 0
+    manifest_payload = json.loads((images_dir / "visual_manifest.json").read_text(encoding="utf-8"))
+    manifest = manifest_payload["visuals"]
+    assert manifest[0]["file"] == "visual_001.svg"
+    assert manifest[0]["asset_status"] == "reviewed-generated"
+    assert manifest[0]["asset"]["width"] == 10
+    assert manifest[0]["asset"]["height"] == 10
 
 
 def test_import_infographic_assets_matches_previous_manifest_key_after_id_shift(tmp_path):

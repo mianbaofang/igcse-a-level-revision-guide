@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.4.1 - 2026-07-02
+
+### Fixed
+
+- Locked term-support languages to the product rule: the handbook body, worked
+  examples, labels, and visual prompts stay English; `zh-CN`, `zh-TW`, `ja`,
+  and other reviewed support languages add only a 30-50 item professional
+  glossary.
+- Fixed cross-subject template leakage found in real samples so Business,
+  Economics, Physics, Accounting, and History routes no longer borrow
+  mathematics, momentum, ledger, or stakeholder examples from the wrong subject.
+- Filtered Cambridge and Pearson boilerplate, footer text, feedback markers,
+  and malformed formula extraction before those source points can reach
+  roadmap mastery cells, explanations, practice, or visual prompts.
+- Tightened visual routing so local SVG is used only for simple deterministic
+  diagrams, Kroki professional diagrams are written and rendered from the visual
+  manifest, and dense educational infographics remain pending until reviewed
+  external image assets are imported.
+- Fixed PDF export quality by disabling browser header/footer output and
+  trimming trailing blank pages produced by the renderer.
+
+### Verified
+
+- Fresh final-ready samples were generated and reviewed for AQA AS Mathematics,
+  Cambridge IGCSE Economics 0455, OxfordAQA IGCSE Business, Pearson IGCSE
+  Accounting, Pearson IGCSE Physics 2017, and Cambridge IGCSE History 0470.
+  Each has zero validation errors, zero pending concept explanations, zero
+  blank PDF text pages, and no local-file footer leakage.
+- OxfordAQA IGCSE Chemistry was deliberately left as `draft_needs_image_review`
+  after concept review because it has 10 dense infographics pending external
+  image generation. This is the expected behavior: pending image work must not
+  be presented as final.
+
 ## 0.4 - 2026-07-02
 
 ### Changed
