@@ -142,6 +142,16 @@ def test_course_contract_payload_exposes_delivery_state_without_mutating_plan():
 
     assert payload["schema_version"] == "v0.4-core-mvp"
     assert payload["delivery_state"] == "review-ready"
+    orchestration = payload["agent_orchestration"]
+    roles = {role["role_id"]: role for role in orchestration["roles"]}
+    assert orchestration["final_reviewer_independent"] is True
+    assert roles["syllabus_outline_analyst"]["status"] == "complete"
+    assert roles["handbook_writer"]["status"] == "complete"
+    assert roles["final_reviewer"]["status"] == "pending"
+    assert roles["final_reviewer"]["independent_from"] == [
+        "syllabus_outline_analyst",
+        "handbook_writer",
+    ]
     assert payload["course_spec"]["provider"] == "oxfordaqa"
     assert payload["learning_units"][0]["id"] == "unit_001"
     assert payload["pedagogical_units"][0]["writing_job_id"] == "concept_001"
@@ -154,3 +164,19 @@ def test_course_contract_payload_final_ready_requires_agent_review():
 
     assert payload["delivery_state"] == "final-ready"
     assert payload["pedagogical_units"][0]["delivery_state"] == "final-ready"
+    roles = {role["role_id"]: role for role in payload["agent_orchestration"]["roles"]}
+    assert roles["final_reviewer"]["status"] == "complete"
+    assert roles["final_reviewer"]["evidence"] == ["final-review-packet.json"]
+
+
+def test_course_contract_payload_separates_review_performed_from_ready_verdict():
+    payload = course_contract_payload(
+        guide_plan(),
+        delivery_status="ready",
+        agent_review_ready=False,
+        final_review_complete=True,
+    )
+
+    roles = {role["role_id"]: role for role in payload["agent_orchestration"]["roles"]}
+    assert payload["delivery_state"] == "review-ready"
+    assert roles["final_reviewer"]["status"] == "complete"

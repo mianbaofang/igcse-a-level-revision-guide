@@ -54,6 +54,14 @@ syllabus, expand it into teachable topic units, write reviewed concept
 explanations from the current topic/source points, create worked examples,
 decide which points need visuals, and deliver HTML/PDF output.
 
+The workflow is recorded as a minimum three-role agent process. The syllabus and
+outline analyst turns official sources into course and learning-unit contracts;
+the handbook writer creates source-bound explanations, practice, visuals, HTML,
+and PDF; the final reviewer is recorded separately and must be independent from
+the first two roles before an output can be treated as final-ready. The evidence
+is written to `agent-orchestration.json`, `delivery-contract.json`, and
+`final-review-packet.json`.
+
 Delivery quality claims are tracked in the delivery matrix at
 `tests/fixtures/delivery_matrix.json`. Each route has an explicit claim status
 and a v0.4 release-evidence status. Candidate routes must not be described as
@@ -133,6 +141,7 @@ outputs/chemistry-9202/
   guide-plan.json            topic, example, and revision-task plan
   qualification.json         qualification and source metadata
   validation.json            quality-check report
+  agent-orchestration.json   syllabus/writer/reviewer role evidence
   final-review-packet.json   Agent/LLM final self-review evidence
   handbook-package.json      final delivery manifest
 ```

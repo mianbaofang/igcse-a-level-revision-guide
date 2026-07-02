@@ -223,6 +223,7 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert (output_dir / "qualification.json").exists()
     assert (output_dir / "run-options.json").exists()
     assert (output_dir / "delivery-contract.json").exists()
+    assert (output_dir / "agent-orchestration.json").exists()
     assert (output_dir / "handbook-package.json").exists()
     assert (output_dir / "sections" / "00_css.txt").exists()
     assert (output_dir / "sections" / "03_topic_navigation.txt").exists()
@@ -260,8 +261,16 @@ def test_demo_cli_generates_offline_guide(tmp_path):
     assert validation["delivery_status"] == "draft_needs_concept_review"
     assert validation["delivery_state"] == "draft"
     delivery_contract = json.loads((output_dir / "delivery-contract.json").read_text(encoding="utf-8"))
+    orchestration = json.loads((output_dir / "agent-orchestration.json").read_text(encoding="utf-8"))
+    roles = {role["role_id"]: role for role in orchestration["roles"]}
     assert delivery_contract["delivery_state"] == "draft"
     assert delivery_contract["course_spec"]["title"] == validation["qualification"]
+    assert validation["agent_orchestration"] == str(output_dir / "agent-orchestration.json")
+    assert delivery_contract["agent_orchestration"] == orchestration
+    assert orchestration["final_reviewer_independent"] is True
+    assert roles["syllabus_outline_analyst"]["status"] == "complete"
+    assert roles["handbook_writer"]["status"] == "complete"
+    assert roles["final_reviewer"]["status"] == "pending"
     assert not [issue for issue in validation["issues"] if issue["severity"] == "error"]
     assert any("topic concept explanations still need LLM/Agent review" in issue["message"] for issue in validation["issues"])
 

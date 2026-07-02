@@ -8,6 +8,7 @@ from importlib import resources
 from pathlib import Path
 
 from intl_exam_guide.core import course_contract_payload
+from intl_exam_guide.agents import write_agent_orchestration
 from intl_exam_guide.models import Qualification
 from intl_exam_guide.planning.guide_plan import (
     IMAGE_PROVIDERS,
@@ -268,6 +269,7 @@ def write_guide_outputs(
     pdf_path = out_dir / "guide.pdf"
     validation_path = out_dir / "validation.json"
     delivery_contract_path = out_dir / "delivery-contract.json"
+    orchestration_path = out_dir / "agent-orchestration.json"
     run_options_path = out_dir / "run-options.json"
     if pdf_path.exists():
         pdf_path.unlink()
@@ -309,6 +311,7 @@ def write_guide_outputs(
         json.dumps(delivery_contract, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    write_agent_orchestration(out_dir, final_review_complete=False)
     payload = {
         "qualification": qualification.title,
         "html": str(html_path),
@@ -316,6 +319,7 @@ def write_guide_outputs(
         "pdf_error": pdf_error,
         "package": package_manifest,
         "delivery_contract": str(delivery_contract_path),
+        "agent_orchestration": str(orchestration_path),
         "review_summary": summary,
         "delivery_status": delivery_status,
         "delivery_state": delivery_contract["delivery_state"],

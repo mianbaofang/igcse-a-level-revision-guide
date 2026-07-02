@@ -4,7 +4,11 @@ from pypdf import PdfWriter
 
 from intl_exam_guide import cli as cli_module
 import intl_exam_guide.auditing.final_review as final_review_module
-from intl_exam_guide.auditing.final_review import build_final_review_packet, write_final_review_packet
+from intl_exam_guide.auditing.final_review import (
+    build_agent_self_review,
+    build_final_review_packet,
+    write_final_review_packet,
+)
 from intl_exam_guide.models import (
     AssessmentPaper,
     GuidePlan,
@@ -204,6 +208,14 @@ def test_final_review_packet_includes_user_visible_evidence(tmp_path):
     assert packet["qualification"]["title"] == "AS Mathematics"
     assert packet["guide_plan"]["available"] is True
     assert packet["agent_review_required"] is True
+    orchestration = packet["agent_orchestration"]
+    roles = {role["role_id"]: role for role in orchestration["roles"]}
+    assert orchestration["final_reviewer_independent"] is True
+    assert roles["final_reviewer"]["status"] == "complete"
+    assert roles["final_reviewer"]["independent_from"] == [
+        "syllabus_outline_analyst",
+        "handbook_writer",
+    ]
     assert packet["agent_self_review"]["status"] == "draft"
     assert packet["agent_self_review"]["must_not_present_as_final"] is True
     assert packet["manual_review_contract"]["required"] is True
@@ -221,6 +233,28 @@ def test_final_review_packet_recomputes_machine_validation_from_current_code(tmp
     assert any("SVG visual titles are too repetitive" in message for message in messages)
     assert packet["agent_self_review"]["status"] == "blocked"
     assert packet["review_summary"]["svg_files"] == 12
+
+
+def test_agent_self_review_blocks_missing_independent_reviewer():
+    review = build_agent_self_review(
+        {"error_count": 0},
+        {},
+        "Rendered student text",
+        [],
+        {
+            "roles": [
+                {
+                    "role_id": "final_reviewer",
+                    "status": "complete",
+                    "independent_from": ["handbook_writer"],
+                }
+            ]
+        },
+    )
+
+    assert review["status"] == "blocked"
+    assert review["must_not_present_as_final"] is True
+    assert any("independent" in reason for reason in review["reasons"])
 
 
 def test_final_review_packet_excerpt_omits_css_and_script(tmp_path):
@@ -265,11 +299,16 @@ def test_write_final_review_packet_refreshes_validation_json(tmp_path):
     validation = json.loads((tmp_path / "validation.json").read_text(encoding="utf-8"))
     packet = json.loads((tmp_path / "final-review-packet.json").read_text(encoding="utf-8"))
     contract = json.loads((tmp_path / "delivery-contract.json").read_text(encoding="utf-8"))
+    orchestration = json.loads((tmp_path / "agent-orchestration.json").read_text(encoding="utf-8"))
     assert validation["validation_refreshed"] is True
     assert validation["review_summary"] == packet["review_summary"]
     assert validation["delivery_status"] == packet["machine_validation"]["delivery_status"]
     assert contract["delivery_state"] == validation["delivery_state"]
     assert contract["pedagogical_units"][0]["delivery_state"] == validation["delivery_state"]
+    assert packet["agent_orchestration"] == orchestration
+    assert contract["agent_orchestration"] == orchestration
+    roles = {role["role_id"]: role for role in orchestration["roles"]}
+    assert roles["final_reviewer"]["status"] == "complete"
 
 
 def test_write_final_review_packet_rerenders_pdf_after_html(monkeypatch, tmp_path):

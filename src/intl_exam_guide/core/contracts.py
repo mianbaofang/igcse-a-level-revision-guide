@@ -4,6 +4,8 @@ from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from typing import Any
 
+from intl_exam_guide.agents.orchestration import agent_orchestration_payload
+
 
 class DeliveryState(StrEnum):
     """User-facing delivery state for a generated handbook package."""
@@ -202,6 +204,7 @@ def course_contract_payload(
     delivery_status: str | None = None,
     *,
     agent_review_ready: bool = False,
+    final_review_complete: bool | None = None,
 ) -> dict[str, Any]:
     """Build a serializable v0.4 contract packet while preserving v0.3 plan data."""
 
@@ -210,9 +213,13 @@ def course_contract_payload(
         delivery_status,
         agent_review_ready=agent_review_ready,
     )
+    reviewer_complete = agent_review_ready if final_review_complete is None else final_review_complete
     return {
         "schema_version": "v0.4-core-mvp",
         "delivery_state": delivery_state.value,
+        "agent_orchestration": agent_orchestration_payload(
+            final_review_complete=reviewer_complete
+        ),
         "course_spec": course_spec_from_qualification(qualification).to_dict(),
         "learning_units": [unit.to_dict() for unit in learning_units_from_qualification(qualification)],
         "pedagogical_units": [

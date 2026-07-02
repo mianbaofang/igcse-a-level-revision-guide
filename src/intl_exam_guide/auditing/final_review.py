@@ -4,6 +4,11 @@ import json
 import re
 from pathlib import Path
 
+from intl_exam_guide.agents import (
+    agent_orchestration_payload,
+    final_reviewer_is_independent,
+    write_agent_orchestration,
+)
 from intl_exam_guide.core import DeliveryState, course_contract_payload
 from intl_exam_guide.models import GuidePlan
 from intl_exam_guide.rendering.pdf import PdfExportError, export_pdf
@@ -54,8 +59,10 @@ def build_final_review_packet(output_dir: Path) -> dict[str, object]:
     summary = refreshed_validation.get("review_summary", {})
     if not isinstance(summary, dict):
         summary = {}
+    orchestration = agent_orchestration_payload(final_review_complete=True)
     return {
         "agent_review_required": True,
+        "agent_orchestration": orchestration,
         "review_questions": [
             "Does the rendered handbook match the requested board, level, subject, language, and style?",
             "Are topic titles teachable rather than parser fragments or generic labels?",
@@ -69,6 +76,7 @@ def build_final_review_packet(output_dir: Path) -> dict[str, object]:
             summary,
             rendered_text,
             [item for item in pending if item],
+            orchestration,
         ),
         "manual_review_contract": {
             "required": True,
@@ -103,6 +111,7 @@ def build_agent_self_review(
     summary: dict[str, object],
     rendered_text: str,
     pending_visual_ids: list[str],
+    orchestration: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Give the Agent a concrete final-delivery verdict to review, not just raw gates."""
 
@@ -115,6 +124,9 @@ def build_agent_self_review(
     if not rendered_text.strip():
         status = "blocked"
         reasons.append("Rendered student-facing text is empty or unreadable.")
+    if not orchestration_has_independent_final_reviewer(orchestration):
+        status = "blocked"
+        reasons.append("Final review must be performed by a role independent from outline analysis and handbook writing.")
 
     pending_concepts = summary_int(summary, "pending_concept_explanations")
     if pending_concepts:
@@ -145,6 +157,15 @@ def build_agent_self_review(
         "must_not_present_as_final": status != "ready",
         "agent_must_inspect_before_handoff": True,
     }
+
+
+def orchestration_has_independent_final_reviewer(orchestration: object) -> bool:
+    if not isinstance(orchestration, dict):
+        return False
+    roles = orchestration.get("roles")
+    if not isinstance(roles, list):
+        return False
+    return final_reviewer_is_independent([role for role in roles if isinstance(role, dict)])
 
 
 def build_refreshed_validation(
@@ -199,6 +220,7 @@ def write_final_review_packet(output_dir: Path) -> Path:
 
 
 def write_review_artifacts(output_dir: Path, packet: dict[str, object], path: Path) -> None:
+    write_agent_orchestration(output_dir, final_review_complete=True)
     write_refreshed_validation(output_dir, packet)
     rewrite_delivery_contract(output_dir, packet)
     path.write_text(
@@ -225,6 +247,7 @@ def rewrite_delivery_contract(output_dir: Path, packet: dict[str, object]) -> No
                 plan,
                 str(delivery_status),
                 agent_review_ready=agent_review_ready,
+                final_review_complete=True,
             ),
             ensure_ascii=False,
             indent=2,

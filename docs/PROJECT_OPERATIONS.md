@@ -35,6 +35,10 @@ User-facing promise:
    briefs, HTML, PDF, and validation output.
 6. Agent writes/imports reviewed concept explanations from
    `concepts/concept_jobs.json` before treating the handbook as final.
+7. Agent keeps the production roles separated in `agent-orchestration.json`:
+   syllabus/outline analyst, handbook writer, and independent final reviewer.
+   The final reviewer may mark the output draft or blocked; review completion is
+   not the same as final-ready approval.
 
 Verified delivery entries are only the routes recorded in the delivery matrix
 with current evidence. Candidate routes must not be described as verified
@@ -67,6 +71,7 @@ ready packet is historical evidence, not a standing v0.4 certification.
 - English/Chinese README: `README.md`, `README.zh-CN.md`
 - Delivery matrix: `tests/fixtures/delivery_matrix.json`
 - Release evidence manifest docs: `docs/release-evidence/`
+- Multi-agent role contract: `docs/MULTI_AGENT_ORCHESTRATION.md`
 
 Do not use old local clones or generated outputs as proof of current behavior.
 When verifying user experience, start from the GitHub repository or the clean
@@ -82,6 +87,7 @@ Every project update must decide whether these files need changes:
 - `docs/index.html`
 - `docs/PROJECT_OPERATIONS.md`
 - `docs/RELEASE_CHECKLIST.md`
+- `docs/MULTI_AGENT_ORCHESTRATION.md`
 - `skill/SKILL.md`
 - `skill/references/revision_guide_spec.md`
 

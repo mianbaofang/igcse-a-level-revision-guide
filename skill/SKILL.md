@@ -71,6 +71,10 @@ a likely route.
   `agent_self_review.must_not_present_as_final` flag. If the Agent cannot
   honestly answer the review questions, present the output as a draft or blocked
   run, not as final.
+- STOP: reviewer is not independent. The final reviewer role in
+  `agent-orchestration.json` must be separate from the syllabus/outline analyst
+  and handbook writer roles. A writer self-check can help, but it does not
+  satisfy final review by itself.
 - STOP: self-review found fixable problems. If the Agent/LLM review notices
   duplicated mastery text, a worked example that answers a different topic,
   repeated or unsuitable visuals, blank PDF pages, unresolved image jobs, or
